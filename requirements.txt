@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+httpx
+pydantic-settings
+python-dotenv
+anthropic
+a2a-sdk
+tree-sitter
+networkx
