@@ -34,13 +34,12 @@ function App() {
   const handleRepoSelected = async (repo) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/github/auth/callback`, {
+      const response = await fetch(`${API_URL}/analyse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          repo_owner: repo.owner,
+          access_token: accessToken,
           repo_name: repo.full_name,
-          access_token: accessToken
         })
       });
       const data = await response.json();
