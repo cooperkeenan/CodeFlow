@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -10,11 +11,9 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str
     ANTHROPIC_API_KEY: str
     CORS_ORIGIN: str = "http://localhost:5173"
+    PROFILER_AGENT_URL: str = "http://localhost:8002"
 
-    model_config = SettingsConfigDict(
-        env_file=str(ROOT_DIR / ".env"),
-        case_sensitive=True
-    )
+    model_config = SettingsConfigDict(env_file=str(ROOT_DIR / ".env"), case_sensitive=True)
 
 
 @lru_cache
