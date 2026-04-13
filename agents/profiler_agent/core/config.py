@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: str
     GITHUB_CLIENT_SECRET: str
 
-    model_config = SettingsConfigDict(env_file=str(ROOT_DIR / ".env"), case_sensitive=True)
+    model_config = SettingsConfigDict(env_file=str(ROOT_DIR / ".env"), case_sensitive=True,  extra="ignore")
 
 
 @lru_cache

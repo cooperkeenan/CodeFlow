@@ -2,8 +2,9 @@ from pydantic import BaseModel
 
 
 class ProfileRequest(BaseModel):
-    access_token: str
     repo_name: str
+    access_token: str | None = None
+    local_path: str | None = None
 
 
 class LayerHints(BaseModel):
