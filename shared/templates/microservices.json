@@ -1,0 +1,5 @@
+{
+  "zones": ["gateway", "services", "data"],
+  "edge_types": ["http", "event", "database"],
+  "description": "Microservices: API gateway, independent services, data stores"
+}

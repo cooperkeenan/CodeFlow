@@ -1,13 +1,13 @@
 import anthropic
 import httpx
-from fastapi import Depends, Request
-
 from core.config import Settings, get_settings
+from fastapi import Depends, Request
 from services.call_graph_service import CallGraphService
 from services.file_fetch_service import FileFetchService
 from services.tracer_service import TracerService
 from tools.build_call_graph_tool import BuildCallGraphTool
 from tools.fetch_layer_files_tool import FetchLayerFilesTool
+from tools.get_diagram_template_tool import GetDiagramTemplateTool
 
 
 def get_http_client(request: Request) -> httpx.AsyncClient:
@@ -36,6 +36,10 @@ def get_build_call_graph_tool(
     return BuildCallGraphTool(service)
 
 
+def get_diagram_template_tool() -> GetDiagramTemplateTool:
+    return GetDiagramTemplateTool()
+
+
 def get_anthropic_client(
     settings: Settings = Depends(get_settings),
 ) -> anthropic.AsyncAnthropic:
@@ -49,10 +53,12 @@ def get_anthropic_client(
 def get_tracer_service(
     fetch_layer_files_tool: FetchLayerFilesTool = Depends(get_fetch_layer_files_tool),
     build_call_graph_tool: BuildCallGraphTool = Depends(get_build_call_graph_tool),
+    diagram_template_tool: GetDiagramTemplateTool = Depends(get_diagram_template_tool),
     anthropic_client: anthropic.AsyncAnthropic = Depends(get_anthropic_client),
 ) -> TracerService:
     return TracerService(
         fetch_layer_files_tool,
         build_call_graph_tool,
+        diagram_template_tool,
         anthropic_client,
     )
