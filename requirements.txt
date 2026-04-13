@@ -7,3 +7,5 @@ anthropic
 a2a-sdk
 tree-sitter
 networkx
+pycg
+networkx

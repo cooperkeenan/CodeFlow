@@ -1,8 +1,7 @@
 import anthropic
 import httpx
-from fastapi import Depends, Request
-
 from core.config import Settings, get_settings
+from fastapi import Depends, Request
 from services.file_tree_service import FileTreeService
 from services.profiler_service import ProfilerService
 from tools.get_file_tree_tool import GetFileTreeTool
@@ -34,7 +33,11 @@ def get_manifest_files_tool(
 def get_anthropic_client(
     settings: Settings = Depends(get_settings),
 ) -> anthropic.AsyncAnthropic:
-    return anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+    http_client = httpx.AsyncClient(verify=False)
+    return anthropic.AsyncAnthropic(
+        api_key=settings.ANTHROPIC_API_KEY,
+        http_client=http_client,
+    )
 
 
 def get_profiler_service(
