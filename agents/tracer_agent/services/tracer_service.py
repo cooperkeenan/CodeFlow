@@ -1,11 +1,19 @@
+import json
 import logging
+import re
 
 import anthropic
+from anthropic.types import MessageParam, ToolResultBlockParam
 from models.tracer_model import TracerResponse
 from prompts.tracer_prompt import TRACER_SYSTEM_PROMPT
 from tools.build_call_graph_tool import BUILD_CALL_GRAPH_SCHEMA, BuildCallGraphTool
 from tools.fetch_layer_files_tool import FETCH_LAYER_FILES_SCHEMA, FetchLayerFilesTool
+from tools.get_diagram_template_tool import (
+    GET_DIAGRAM_TEMPLATE_SCHEMA,
+    GetDiagramTemplateTool,
+)
 
+from shared.models.diagram_spec import DiagramSpec
 from shared.models.tracer_request import TracerRequest
 
 logger = logging.getLogger(__name__)
@@ -16,13 +24,19 @@ class TracerService:
         self,
         fetch_layer_files_tool: FetchLayerFilesTool,
         build_call_graph_tool: BuildCallGraphTool,
+        diagram_template_tool: GetDiagramTemplateTool,
         anthropic_client: anthropic.AsyncAnthropic,
     ):
         self._tools = {
             "fetch_layer_files": fetch_layer_files_tool,
             "build_call_graph": build_call_graph_tool,
+            "get_diagram_template": diagram_template_tool,
         }
-        self._schemas = [FETCH_LAYER_FILES_SCHEMA, BUILD_CALL_GRAPH_SCHEMA]
+        self._schemas = [
+            FETCH_LAYER_FILES_SCHEMA,
+            BUILD_CALL_GRAPH_SCHEMA,
+            GET_DIAGRAM_TEMPLATE_SCHEMA,
+        ]
         self._llm = anthropic_client
 
     async def trace(self, request: TracerRequest) -> TracerResponse:
@@ -34,7 +48,7 @@ class TracerService:
             + request.layer_hints.data
         )
 
-        messages = [
+        messages: list[MessageParam] = [
             {
                 "role": "user",
                 "content": (
@@ -51,7 +65,7 @@ class TracerService:
         while True:
             response = await self._llm.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=2000,
+                max_tokens=4096,
                 system=TRACER_SYSTEM_PROMPT,
                 tools=self._schemas,
                 messages=messages,
@@ -59,14 +73,22 @@ class TracerService:
             logger.info("LLM stop reason: %s", response.stop_reason)
 
             if response.stop_reason == "end_turn":
-                description = next(b.text for b in response.content if b.type == "text")
+                text = next(b.text for b in response.content if b.type == "text")
+                logger.info("Raw LLM response: %s", text)
+
+                match = re.search(r"\{.*\}", text, re.DOTALL)
+                if not match:
+                    raise ValueError("LLM did not return valid JSON")
+
+                result = json.loads(match.group())
+                diagram_spec = DiagramSpec.model_validate(result)
                 logger.info("Tracing complete for %s", request.repo_name)
                 return TracerResponse(
                     architecture_type=request.architecture_type,
-                    description=description,
+                    diagram_spec=diagram_spec,
                 )
 
-            tool_results = []
+            tool_results: list[ToolResultBlockParam] = []
             for block in response.content:
                 if block.type == "tool_use":
                     logger.info("Tool called: %s", block.name)
@@ -79,11 +101,13 @@ class TracerService:
                             **block.input,
                         }
                     tool_result = await self._tools[block.name].handle(tool_input)
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": tool_result,
-                    })
+                    tool_results.append(
+                        ToolResultBlockParam(
+                            type="tool_result",
+                            tool_use_id=block.id,
+                            content=tool_result,
+                        )
+                    )
 
-            messages.append({"role": "assistant", "content": response.content})
+            messages.append({"role": "assistant", "content": response.content})  # type: ignore[arg-type]
             messages.append({"role": "user", "content": tool_results})

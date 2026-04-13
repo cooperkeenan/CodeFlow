@@ -1,0 +1,5 @@
+{
+  "zones": ["presentation", "business", "data"],
+  "edge_types": ["import", "call", "database"],
+  "description": "Monolith: layered with presentation, business logic, data access"
+}
