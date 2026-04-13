@@ -12,7 +12,8 @@ start_service() {
     local name=$1
     local dir=$2
     local port=$3
-
+    export PYTHONPATH="$ROOT_DIR:$PYTHONPATH"
+    
     uvicorn main:app \
         --app-dir "$ROOT_DIR/$dir" \
         --host 0.0.0.0 \

@@ -45,6 +45,11 @@ class FetchLayerFilesTool:
                     tool_input["directories"],
                 )
             else:
+                if not tool_input.get("access_token") or not tool_input.get("repo_name"):
+                    raise ValueError(
+                        "fetch_layer_files requires local_path for local repos or "
+                        "both access_token and repo_name for GitHub repos"
+                    )
                 temp_dir, file_paths = await self._service.fetch_files_to_temp(
                     tool_input["access_token"],
                     tool_input["repo_name"],
@@ -66,11 +71,22 @@ class FetchLayerFilesTool:
         excluded = {"__pycache__", ".venv", "venv", "tests", "test"}
 
         for directory in directories:
-            source_dir = root / directory.rstrip("/")
-            if not source_dir.exists():
-                logger.warning("Directory not found: %s", source_dir)
+            source_path = root / directory.rstrip("/")
+            if not source_path.exists():
+                logger.warning("Path not found: %s", source_path)
                 continue
-            for file_path in source_dir.rglob("*.py"):
+
+            if source_path.is_file():
+                if source_path.suffix != ".py" or any(ex in source_path.parts for ex in excluded):
+                    continue
+                dest = Path(temp_dir) / source_path.relative_to(root)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source_path, dest)
+                written_files.append(str(dest))
+                logger.info("Copied %s", source_path.name)
+                continue
+
+            for file_path in source_path.rglob("*.py"):
                 if any(ex in file_path.parts for ex in excluded):
                     continue
                 dest = Path(temp_dir) / file_path.relative_to(root)

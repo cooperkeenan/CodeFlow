@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+from shared.models.profiler_response import ProfileResponse
+from agents.tracer_agent.models.tracer_model import TracerResponse
+
 
 class AnalyseRequest(BaseModel):
     access_token: str | None = None
@@ -9,4 +12,5 @@ class AnalyseRequest(BaseModel):
 
 class AnalyseResponse(BaseModel):
     repo: str
-    profile: dict
+    profile: ProfileResponse
+    trace: TracerResponse

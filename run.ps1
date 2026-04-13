@@ -9,6 +9,7 @@ function Start-Service {
         [string]$Dir,
         [int]$Port
     )
+    $env:PYTHONPATH = $RootDir
     $process = Start-Process `
         -FilePath $UvicornBin `
         -ArgumentList "main:app --app-dir $RootDir\$Dir --host 0.0.0.0 --port $Port --reload" `
