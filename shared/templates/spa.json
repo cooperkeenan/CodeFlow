@@ -1,0 +1,5 @@
+{
+  "zones": ["frontend", "api", "data"],
+  "edge_types": ["http", "import", "database"],
+  "description": "SPA: frontend components, API layer, data layer"
+}
