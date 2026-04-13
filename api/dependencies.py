@@ -1,9 +1,9 @@
 import httpx
-from fastapi import Depends, Request
-
 from clients.github_client import GitHubClient
 from clients.profiler_client import ProfilerClient
+from clients.tracer_client import TracerClient
 from core.config import Settings, get_settings
+from fastapi import Depends, Request
 from services.analysis_service import AnalysisService
 from services.github_service import GitHubService
 
@@ -32,7 +32,15 @@ def get_profiler_client(
     return ProfilerClient(http_client, settings.PROFILER_AGENT_URL)
 
 
+def get_tracer_client(
+    http_client: httpx.AsyncClient = Depends(get_http_client),
+    settings: Settings = Depends(get_settings),
+) -> TracerClient:
+    return TracerClient(http_client, settings.TRACER_AGENT_URL)
+
+
 def get_analysis_service(
     profiler_client: ProfilerClient = Depends(get_profiler_client),
+    tracer_client: TracerClient = Depends(get_tracer_client),
 ) -> AnalysisService:
-    return AnalysisService(profiler_client)
+    return AnalysisService(profiler_client, tracer_client)

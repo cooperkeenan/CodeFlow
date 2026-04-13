@@ -3,11 +3,13 @@ import logging
 import re
 
 import anthropic
-
 from models.profiler_model import LayerHints, ProfileRequest, ProfileResponse
 from prompts.profiler_prompt import PROFILER_SYSTEM_PROMPT
 from tools.get_file_tree_tool import GET_FILE_TREE_SCHEMA, GetFileTreeTool
-from tools.get_manifest_tool import GET_MANIFEST_FILES_SCHEMA, GetManifestFilesTool
+from tools.get_manifest_tool import (
+    GET_MANIFEST_FILES_SCHEMA,
+    GetManifestFilesTool,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +31,15 @@ class ProfilerService:
     async def profile(self, request: ProfileRequest) -> ProfileResponse:
         logger.info("Profiling repo: %s", request.repo_name)
 
-        messages = [
-            {
-                "role": "user",
-                "content": f"Classify this repository: {request.repo_name}. Access token: {request.access_token}",
-            }
-        ]
+        if request.local_path:
+            user_content = f"Classify this local repository at path: {request.local_path}"
+        else:
+            user_content = (
+                f"Classify this repository: {request.repo_name}. "
+                f"Access token: {request.access_token}"
+            )
+
+        messages = [{"role": "user", "content": user_content}]
 
         while True:
             response = await self._llm.messages.create(
@@ -50,10 +55,8 @@ class ProfilerService:
                 text = next(b.text for b in response.content if b.type == "text")
                 logger.info("Raw LLM response: %s", text)
 
-                # Extract JSON from response regardless of surrounding text or code fences
                 match = re.search(r"\{.*\}", text, re.DOTALL)
                 if not match:
-                    logger.error("No JSON found in LLM response")
                     raise ValueError("LLM did not return valid JSON")
 
                 result = json.loads(match.group())
