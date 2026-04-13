@@ -1,3 +1,6 @@
+import inspect
+import logging
+
 import httpx
 from clients.github_client import GitHubClient
 from clients.profiler_client import ProfilerClient
@@ -6,6 +9,8 @@ from core.config import Settings, get_settings
 from fastapi import Depends, Request
 from services.analysis_service import AnalysisService
 from services.github_service import GitHubService
+
+logger = logging.getLogger(__name__)
 
 
 def get_http_client(request: Request) -> httpx.AsyncClient:
@@ -36,6 +41,11 @@ def get_tracer_client(
     http_client: httpx.AsyncClient = Depends(get_http_client),
     settings: Settings = Depends(get_settings),
 ) -> TracerClient:
+    logger.info(
+        "Creating TracerClient from %s with trace signature %s",
+        inspect.getfile(TracerClient),
+        inspect.signature(TracerClient.trace),
+    )
     return TracerClient(http_client, settings.TRACER_AGENT_URL)
 
 
