@@ -36,7 +36,7 @@ class CallGraphService:
         return graph
 
     def _to_serialisable(self, graph: nx.DiGraph) -> dict:
-        return {
-            "nodes": list(graph.nodes()),
-            "edges": [{"from": u, "to": v} for u, v in graph.edges()],
-        }
+        graph.remove_nodes_from(list(nx.isolates(graph)))
+        edges = [{"from": u, "to": v} for u, v in graph.edges()][:300]
+        nodes = list({n for e in edges for n in (e["from"], e["to"])})
+        return {"nodes": nodes, "edges": edges}

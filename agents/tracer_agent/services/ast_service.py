@@ -29,7 +29,7 @@ class AstService:
             elif isinstance(node, ast.ImportFrom):
                 imports.append({
                     "from": node.module or "",
-                    "import": [a.name for a in node.names],
+                    "import": ", ".join(a.name for a in node.names),
                 })
         return imports
 

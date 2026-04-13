@@ -1,0 +1,5 @@
+{
+  "zones": ["presentation", "business", "data"],
+  "edge_types": ["http", "import", "database", "event", "call"],
+  "description": "Three-tier: presentation routes/controllers, business services/logic, data repositories/models"
+}
