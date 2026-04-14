@@ -1,0 +1,67 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "API Gateway",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": ["main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+            "cwd": "${workspaceFolder}/api",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "presentation": { "group": "codeflow", "order": 1, "close": true }
+        },
+        {
+            "name": "Profiler Agent",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": ["main:app", "--host", "0.0.0.0", "--port", "8002", "--reload"],
+            "cwd": "${workspaceFolder}/agents/profiler_agent",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "presentation": { "group": "codeflow", "order": 2, "close": true }
+        },
+        {
+            "name": "Tracer Agent",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": ["main:app", "--host", "0.0.0.0", "--port", "8003", "--reload"],
+            "cwd": "${workspaceFolder}/agents/tracer_agent",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "presentation": { "group": "codeflow", "order": 3, "close": true }
+        },
+        {
+            "name": "Render Agent",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": ["main:app", "--host", "0.0.0.0", "--port", "8004", "--reload"],
+            "cwd": "${workspaceFolder}/agents/render_agent",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "presentation": { "group": "codeflow", "order": 4, "close": true }
+        },
+        {
+            "name": "Frontend",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "cwd": "${workspaceFolder}/frontend",
+            "presentation": { "group": "codeflow", "order": 5, "close": true }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "CodeFlow: All Services",
+            "configurations": [
+                "API Gateway",
+                "Profiler Agent",
+                "Tracer Agent",
+                "Render Agent",
+                "Frontend"
+            ],
+            "stopAll": true,
+            "presentation": { "group": "codeflow" }
+        }
+    ]
+}
