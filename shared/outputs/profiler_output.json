@@ -1,0 +1,29 @@
+{
+  "architecture_type": "three-tier",
+  "language": "python",
+  "framework": "fastapi",
+  "patterns": [
+    "layered_architecture",
+    "repository_pattern",
+    "service_layer",
+    "matcher_strategy_pattern",
+    "domain_driven_design"
+  ],
+  "entry_point_hint": "src/api/app.py is the FastAPI application entry point; test_telegram.py and scripts/ contain CLI entry points",
+  "layer_hints": {
+    "presentation": [
+      "src/api/",
+      "scripts/"
+    ],
+    "business": [
+      "src/application/",
+      "src/matching/",
+      "src/scraper/",
+      "src/services/"
+    ],
+    "data": [
+      "src/infrastructure/",
+      "src/domain/"
+    ]
+  }
+}
