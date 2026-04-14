@@ -1,5 +1,8 @@
 import logging
+from pathlib import Path
+
 from clients.profiler_client import ProfilerClient
+from clients.render_client import RenderClient
 from clients.tracer_client import TracerClient
 from models.analysis_model import AnalyseRequest, AnalyseResponse
 
@@ -10,9 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class AnalysisService:
-    def __init__(self, profiler_client: ProfilerClient, tracer_client: TracerClient):
+    def __init__(
+        self,
+        profiler_client: ProfilerClient,
+        tracer_client: TracerClient,
+        render_client: RenderClient,
+    ):
         self._profiler = profiler_client
         self._tracer = tracer_client
+        self._render = render_client
 
     async def analyse(self, request: AnalyseRequest) -> AnalyseResponse:
         logger.info("Starting analysis for: %s", request.repo_name)
@@ -47,5 +56,6 @@ class AnalysisService:
             layer_hints=profile.layer_hints,
         )
         trace = await self._tracer.trace(tracer_request)
-        logger.info("Tracer complete for: %s", repo_name)
-        return AnalyseResponse(repo=repo_name, profile=profile, trace=trace)
+        mermaid = await self._render.render(trace["architecture_type"], trace["diagram_spec"])
+        logger.info("Render complete for: %s", repo_name)
+        return AnalyseResponse(repo=repo_name, profile=profile, trace=trace, mermaid=mermaid)
