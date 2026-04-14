@@ -1,71 +1,46 @@
-import React from 'react';
-import MermaidDiagram from './MermaidDiagram';
+import React, { useEffect, useRef } from 'react'
+import mermaid from 'mermaid'
+
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' })
 
 export default function DiagramViewer({ analysis, onBack }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!ref.current || !analysis?.mermaid) return
+    const id = `mermaid-${Date.now()}`
+    mermaid.render(id, analysis.mermaid).then(({ svg }) => {
+      ref.current.innerHTML = svg
+    }).catch(e => {
+      ref.current.innerHTML = `<pre class="mermaid-error">${e.message}</pre>`
+    })
+  }, [analysis])
+
+  const profile = analysis?.profile
+
   return (
-    <div>
-      <button onClick={onBack} style={{ marginBottom: '1rem' }}>
-        ← Back to repositories
-      </button>
-      
-      <h2>Analysis: {analysis.repo}</h2>
-      
-      <div style={{ marginTop: '2rem' }}>
-        <h3>Summary</h3>
-        <ul>
-          <li>Total files: {analysis.analysis.summary.total_files}</li>
-          <li>Total functions: {analysis.analysis.summary.total_functions}</li>
-          <li>Total classes: {analysis.analysis.summary.total_classes}</li>
-        </ul>
+    <div className="viewer">
+      <div className="viewer-header">
+        <button className="back-btn" onClick={onBack}>← back</button>
+        <div className="viewer-meta">
+          <span className="viewer-repo">{analysis?.repo?.split('/').pop()}</span>
+          <span className="viewer-badge">{profile?.architecture_type}</span>
+          <span className="viewer-badge">{profile?.language}</span>
+          <span className="viewer-badge">{profile?.framework}</span>
+        </div>
       </div>
 
-      {/* Mermaid Diagrams */}
-      {analysis.diagrams && (
-        <>
-          <MermaidDiagram 
-            chart={analysis.diagrams.architecture}
-            title="Architecture Overview"
-          />
-          
-          <MermaidDiagram 
-            chart={analysis.diagrams.dependencies}
-            title="Dependency Graph"
-          />
-        </>
-      )}
+      <div className="diagram-wrap" ref={ref} />
 
-      {/* Raw Data (collapsible) */}
-      <details style={{ marginTop: '3rem' }}>
-        <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem' }}>
-          View Raw Analysis Data
-        </summary>
-        
-        <div style={{ marginTop: '2rem' }}>
-          <h3>Files Analyzed</h3>
-          {Object.entries(analysis.analysis.files).map(([filepath, data]) => (
-            <details key={filepath} style={{ marginBottom: '1rem' }}>
-              <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                {filepath}
-              </summary>
-              <pre style={{ 
-                background: '#f5f5f5', 
-                padding: '1rem', 
-                overflow: 'auto',
-                fontSize: '0.85rem'
-              }}>
-                {JSON.stringify(data, null, 2)}
-              </pre>
-            </details>
-          ))}
-        </div>
+      <details className="raw-details">
+        <summary>Raw Mermaid</summary>
+        <pre className="raw-pre">{analysis?.mermaid}</pre>
+      </details>
 
-        <div style={{ marginTop: '2rem' }}>
-          <h3>Dependency Graph (JSON)</h3>
-          <pre style={{ background: '#f5f5f5', padding: '1rem', overflow: 'auto' }}>
-            {JSON.stringify(analysis.analysis.dependency_graph, null, 2)}
-          </pre>
-        </div>
+      <details className="raw-details">
+        <summary>Diagram Spec</summary>
+        <pre className="raw-pre">{JSON.stringify(analysis?.trace?.diagram_spec, null, 2)}</pre>
       </details>
     </div>
-  );
+  )
 }

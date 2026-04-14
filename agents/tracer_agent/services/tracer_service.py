@@ -95,10 +95,10 @@ class TracerService:
                     tool_input = block.input
                     if block.name == "fetch_layer_files":
                         tool_input = {
+                            **block.input,
                             "access_token": request.access_token,
                             "repo_name": request.repo_name,
-                            "local_path": request.local_path,
-                            **block.input,
+                            "local_path": request.local_path,  # always wins
                         }
                     tool_result = await self._tools[block.name].handle(tool_input)
                     tool_results.append(
