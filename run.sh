@@ -1,65 +1,65 @@
 #!/bin/bash
 
-VENV_DIR="venv"
-PID_FILE=".pids"
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+OUTPUTS_DIR="$ROOT_DIR/shared/outputs"
+GATEWAY="http://localhost:8000"
 
-activate_venv() {
-    source "$ROOT_DIR/$VENV_DIR/bin/activate"
+mkdir -p "$OUTPUTS_DIR"
+
+get_env_value() {
+    grep -E "^${1}=" "$ROOT_DIR/.env" 2>/dev/null | cut -d'=' -f2- | tr -d '[:space:]'
 }
 
-start_service() {
-    local name=$1
-    local dir=$2
-    local port=$3
-    export PYTHONPATH="$ROOT_DIR:$PYTHONPATH"
-    
-    uvicorn main:app \
-        --app-dir "$ROOT_DIR/$dir" \
-        --host 0.0.0.0 \
-        --port "$port" \
-        --reload &
-    echo "$!" >> "$ROOT_DIR/$PID_FILE"
-    echo "  ✓ $name on port $port (pid $!)"
-}
+while true; do
+    echo ""
+    echo "==============================="
+    echo "   CodeFlow Dev Runner"
+    echo "==============================="
+    echo "  Repo: $(basename "$(get_env_value LOCAL_REPO_PATH)")"
+    echo ""
+    echo "  1) Profiler "
+    echo "  2) Tracer "
+    echo "  3) Render "
+    echo "  4) Stop "
+    echo ""
+    read -rp "Select: " choice
 
-kill_ports() {
-    local ports=(8000 8002 8003 8004 5173 5174 5175 5176 5177)
-    for port in "${ports[@]}"; do
-        pids=$(lsof -ti :"$port")
-        if [ -n "$pids" ]; then
-            echo "$pids" | xargs kill -9 2>/dev/null
-            echo "  ✓ Cleared port $port"
-        fi
-    done
-}
-
-activate_venv
-> "$ROOT_DIR/$PID_FILE"
-
-echo ""
-echo "==============================="
-echo "   CodeFlow Dev Runner"
-echo "==============================="
-echo ""
-echo "Clearing ports..."
-kill_ports
-sleep 1
-
-echo ""
-echo "Starting services..."
-start_service "API Gateway"     api                   8000
-start_service "Profiler Agent"  agents/profiler_agent 8002
-start_service "Tracer Agent"    agents/tracer_agent   8003
-start_service "Render Agent"    agents/render_agent   8004
-
-echo ""
-echo "Starting frontend..."
-cd "$ROOT_DIR/frontend"
-npm run dev &
-echo "$!" >> "$ROOT_DIR/$PID_FILE"
-echo "  ✓ Frontend on port 5173 (pid $!)"
-cd "$ROOT_DIR"
-
-echo ""
-echo "All services running. PIDs saved to .pids"
+    case $choice in
+        1)
+            response=$(curl -sf -X POST "$GATEWAY/analyse/local" -H "Content-Type: application/json")
+            [ $? -ne 0 ] && echo "✗ Failed" && continue
+            echo "$response" | python3 -m json.tool | tee \
+                >(python3 -c "import json,sys; d=json.load(sys.stdin); open('$OUTPUTS_DIR/profiler_output.json','w').write(json.dumps(d['profile'], indent=2))") \
+                >(python3 -c "import json,sys; d=json.load(sys.stdin); open('$OUTPUTS_DIR/tracer_output.json','w').write(json.dumps(d['trace'], indent=2))") \
+                > /dev/null
+            echo "✓ Saved profiler_output.json + tracer_output.json"
+            ;;
+        2)
+            [ ! -f "$OUTPUTS_DIR/profiler_output.json" ] && echo "✗ No stored profiler output" && continue
+            response=$(curl -sf -X POST "$GATEWAY/analyse/from-profile" \
+                -H "Content-Type: application/json" \
+                -d @"$OUTPUTS_DIR/profiler_output.json")
+            [ $? -ne 0 ] && echo "✗ Failed" && continue
+            echo "$response" | python3 -m json.tool | \
+                python3 -c "import json,sys; d=json.load(sys.stdin); open('$OUTPUTS_DIR/tracer_output.json','w').write(json.dumps(d['trace'], indent=2))"
+            echo "✓ Saved tracer_output.json"
+            ;;
+        3)
+            [ ! -f "$OUTPUTS_DIR/tracer_output.json" ] && echo "✗ No stored tracer output" && continue
+            curl -sf -X POST "$GATEWAY/analyse/from-trace" \
+                -H "Content-Type: application/json" \
+                -d @"$OUTPUTS_DIR/tracer_output.json" | python3 -m json.tool
+            ;;
+        4)
+            echo "Stopping..."
+            for port in 8000 8002 8003 8004; do
+                pids=$(lsof -ti :"$port")
+                if [ -n "$pids" ]; then
+                    echo "$pids" | xargs kill -9 2>/dev/null
+                    echo "  ✓ Cleared port $port"
+                fi
+            done
+            exit 0
+            ;;
+    esac
+done

@@ -1,0 +1,470 @@
+{
+  "architecture_type": "three-tier",
+  "diagram_spec": {
+    "architecture_type": "three-tier",
+    "layers": {
+      "presentation": [
+        {
+          "name": "ScraperAPI",
+          "description": "FastAPI application that exposes REST endpoints for scraping and job management.",
+          "file_path": "src/api/app.py",
+          "io": {
+            "inputs": [
+              "request: ScrapeRequest",
+              "api_key: str"
+            ],
+            "outputs": [
+              "ScrapeResponse",
+              "JobStatusResponse"
+            ]
+          },
+          "children": [
+            "SessionExecutor"
+          ]
+        },
+        {
+          "name": "SessionExecutor",
+          "description": "Executes scraping sessions in background tasks with job tracking.",
+          "file_path": "src/api/session_executor.py",
+          "io": {
+            "inputs": [
+              "job_id: str",
+              "brands: list[str]",
+              "marketplace: str"
+            ],
+            "outputs": [
+              "JobStatusResponse"
+            ]
+          },
+          "children": [
+            "ScrapingOrchestrator",
+            "BrowserService",
+            "FacebookService",
+            "SessionService",
+            "ProxyService"
+          ]
+        }
+      ],
+      "business": [
+        {
+          "name": "ScrapingOrchestrator",
+          "description": "Orchestrates the complete scraping and matching workflow for a brand.",
+          "file_path": "src/application/scraping_orchestration.py",
+          "io": {
+            "inputs": [
+              "brands: list[str]",
+              "marketplace: str",
+              "driver: WebDriver"
+            ],
+            "outputs": [
+              "list[MatchResult]",
+              "dict[str, Any]"
+            ]
+          },
+          "children": [
+            "MarketplaceScraper",
+            "MatchingEngine",
+            "ProductService"
+          ]
+        },
+        {
+          "name": "MarketplaceScraper",
+          "description": "Scrapes listings from Facebook Marketplace using browser automation.",
+          "file_path": "src/scraper/marketplace_scraper.py",
+          "io": {
+            "inputs": [
+              "search_query: str",
+              "driver: WebDriver"
+            ],
+            "outputs": [
+              "list[Listing]"
+            ]
+          },
+          "children": [
+            "BrowserHelper"
+          ]
+        },
+        {
+          "name": "MatchingEngine",
+          "description": "Matches scraped listings to products using multiple matching strategies.",
+          "file_path": "src/matching/matching_engine.py",
+          "io": {
+            "inputs": [
+              "listings: list[Listing]",
+              "products: list[Product]"
+            ],
+            "outputs": [
+              "list[MatchResult]"
+            ]
+          },
+          "children": [
+            "TitleMatcher",
+            "PriceMatcher",
+            "KeywordFilter",
+            "ConfidenceCalculator"
+          ]
+        },
+        {
+          "name": "ProductService",
+          "description": "Loads and manages product data from repository for matching operations.",
+          "file_path": "src/application/product_service.py",
+          "io": {
+            "inputs": [
+              "brands: list[str]"
+            ],
+            "outputs": [
+              "list[Product]"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "BrowserService",
+          "description": "Manages WebDriver lifecycle and browser configuration for scraping.",
+          "file_path": "src/services/browser_service.py",
+          "io": {
+            "inputs": [
+              "proxy_service: ProxyService"
+            ],
+            "outputs": [
+              "WebDriver"
+            ]
+          },
+          "children": [
+            "ProxyService"
+          ]
+        },
+        {
+          "name": "FacebookService",
+          "description": "Handles Facebook authentication and session restoration.",
+          "file_path": "src/services/facebook_service.py",
+          "io": {
+            "inputs": [
+              "driver: WebDriver"
+            ],
+            "outputs": [
+              "bool"
+            ]
+          },
+          "children": [
+            "SessionService",
+            "BrowserService"
+          ]
+        },
+        {
+          "name": "SessionService",
+          "description": "Manages cookie-based session persistence for authentication.",
+          "file_path": "src/services/session_service.py",
+          "io": {
+            "inputs": [
+              "session_name: str"
+            ],
+            "outputs": [
+              "dict[str, str]",
+              "bool"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "ProxyService",
+          "description": "Configures and manages proxy settings for requests.",
+          "file_path": "src/services/proxy_service.py",
+          "io": {
+            "inputs": [],
+            "outputs": [
+              "dict[str, str]"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "TitleMatcher",
+          "description": "Matches listings to products based on title similarity.",
+          "file_path": "src/matching/matchers/title_matcher.py",
+          "io": {
+            "inputs": [
+              "listing: Listing",
+              "product: Product"
+            ],
+            "outputs": [
+              "float"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "PriceMatcher",
+          "description": "Matches listings to products based on price range.",
+          "file_path": "src/matching/matchers/price_matcher.py",
+          "io": {
+            "inputs": [
+              "listing: Listing",
+              "product: Product"
+            ],
+            "outputs": [
+              "float"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "KeywordFilter",
+          "description": "Filters listings based on keyword presence and exclusion rules.",
+          "file_path": "src/matching/matchers/keyword_filter.py",
+          "io": {
+            "inputs": [
+              "listing: Listing",
+              "product: Product"
+            ],
+            "outputs": [
+              "bool"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "ConfidenceCalculator",
+          "description": "Calculates confidence scores from multiple matcher results.",
+          "file_path": "src/matching/confidence_calculator.py",
+          "io": {
+            "inputs": [
+              "scores: dict[str, float]"
+            ],
+            "outputs": [
+              "float"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "BrowserHelper",
+          "description": "Provides helper methods for browser navigation and element extraction.",
+          "file_path": "src/scraper/browser_helper.py",
+          "io": {
+            "inputs": [
+              "driver: WebDriver"
+            ],
+            "outputs": [
+              "list[Any]"
+            ]
+          },
+          "children": []
+        }
+      ],
+      "data": [
+        {
+          "name": "ProductRepository",
+          "description": "Persists and retrieves product data from the database.",
+          "file_path": "src/infrastructure/database/repositories/product_repository.py",
+          "io": {
+            "inputs": [
+              "product: Product"
+            ],
+            "outputs": [
+              "list[Product]"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "ListingRepository",
+          "description": "Persists and retrieves listing data from the database.",
+          "file_path": "src/infrastructure/database/repositories/listing_repository.py",
+          "io": {
+            "inputs": [
+              "listing: Listing"
+            ],
+            "outputs": [
+              "list[Listing]",
+              "bool"
+            ]
+          },
+          "children": []
+        },
+        {
+          "name": "Product",
+          "description": "Domain model representing a product with brand and pricing information.",
+          "file_path": "src/domain/models/product.py",
+          "io": {
+            "inputs": [],
+            "outputs": []
+          },
+          "children": []
+        },
+        {
+          "name": "Listing",
+          "description": "Domain model representing a marketplace listing with title, price, and URL.",
+          "file_path": "src/domain/models/listing.py",
+          "io": {
+            "inputs": [],
+            "outputs": []
+          },
+          "children": []
+        },
+        {
+          "name": "MatchResult",
+          "description": "Domain model representing the result of matching a listing to a product.",
+          "file_path": "src/domain/models/match_result.py",
+          "io": {
+            "inputs": [],
+            "outputs": []
+          },
+          "children": []
+        }
+      ]
+    },
+    "edges": [
+      {
+        "source": "ScraperAPI",
+        "target": "SessionExecutor",
+        "edge_type": "call"
+      },
+      {
+        "source": "SessionExecutor",
+        "target": "ScrapingOrchestrator",
+        "edge_type": "call"
+      },
+      {
+        "source": "SessionExecutor",
+        "target": "BrowserService",
+        "edge_type": "call"
+      },
+      {
+        "source": "SessionExecutor",
+        "target": "FacebookService",
+        "edge_type": "call"
+      },
+      {
+        "source": "SessionExecutor",
+        "target": "SessionService",
+        "edge_type": "call"
+      },
+      {
+        "source": "SessionExecutor",
+        "target": "ProxyService",
+        "edge_type": "call"
+      },
+      {
+        "source": "SessionExecutor",
+        "target": "ProductRepository",
+        "edge_type": "call"
+      },
+      {
+        "source": "SessionExecutor",
+        "target": "ListingRepository",
+        "edge_type": "call"
+      },
+      {
+        "source": "ScrapingOrchestrator",
+        "target": "MarketplaceScraper",
+        "edge_type": "call"
+      },
+      {
+        "source": "ScrapingOrchestrator",
+        "target": "MatchingEngine",
+        "edge_type": "call"
+      },
+      {
+        "source": "ScrapingOrchestrator",
+        "target": "ProductService",
+        "edge_type": "call"
+      },
+      {
+        "source": "ScrapingOrchestrator",
+        "target": "ListingRepository",
+        "edge_type": "call"
+      },
+      {
+        "source": "MarketplaceScraper",
+        "target": "BrowserHelper",
+        "edge_type": "call"
+      },
+      {
+        "source": "MatchingEngine",
+        "target": "TitleMatcher",
+        "edge_type": "call"
+      },
+      {
+        "source": "MatchingEngine",
+        "target": "PriceMatcher",
+        "edge_type": "call"
+      },
+      {
+        "source": "MatchingEngine",
+        "target": "KeywordFilter",
+        "edge_type": "call"
+      },
+      {
+        "source": "MatchingEngine",
+        "target": "ConfidenceCalculator",
+        "edge_type": "call"
+      },
+      {
+        "source": "ProductService",
+        "target": "ProductRepository",
+        "edge_type": "call"
+      },
+      {
+        "source": "BrowserService",
+        "target": "ProxyService",
+        "edge_type": "call"
+      },
+      {
+        "source": "FacebookService",
+        "target": "BrowserService",
+        "edge_type": "call"
+      },
+      {
+        "source": "FacebookService",
+        "target": "SessionService",
+        "edge_type": "call"
+      },
+      {
+        "source": "ProductRepository",
+        "target": "Product",
+        "edge_type": "import"
+      },
+      {
+        "source": "ListingRepository",
+        "target": "Listing",
+        "edge_type": "import"
+      },
+      {
+        "source": "MatchingEngine",
+        "target": "MatchResult",
+        "edge_type": "call"
+      }
+    ],
+    "external_actors": [
+      {
+        "name": "Facebook Marketplace",
+        "type": "api",
+        "description": "The system scrapes product listings from Facebook Marketplace using browser automation."
+      },
+      {
+        "name": "PostgreSQL",
+        "type": "database",
+        "description": "Stores products, listings, and job status information."
+      },
+      {
+        "name": "Docker",
+        "type": "api",
+        "description": "Used to containerize and run Selenium browser instances."
+      },
+      {
+        "name": "Selenium WebDriver",
+        "type": "api",
+        "description": "Provides browser automation capabilities for marketplace scraping."
+      },
+      {
+        "name": "IPRoyal Proxy Service",
+        "type": "api",
+        "description": "Provides proxy services to rotate IPs during scraping operations."
+      }
+    ],
+    "entry_points": [
+      "ScraperAPI"
+    ]
+  }
+}

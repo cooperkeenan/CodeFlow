@@ -14,7 +14,7 @@ Return your final classification as JSON matching this schema exactly:
   "patterns": ["list", "of", "detected", "patterns"],
   "entry_point_hint": "brief hint on where entrypoints are likely to be",
   "layer_hints": {
-    "presentation": ["folder/", "paths/"],
+    "presentation": ["folder/", "paths/"],  # always directories, never individual files
     "business": ["folder/", "paths/"],
     "data": ["folder/", "paths/"]
   }
