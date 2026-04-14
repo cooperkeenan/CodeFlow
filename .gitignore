@@ -24,7 +24,7 @@ dist/
 frontend/dist/
 
 # IDE
-.vscode/
+#.vscode/
 .idea/
 
 # Misc
