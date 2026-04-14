@@ -1,0 +1,110 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "API Gateway",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+            "options": {
+                "cwd": "${workspaceFolder}/api",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}"
+                }
+            },
+            "icon": {
+                "id": "plug",
+                "color": "terminal.ansiBlue"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "Profiler Agent",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8002 --reload",
+            "options": {
+                "cwd": "${workspaceFolder}/agents/profiler_agent",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}"
+                }
+            },
+            "icon": {
+                "id": "search",
+                "color": "terminal.ansiGreen"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "Tracer Agent",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8003 --reload",
+            "options": {
+                "cwd": "${workspaceFolder}/agents/tracer_agent",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}"
+                }
+            },
+            "icon": {
+                "id": "git-branch",
+                "color": "terminal.ansiYellow"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "Render Agent",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8004 --reload",
+            "options": {
+                "cwd": "${workspaceFolder}/agents/render_agent",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}"
+                }
+            },
+            "icon": {
+                "id": "graph",
+                "color": "terminal.ansiMagenta"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "Frontend",
+            "type": "shell",
+            "command": "npm run dev",
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "icon": {
+                "id": "browser",
+                "color": "terminal.ansiCyan"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "CodeFlow: All Services",
+            "dependsOn": [
+                "API Gateway",
+                "Profiler Agent",
+                "Tracer Agent",
+                "Render Agent",
+                "Frontend"
+            ],
+            "dependsOrder": "parallel",
+            "icon": {
+                "id": "rocket",
+                "color": "terminal.ansiWhite"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "CodeFlow: Stop All",
+            "type": "shell",
+            "command": "for port in 8000 8002 8003 8004 5173; do pids=$(lsof -ti :$port); if [ -n \"$pids\" ]; then echo \"$pids\" | xargs kill -9; echo \"Cleared port $port\"; else echo \"Port $port already free\"; fi; done",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "icon": {
+                "id": "stop-circle",
+                "color": "terminal.ansiRed"
+            }
+        }
+    ]
+}
