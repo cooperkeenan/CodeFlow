@@ -90,24 +90,30 @@ class TracerService:
 
             tool_results: list[ToolResultBlockParam] = []
             for block in response.content:
-                if block.type == "tool_use":
-                    logger.info("Tool called: %s", block.name)
-                    tool_input = block.input
-                    if block.name == "fetch_layer_files":
-                        tool_input = {
-                            **block.input,
-                            "access_token": request.access_token,
-                            "repo_name": request.repo_name,
-                            "local_path": request.local_path,  # always wins
-                        }
-                    tool_result = await self._tools[block.name].handle(tool_input)
-                    tool_results.append(
-                        ToolResultBlockParam(
-                            type="tool_result",
-                            tool_use_id=block.id,
-                            content=tool_result,
-                        )
+                if block.type != "tool_use":
+                    continue
+                logger.info("Tool called: %s", block.name)
+                tool_input = dict(block.input)
+                if block.name == "fetch_layer_files":
+                    tool_input = {
+                        **block.input,
+                        "access_token": request.access_token,
+                        "repo_name": request.repo_name,
+                        "local_path": request.local_path,
+                    }
+                elif block.name == "build_call_graph":
+                    tool_input = {
+                        **block.input,
+                        "entry_point_hint": request.entry_point_hint,
+                    }
+                tool_result = await self._tools[block.name].handle(tool_input)
+                tool_results.append(
+                    ToolResultBlockParam(
+                        type="tool_result",
+                        tool_use_id=block.id,
+                        content=tool_result,
                     )
+                )
 
             messages.append({"role": "assistant", "content": response.content})  # type: ignore[arg-type]
             messages.append({"role": "user", "content": tool_results})

@@ -3,6 +3,8 @@ import dagre from 'dagre'
 
 const NODE_W = 190
 const NODE_H = 64
+const GROUP_PADDING = 24
+const GROUP_HEADER = 28
 
 function applyLayout(nodes, edges) {
   const g = new dagre.graphlib.Graph()
@@ -55,34 +57,106 @@ function flattenComponents(layers) {
 
 function buildSystemGraph(spec) {
   const components = flattenComponents(spec.layers)
+  const allChildNames = new Set(components.flatMap(c => c.children ?? []))
+  const topLevel = components.filter(c => !allChildNames.has(c.name))
+  const topLevelNames = new Set(topLevel.map(c => c.name))
+  const actorNames = new Set(spec.external_actors.map(a => a.name))
+  const visibleNames = new Set([...topLevelNames, ...actorNames])
 
-  const nodes = [
-    ...components.map(c =>
-      toRFNode(c.name, {
-        label: c.name,
-        layer: c.layer,
-        isEntry: spec.entry_points.includes(c.name),
-        drillable: (c.children?.length ?? 0) > 0,
-        description: c.description,
-        file_path: c.file_path,
-        io: c.io,
-      })
-    ),
-    ...spec.external_actors.map(a =>
-      toRFNode(a.name, {
-        label: a.name,
-        layer: 'external',
-        isEntry: false,
-        drillable: false,
-        description: a.description,
-        actorType: a.type,
-      })
-    ),
+  const rawNodes = [
+    ...topLevel.map(c => toRFNode(c.name, {
+      label: c.name,
+      layer: c.layer,
+      isEntry: spec.entry_points.includes(c.name),
+      drillable: (c.children?.length ?? 0) > 0,
+      description: c.description,
+      file_path: c.file_path,
+      io: c.io,
+    })),
+    ...spec.external_actors.map(a => toRFNode(a.name, {
+      label: a.name,
+      layer: 'external',
+      isEntry: false,
+      drillable: false,
+      description: a.description,
+      actorType: a.type,
+    })),
   ]
 
-  const edges = spec.edges.map(toRFEdge)
+  const edges = spec.edges
+    .filter(e => visibleNames.has(e.source) && visibleNames.has(e.target))
+    .map(toRFEdge)
 
-  return { nodes: applyLayout(nodes, edges), edges }
+  const laidOut = applyLayout(rawNodes, edges)
+
+  // Compute bounding box per layer
+  const bounds = {}
+  for (const node of laidOut) {
+    const layer = node.data.layer
+    if (!bounds[layer]) bounds[layer] = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+    const b = bounds[layer]
+    b.minX = Math.min(b.minX, node.position.x)
+    b.minY = Math.min(b.minY, node.position.y)
+    b.maxX = Math.max(b.maxX, node.position.x + NODE_W)
+    b.maxY = Math.max(b.maxY, node.position.y + NODE_H)
+  }
+
+  // Group container nodes (rendered behind children)
+  const groupNodes = Object.entries(bounds).map(([layer, b]) => ({
+    id: `group_${layer}`,
+    type: 'layerGroup',
+    selectable: false,
+    position: {
+      x: b.minX - GROUP_PADDING,
+      y: b.minY - GROUP_PADDING - GROUP_HEADER,
+    },
+    style: {
+      width: b.maxX - b.minX + GROUP_PADDING * 2,
+      height: b.maxY - b.minY + GROUP_PADDING * 2 + GROUP_HEADER,
+      pointerEvents: 'none',
+      zIndex: -1,
+    },
+    data: { layer },
+  }))
+
+  // Convert child positions to be relative to their group container
+  const adjustedNodes = laidOut.map(node => {
+    const layer = node.data.layer
+    const b = bounds[layer]
+    const groupX = b.minX - GROUP_PADDING
+    const groupY = b.minY - GROUP_PADDING - GROUP_HEADER
+    return {
+      ...node,
+      parentNode: `group_${layer}`,
+      extent: 'parent',
+      position: {
+        x: node.position.x - groupX,
+        y: node.position.y - groupY,
+      },
+    }
+  })
+
+  // Group nodes must appear before their children in the array
+  return { nodes: [...groupNodes, ...adjustedNodes], edges }
+}
+
+// Expands single-child chains automatically when drilling down
+function collectInvolved(rootName, componentMap) {
+  const involved = new Set([rootName])
+  const queue = [rootName]
+
+  while (queue.length > 0) {
+    const name = queue.shift()
+    const children = componentMap[name]?.children ?? []
+    for (const child of children) {
+      involved.add(child)
+    }
+    if (children.length === 1) {
+      queue.push(children[0])
+    }
+  }
+
+  return involved
 }
 
 function buildComponentGraph(spec, componentName) {
@@ -93,8 +167,7 @@ function buildComponentGraph(spec, componentName) {
   const root = componentMap[componentName]
   if (!root) return { nodes: [], edges: [] }
 
-  const childNames = new Set(root.children ?? [])
-  const involved = new Set([componentName, ...childNames])
+  const involved = collectInvolved(componentName, componentMap)
 
   const nodes = [...involved].map(name => {
     const c = componentMap[name]
