@@ -3,30 +3,119 @@ import dagre from 'dagre'
 
 const NODE_W = 190
 const NODE_H = 64
+const NODE_X_GAP = 60
+const LAYER_Y_GAP = 100
 const GROUP_PADDING = 24
 const GROUP_HEADER = 28
+const EXTERNAL_X_OFFSET = 160
 
-function applyLayout(nodes, edges) {
+const LAYER_ORDER = ['presentation', 'business', 'data']
+
+function applyDagreLayout(nodes, edges) {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 80, marginx: 40, marginy: 40 })
-
   nodes.forEach(n => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
   edges.forEach(e => {
-    if (g.hasNode(e.source) && g.hasNode(e.target)) {
-      g.setEdge(e.source, e.target)
+    if (g.hasNode(e.source) && g.hasNode(e.target)) g.setEdge(e.source, e.target)
+  })
+  dagre.layout(g)
+  return nodes.map(n => ({
+    ...n,
+    position: { x: g.node(n.id).x - NODE_W / 2, y: g.node(n.id).y - NODE_H / 2 },
+  }))
+}
+
+// Custom layout for system view — stacks layers vertically, external to the right
+function applySystemLayout(rawNodes) {
+  const byLayer = {}
+  const externalNodes = []
+
+  for (const node of rawNodes) {
+    const layer = node.data.layer
+    if (layer === 'external') {
+      externalNodes.push(node)
+    } else {
+      if (!byLayer[layer]) byLayer[layer] = []
+      byLayer[layer].push(node)
+    }
+  }
+
+  const layerWidths = LAYER_ORDER.map(l => {
+    const count = (byLayer[l] ?? []).length
+    return count > 0 ? count * NODE_W + (count - 1) * NODE_X_GAP : 0
+  })
+  const maxLayerWidth = Math.max(...layerWidths, 0)
+
+  const positioned = []
+  let currentY = 0
+
+  for (const layer of LAYER_ORDER) {
+    const layerNodes = byLayer[layer] ?? []
+    if (layerNodes.length === 0) continue
+    const layerWidth = layerNodes.length * NODE_W + (layerNodes.length - 1) * NODE_X_GAP
+    let x = (maxLayerWidth - layerWidth) / 2
+    for (const node of layerNodes) {
+      positioned.push({ ...node, position: { x, y: currentY } })
+      x += NODE_W + NODE_X_GAP
+    }
+    currentY += NODE_H + LAYER_Y_GAP
+  }
+
+  // Place external nodes to the right, vertically centred on the main content
+  const mainHeight = currentY - LAYER_Y_GAP
+  const externalTotalHeight = externalNodes.length * NODE_H + (externalNodes.length - 1) * 40
+  const externalX = maxLayerWidth + EXTERNAL_X_OFFSET
+  let ey = (mainHeight - externalTotalHeight) / 2
+
+  for (const node of externalNodes) {
+    positioned.push({ ...node, position: { x: externalX, y: ey } })
+    ey += NODE_H + 40
+  }
+
+  return positioned
+}
+
+function buildGroups(laidOut) {
+  const bounds = {}
+  for (const node of laidOut) {
+    const layer = node.data.layer
+    if (!bounds[layer]) bounds[layer] = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+    const b = bounds[layer]
+    b.minX = Math.min(b.minX, node.position.x)
+    b.minY = Math.min(b.minY, node.position.y)
+    b.maxX = Math.max(b.maxX, node.position.x + NODE_W)
+    b.maxY = Math.max(b.maxY, node.position.y + NODE_H)
+  }
+
+  const groupNodes = Object.entries(bounds).map(([layer, b]) => ({
+    id: `group_${layer}`,
+    type: 'layerGroup',
+    selectable: false,
+    position: { x: b.minX - GROUP_PADDING, y: b.minY - GROUP_PADDING - GROUP_HEADER },
+    style: {
+      width: b.maxX - b.minX + GROUP_PADDING * 2,
+      height: b.maxY - b.minY + GROUP_PADDING * 2 + GROUP_HEADER,
+      pointerEvents: 'none',
+      zIndex: -1,
+    },
+    data: { layer },
+  }))
+
+  const adjustedNodes = laidOut.map(node => {
+    const layer = node.data.layer
+    const b = bounds[layer]
+    const groupX = b.minX - GROUP_PADDING
+    const groupY = b.minY - GROUP_PADDING - GROUP_HEADER
+    return {
+      ...node,
+      parentNode: `group_${layer}`,
+      extent: 'parent',
+      position: { x: node.position.x - groupX, y: node.position.y - groupY },
     }
   })
 
-  dagre.layout(g)
-
-  return nodes.map(n => ({
-    ...n,
-    position: {
-      x: g.node(n.id).x - NODE_W / 2,
-      y: g.node(n.id).y - NODE_H / 2,
-    },
-  }))
+  return { groupNodes, adjustedNodes }
 }
 
 function toRFEdge(e) {
@@ -65,21 +154,15 @@ function buildSystemGraph(spec) {
 
   const rawNodes = [
     ...topLevel.map(c => toRFNode(c.name, {
-      label: c.name,
-      layer: c.layer,
+      label: c.name, layer: c.layer,
       isEntry: spec.entry_points.includes(c.name),
       drillable: (c.children?.length ?? 0) > 0,
-      description: c.description,
-      file_path: c.file_path,
-      io: c.io,
+      description: c.description, file_path: c.file_path, io: c.io,
     })),
     ...spec.external_actors.map(a => toRFNode(a.name, {
-      label: a.name,
-      layer: 'external',
-      isEntry: false,
-      drillable: false,
-      description: a.description,
-      actorType: a.type,
+      label: a.name, layer: 'external',
+      isEntry: false, drillable: false,
+      description: a.description, actorType: a.type,
     })),
   ]
 
@@ -87,75 +170,21 @@ function buildSystemGraph(spec) {
     .filter(e => visibleNames.has(e.source) && visibleNames.has(e.target))
     .map(toRFEdge)
 
-  const laidOut = applyLayout(rawNodes, edges)
+  const laidOut = applySystemLayout(rawNodes)
+  const { groupNodes, adjustedNodes } = buildGroups(laidOut)
 
-  // Compute bounding box per layer
-  const bounds = {}
-  for (const node of laidOut) {
-    const layer = node.data.layer
-    if (!bounds[layer]) bounds[layer] = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
-    const b = bounds[layer]
-    b.minX = Math.min(b.minX, node.position.x)
-    b.minY = Math.min(b.minY, node.position.y)
-    b.maxX = Math.max(b.maxX, node.position.x + NODE_W)
-    b.maxY = Math.max(b.maxY, node.position.y + NODE_H)
-  }
-
-  // Group container nodes (rendered behind children)
-  const groupNodes = Object.entries(bounds).map(([layer, b]) => ({
-    id: `group_${layer}`,
-    type: 'layerGroup',
-    selectable: false,
-    position: {
-      x: b.minX - GROUP_PADDING,
-      y: b.minY - GROUP_PADDING - GROUP_HEADER,
-    },
-    style: {
-      width: b.maxX - b.minX + GROUP_PADDING * 2,
-      height: b.maxY - b.minY + GROUP_PADDING * 2 + GROUP_HEADER,
-      pointerEvents: 'none',
-      zIndex: -1,
-    },
-    data: { layer },
-  }))
-
-  // Convert child positions to be relative to their group container
-  const adjustedNodes = laidOut.map(node => {
-    const layer = node.data.layer
-    const b = bounds[layer]
-    const groupX = b.minX - GROUP_PADDING
-    const groupY = b.minY - GROUP_PADDING - GROUP_HEADER
-    return {
-      ...node,
-      parentNode: `group_${layer}`,
-      extent: 'parent',
-      position: {
-        x: node.position.x - groupX,
-        y: node.position.y - groupY,
-      },
-    }
-  })
-
-  // Group nodes must appear before their children in the array
   return { nodes: [...groupNodes, ...adjustedNodes], edges }
 }
 
-// Expands single-child chains automatically when drilling down
 function collectInvolved(rootName, componentMap) {
   const involved = new Set([rootName])
   const queue = [rootName]
-
   while (queue.length > 0) {
     const name = queue.shift()
     const children = componentMap[name]?.children ?? []
-    for (const child of children) {
-      involved.add(child)
-    }
-    if (children.length === 1) {
-      queue.push(children[0])
-    }
+    for (const child of children) involved.add(child)
+    if (children.length === 1) queue.push(children[0])
   }
-
   return involved
 }
 
@@ -163,31 +192,24 @@ function buildComponentGraph(spec, componentName) {
   const componentMap = Object.fromEntries(
     flattenComponents(spec.layers).map(c => [c.name, c])
   )
-
   const root = componentMap[componentName]
   if (!root) return { nodes: [], edges: [] }
 
   const involved = collectInvolved(componentName, componentMap)
-
   const nodes = [...involved].map(name => {
     const c = componentMap[name]
     const isRoot = name === componentName
     return toRFNode(name, {
-      label: name,
-      layer: c?.layer ?? 'business',
-      isEntry: isRoot,
-      drillable: !isRoot && (c?.children?.length ?? 0) > 0,
-      description: c?.description,
-      file_path: c?.file_path,
-      io: c?.io,
+      label: name, layer: c?.layer ?? 'business',
+      isEntry: isRoot, drillable: !isRoot && (c?.children?.length ?? 0) > 0,
+      description: c?.description, file_path: c?.file_path, io: c?.io,
     })
   })
-
   const edges = spec.edges
     .filter(e => involved.has(e.source) && involved.has(e.target))
     .map(toRFEdge)
 
-  return { nodes: applyLayout(nodes, edges), edges }
+  return { nodes: applyDagreLayout(nodes, edges), edges }
 }
 
 export function useGraphTransform(spec, focusComponent) {
