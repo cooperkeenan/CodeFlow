@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 
 from clients.profiler_client import ProfilerClient
 from clients.render_client import RenderClient

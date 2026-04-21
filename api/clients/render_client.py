@@ -3,8 +3,6 @@ import logging
 
 import httpx
 
-from shared.models.diagram_spec import DiagramSpec
-
 logger = logging.getLogger(__name__)
 
 
