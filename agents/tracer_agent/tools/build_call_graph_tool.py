@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 BUILD_CALL_GRAPH_SCHEMA = {
     "name": "build_call_graph",
     "description": (
-        "Build a call graph using pycg static analysis from files previously fetched. "
+        "Build a call graph using jarviscg static analysis from files previously fetched. "
         "Pass the temp_dir and file_paths returned by fetch_layer_files. "
         "Returns nodes and edges showing which functions call which."
     ),
@@ -40,6 +40,7 @@ class BuildCallGraphTool:
             result = self._service.build(
                 tool_input["temp_dir"],
                 tool_input["file_paths"],
+                tool_input.get("entry_point_hint"),
             )
             return json.dumps(result)
         except Exception as e:

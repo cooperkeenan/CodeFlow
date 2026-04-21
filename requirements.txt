@@ -7,5 +7,4 @@ anthropic
 a2a-sdk
 tree-sitter
 networkx
-pyan3
-networkx
+jarviscg @ git+https://github.com/nuanced-dev/jarviscg

@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 
 from shared.models.profiler_response import ProfileResponse
-from shared.models.tracer_request import TracerRequest
 
 
 class AnalyseRequest(BaseModel):
