@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 import shutil
 import subprocess
 import sys
@@ -19,12 +18,12 @@ class CallGraphService:
     ) -> dict:
         logger.info("Running jarviscg on %d files in %s", len(entry_files), temp_dir)
         output_path = Path(tempfile.mkdtemp()) / "callgraph.json"
-        entry_file = self._resolve_entry_file(entry_files, entry_point_hint)
-        logger.info("Entry file: %s", entry_file)
+        resolved_files = self._resolve_entry_files(entry_files)
+        logger.info("Entry files: %d", len(resolved_files))
         try:
             binary = self._find_binary()
             result = subprocess.run(
-                [binary, entry_file, "--package", temp_dir, "--precision", "-o", str(output_path)],
+                [binary] + resolved_files + ["--package", temp_dir, "--precision", "-o", str(output_path)],
                 capture_output=True,
                 text=True,
                 timeout=120,
@@ -43,9 +42,8 @@ class CallGraphService:
             )
             return graph
         finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
             shutil.rmtree(str(output_path.parent), ignore_errors=True)
-            logger.info("Cleaned up temp dirs")
+            logger.info("Cleaned up jarviscg output dir")
 
     def _find_binary(self) -> str:
         on_path = shutil.which("jarviscg")
@@ -59,25 +57,26 @@ class CallGraphService:
             f"sys.executable={sys.executable}"
         )
 
-    def _resolve_entry_file(self, entry_files: list[str], hint: str | None) -> str:
-        if hint:
-            for match in re.findall(r"[\w./\-]+\.py", hint):
-                stem = Path(match).name
-                for f in entry_files:
-                    if Path(f).name == stem:
-                        return f
-        for preferred in ("app.py", "main.py"):
-            for f in entry_files:
-                if Path(f).name == preferred:
-                    return f
-        return entry_files[0]
+    def _resolve_entry_files(self, entry_files: list[str]) -> list[str]:
+        return entry_files
+
+    def _class_name_from_node(self, node: str) -> str | None:
+        for part in reversed(node.split(".")):
+            if part and part[0].isupper():
+                return part
+        return None
 
     def _to_serialisable(self, raw: dict[str, list[str]]) -> dict:
-        edges = [
-            {"from": caller, "to": callee}
-            for caller, callees in raw.items()
-            for callee in callees
-            if caller != callee
-        ][:300]
+        class_edges: set[tuple[str, str]] = set()
+        for caller, callees in raw.items():
+            src = self._class_name_from_node(caller)
+            if not src:
+                continue
+            for callee in callees:
+                tgt = self._class_name_from_node(callee)
+                if not tgt or src == tgt:
+                    continue
+                class_edges.add((src, tgt))
+        edges = [{"from": s, "to": t} for s, t in class_edges]
         nodes = list({n for e in edges for n in (e["from"], e["to"])})
         return {"nodes": nodes, "edges": edges}
