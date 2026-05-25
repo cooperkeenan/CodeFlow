@@ -6,7 +6,9 @@ import anthropic
 from anthropic.types import MessageParam, ToolResultBlockParam
 from models.tracer_model import TracerResponse
 from prompts.tracer_prompt import TRACER_SYSTEM_PROMPT
+from services.graph_validator import GraphValidator
 from tools.build_call_graph_tool import BUILD_CALL_GRAPH_SCHEMA, BuildCallGraphTool
+from tools.build_evidence_tool import BUILD_EVIDENCE_SCHEMA, BuildEvidenceTool
 from tools.fetch_layer_files_tool import FETCH_LAYER_FILES_SCHEMA, FetchLayerFilesTool
 from tools.get_diagram_template_tool import (
     GET_DIAGRAM_TEMPLATE_SCHEMA,
@@ -25,19 +27,23 @@ class TracerService:
         fetch_layer_files_tool: FetchLayerFilesTool,
         build_call_graph_tool: BuildCallGraphTool,
         diagram_template_tool: GetDiagramTemplateTool,
+        build_evidence_tool: BuildEvidenceTool,
         anthropic_client: anthropic.AsyncAnthropic,
     ):
         self._tools = {
             "fetch_layer_files": fetch_layer_files_tool,
             "build_call_graph": build_call_graph_tool,
             "get_diagram_template": diagram_template_tool,
+            "build_evidence": build_evidence_tool,
         }
         self._schemas = [
             FETCH_LAYER_FILES_SCHEMA,
             BUILD_CALL_GRAPH_SCHEMA,
             GET_DIAGRAM_TEMPLATE_SCHEMA,
+            BUILD_EVIDENCE_SCHEMA,
         ]
         self._llm = anthropic_client
+        self._evidence: dict = {}
 
     async def trace(self, request: TracerRequest) -> TracerResponse:
         logger.info("Tracing repo: %s", request.repo_name)
@@ -82,10 +88,15 @@ class TracerService:
 
                 result = json.loads(match.group())
                 diagram_spec = DiagramSpec.model_validate(result)
+
+                validation = GraphValidator().validate(diagram_spec, self._evidence)
+                for msg in validation.errors + validation.warnings:
+                    logger.warning("Validator: %s", msg)
+
                 logger.info("Tracing complete for %s", request.repo_name)
                 return TracerResponse(
                     architecture_type=request.architecture_type,
-                    diagram_spec=diagram_spec,
+                    diagram_spec=validation.fixed_spec,
                 )
 
             tool_results: list[ToolResultBlockParam] = []
@@ -107,6 +118,10 @@ class TracerService:
                         "entry_point_hint": request.entry_point_hint,
                     }
                 tool_result = await self._tools[block.name].handle(tool_input)
+                if block.name == "build_evidence":
+                    parsed = json.loads(tool_result)
+                    if "error" not in parsed:
+                        self._evidence = parsed
                 tool_results.append(
                     ToolResultBlockParam(
                         type="tool_result",
