@@ -29,6 +29,7 @@ class MermaidService:
         lines += self._edges(spec)
         diagram = "\n".join(lines)
         logger.info("Diagram complete: %d lines", len(lines))
+        logger.info("Rendered Mermaid:\n%s", diagram)
         return diagram
 
     # ── Subgraphs ─────────────────────────────────────────────────────────────
@@ -48,10 +49,14 @@ class MermaidService:
         all_component_names = {c.name for layer in spec.layers.values() for c in layer}
 
         for layer_name, components in spec.layers.items():
-            top_level = [
-                c for c in components
-                if c.name not in self._same_layer_children(layer_name, spec)
-            ]
+            same_layer_names = {c.name for c in components}
+            all_children_in_layer = {
+                child
+                for c in components
+                for child in c.children
+                if child in same_layer_names
+            }
+            top_level = [c for c in components if c.name not in all_children_in_layer]
             if not top_level:
                 continue
             lines.append(f'    subgraph {self._id(layer_name)}["{layer_name.capitalize()} Layer"]')
@@ -155,15 +160,6 @@ class MermaidService:
         return lines
 
     # ── Helpers ───────────────────────────────────────────────────────────────
-
-    def _same_layer_children(self, layer_name: str, spec: DiagramSpec) -> set[str]:
-        layer_names = {c.name for c in spec.layers.get(layer_name, [])}
-        return {
-            child
-            for component in spec.layers.get(layer_name, [])
-            for child in component.children
-            if child in layer_names
-        }
 
     def _all_internal_ids(self, spec: DiagramSpec) -> set[str]:
         ids: set[str] = set()
