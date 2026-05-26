@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 
 from services.ast_service import AstService
@@ -11,11 +10,10 @@ class EvidenceService:
     def __init__(self, ast_service: AstService):
         self._ast = ast_service
 
-    def build(self, file_paths: list[str], call_graph: dict) -> dict:
+    def build(self, file_paths: list[str], call_graph: dict, temp_dir: str) -> dict:
         if not file_paths:
             return {"signatures": {}, "import_edges": [], "call_edges": [], "confirmed_edges": []}
-        base = self._compute_base(file_paths)
-        files = self._read_files(file_paths, base)
+        files = self._read_files(file_paths, Path(temp_dir))
         signatures = self._build_signatures(files)
         import_graph = self._ast.build_import_graph(files)
         import_edges = [
@@ -31,13 +29,6 @@ class EvidenceService:
             "call_edges": call_edges,
             "confirmed_edges": confirmed_edges,
         }
-
-    def _compute_base(self, file_paths: list[str]) -> Path:
-        try:
-            base = Path(os.path.commonpath(file_paths))
-        except ValueError:
-            return Path(file_paths[0]).parent
-        return base.parent if base.suffix == ".py" else base
 
     def _read_files(self, file_paths: list[str], base: Path) -> dict[str, str]:
         files: dict[str, str] = {}
