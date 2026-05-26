@@ -19,7 +19,9 @@ async def analyse(
     request: AnalyseRequest,
     service: AnalysisService = Depends(get_analysis_service),
 ) -> AnalyseResponse:
-    return await service.analyse(request)
+    result = await service.analyse(request)
+    (_OUTPUTS_DIR / "tracer_output.json").write_text(result.model_dump_json(indent=2))
+    return result
 
 
 @router.post("/analyse/local", response_model=AnalyseResponse)
@@ -27,10 +29,12 @@ async def analyse_local(
     service: AnalysisService = Depends(get_analysis_service),
     settings: Settings = Depends(get_settings),
 ) -> AnalyseResponse:
-    return await service.analyse(AnalyseRequest(
+    result = await service.analyse(AnalyseRequest(
         repo_name=Path(settings.LOCAL_REPO_PATH).name,
         local_path=settings.LOCAL_REPO_PATH,
     ))
+    (_OUTPUTS_DIR / "tracer_output.json").write_text(result.model_dump_json(indent=2))
+    return result
 
 
 @router.post("/analyse/local/from-profile", response_model=AnalyseResponse)
@@ -42,11 +46,13 @@ async def analyse_local_from_profile(
     if not path.exists():
         raise HTTPException(status_code=404, detail="No stored profiler output")
     profile = ProfileResponse.model_validate(json.loads(path.read_text()))
-    return await service.analyse_from_profile(
+    result = await service.analyse_from_profile(
         repo_name=Path(settings.LOCAL_REPO_PATH).name,
         local_path=settings.LOCAL_REPO_PATH,
         profile=profile,
     )
+    (_OUTPUTS_DIR / "tracer_output.json").write_text(result.model_dump_json(indent=2))
+    return result
 
 
 @router.post("/analyse/local/from-trace", response_model=AnalyseResponse)
@@ -57,4 +63,6 @@ async def analyse_local_from_trace(
     if not path.exists():
         raise HTTPException(status_code=404, detail="No stored tracer output")
     stored = AnalyseResponse.model_validate(json.loads(path.read_text()))
-    return await service.analyse_from_trace(stored)
+    result = await service.analyse_from_trace(stored)
+    (_OUTPUTS_DIR / "tracer_output.json").write_text(result.model_dump_json(indent=2))
+    return result
