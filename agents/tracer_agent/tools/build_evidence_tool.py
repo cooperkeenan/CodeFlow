@@ -44,6 +44,7 @@ class BuildEvidenceTool:
             result = self._service.build(
                 tool_input["file_paths"],
                 tool_input["call_graph"],
+                tool_input["temp_dir"],
             )
             return json.dumps(result)
         except Exception as e:

@@ -19,7 +19,7 @@ Return your final output as JSON matching this schema exactly:
         "description": "<one sentence>",
         "file_path": "<exactly as it appears in signatures>",
         "io": {
-          "inputs": ["<param_name>: <type>"],
+          "inputs": ["<param_name>: <type> or just <param_name> when no annotation"],
           "outputs": ["<type>"]
         },
         "children": ["<name of sub-component instantiated in __init__>"]
@@ -64,4 +64,5 @@ IO RULES:
 - Inputs: primary public method parameters from signatures, excluding self
 - Outputs: return types of primary public methods from signatures
 - If no public methods, set to empty lists
-- Never invent types"""
+- Never invent types
+- Format each input as "name: type" when the annotation is present, or just "name" when there is no annotation — never emit a trailing colon"""
