@@ -10,6 +10,7 @@ const GROUP_HEADER = 28
 const EXTERNAL_X_OFFSET = 160
 
 const LAYER_ORDER = ['presentation', 'business', 'data']
+const DRILL_DOWN_THRESHOLD = 3
 
 function applyDagreLayout(nodes, edges) {
   const g = new dagre.graphlib.Graph()
@@ -146,19 +147,57 @@ function flattenComponents(layers) {
 
 function buildSystemGraph(spec) {
   const components = flattenComponents(spec.layers)
-  const allChildNames = new Set(components.flatMap(c => c.children ?? []))
-  const topLevel = components.filter(c => !allChildNames.has(c.name))
-  const topLevelNames = new Set(topLevel.map(c => c.name))
-  const actorNames = new Set(spec.external_actors.map(a => a.name))
-  const visibleNames = new Set([...topLevelNames, ...actorNames])
+  const componentMap = Object.fromEntries(components.map(c => [c.name, c]))
 
-  const rawNodes = [
-    ...topLevel.map(c => toRFNode(c.name, {
-      label: c.name, layer: c.layer,
-      isEntry: spec.entry_points.includes(c.name),
-      drillable: (c.children?.length ?? 0) > 0,
-      description: c.description, file_path: c.file_path, io: c.io,
-    })),
+  // Roots: not a child of any other component
+  const allChildNames = new Set(components.flatMap(c => c.children ?? []))
+  const rootComponents = components.filter(c => !allChildNames.has(c.name))
+
+  // BFS expansion: add component to visible set.
+  // If it has < DRILL_DOWN_THRESHOLD children, also inline-expand those children.
+  // If it has >= DRILL_DOWN_THRESHOLD children, it is collapsed (drill-down only).
+  const visibleNames = new Set()
+  const collapsedNames = new Set()
+
+  function expand(name) {
+    if (visibleNames.has(name)) return
+    visibleNames.add(name)
+    const c = componentMap[name]
+    if (!c) return
+    if ((c.children ?? []).length >= DRILL_DOWN_THRESHOLD) {
+      collapsedNames.add(name)
+    } else {
+      for (const child of c.children ?? []) expand(child)
+    }
+  }
+
+  for (const root of rootComponents) expand(root.name)
+
+  // Parent map — used to reroute edges that target hidden children up to their
+  // collapsed visible ancestor.
+  const parentOf = {}
+  for (const c of components) {
+    for (const child of c.children ?? []) parentOf[child] = c.name
+  }
+
+  function resolveVisible(name) {
+    let cur = name
+    while (cur && !visibleNames.has(cur)) cur = parentOf[cur]
+    return cur ?? name
+  }
+
+  const actorNames = new Set(spec.external_actors.map(a => a.name))
+  const allVisible = new Set([...visibleNames, ...actorNames])
+
+  const nodes = [
+    ...components
+      .filter(c => visibleNames.has(c.name))
+      .map(c => toRFNode(c.name, {
+        label: c.name, layer: c.layer,
+        isEntry: spec.entry_points.includes(c.name),
+        drillable: collapsedNames.has(c.name),
+        description: c.description, file_path: c.file_path, io: c.io,
+      })),
     ...spec.external_actors.map(a => toRFNode(a.name, {
       label: a.name, layer: 'external',
       isEntry: false, drillable: false,
@@ -166,26 +205,22 @@ function buildSystemGraph(spec) {
     })),
   ]
 
+  const seenEdgeKeys = new Set()
   const edges = spec.edges
-    .filter(e => visibleNames.has(e.source) && visibleNames.has(e.target))
+    .map(e => ({ ...e, source: resolveVisible(e.source), target: resolveVisible(e.target) }))
+    .filter(e => {
+      if (e.source === e.target) return false
+      if (!allVisible.has(e.source) || !allVisible.has(e.target)) return false
+      const key = `${e.source}→${e.target}`
+      if (seenEdgeKeys.has(key)) return false
+      seenEdgeKeys.add(key)
+      return true
+    })
     .map(toRFEdge)
 
-  const laidOut = applySystemLayout(rawNodes)
+  const laidOut = applySystemLayout(nodes)
   const { groupNodes, adjustedNodes } = buildGroups(laidOut)
-
   return { nodes: [...groupNodes, ...adjustedNodes], edges }
-}
-
-function collectInvolved(rootName, componentMap) {
-  const involved = new Set([rootName])
-  const queue = [rootName]
-  while (queue.length > 0) {
-    const name = queue.shift()
-    const children = componentMap[name]?.children ?? []
-    for (const child of children) involved.add(child)
-    if (children.length === 1) queue.push(children[0])
-  }
-  return involved
 }
 
 function buildComponentGraph(spec, componentName) {
@@ -195,13 +230,21 @@ function buildComponentGraph(spec, componentName) {
   const root = componentMap[componentName]
   if (!root) return { nodes: [], edges: [] }
 
-  const involved = collectInvolved(componentName, componentMap)
+  // A child that also appears in another sibling's children list is a grandchild —
+  // exclude it so it only appears when the user drills into the intermediate parent.
+  const directChildren = root.children ?? []
+  const grandchildren = new Set(
+    directChildren.flatMap(name => componentMap[name]?.children ?? [])
+  )
+  const trueDirectChildren = directChildren.filter(name => !grandchildren.has(name))
+  const involved = new Set([componentName, ...trueDirectChildren])
   const nodes = [...involved].map(name => {
     const c = componentMap[name]
     const isRoot = name === componentName
     return toRFNode(name, {
       label: name, layer: c?.layer ?? 'business',
-      isEntry: isRoot, drillable: !isRoot && (c?.children?.length ?? 0) > 0,
+      isEntry: isRoot,
+      drillable: !isRoot && (c?.children?.length ?? 0) > 0,
       description: c?.description, file_path: c?.file_path, io: c?.io,
     })
   })

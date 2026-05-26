@@ -25,30 +25,34 @@ class AnalysisService:
     async def analyse(self, request: AnalyseRequest) -> AnalyseResponse:
         logger.info("Starting analysis for: %s", request.repo_name)
         profile = await self._profiler.profile(request)
-        return await self._run_from_profile(request.repo_name, request.local_path, profile)
+        return await self._run_from_profile(request.repo_name, request.local_path, profile, request.access_token)
 
     async def analyse_from_profile(
         self,
         repo_name: str,
         local_path: str | None,
         profile: ProfileResponse,
+        access_token: str | None = None,
     ) -> AnalyseResponse:
         logger.info("Resuming from stored profile for: %s", repo_name)
-        return await self._run_from_profile(repo_name, local_path, profile)
+        return await self._run_from_profile(repo_name, local_path, profile, access_token)
 
     async def analyse_from_trace(self, stored: AnalyseResponse) -> AnalyseResponse:
-        logger.info("Resuming from stored trace for: %s", stored.repo)
-        return stored
+        logger.info("Re-rendering from stored trace for: %s", stored.repo)
+        mermaid = await self._render.render(stored.trace["architecture_type"], stored.trace["diagram_spec"])
+        return AnalyseResponse(repo=stored.repo, profile=stored.profile, trace=stored.trace, mermaid=mermaid)
 
     async def _run_from_profile(
         self,
         repo_name: str,
         local_path: str | None,
         profile: ProfileResponse,
+        access_token: str | None = None,
     ) -> AnalyseResponse:
         tracer_request = TracerRequest(
             repo_name=repo_name,
             local_path=local_path,
+            access_token=access_token,
             architecture_type=profile.architecture_type,
             language=profile.language,
             entry_point_hint=profile.entry_point_hint,
