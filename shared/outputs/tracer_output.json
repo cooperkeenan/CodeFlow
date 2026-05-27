@@ -1,36 +1,41 @@
 {
-  "repo": "cooperkeenan/TA_Platform",
+  "repo": "cooperkeenan/CodeFlow",
   "profile": {
     "architecture_type": "microservices",
     "language": "python",
     "framework": "fastapi",
     "patterns": [
       "service_layer",
-      "repository_pattern",
       "dependency_injection",
-      "strategy_pattern",
-      "domain_driven_design"
+      "agent_pattern"
     ],
-    "entry_point_hint": "Multiple microservices: app/platform_orchestrator/src/main.py creates the FastAPI app for the orchestrator service, app/regulatory_agent/src/main.py creates the FastAPI app for the regulatory agent service. Additionally, app/common_auth is a shared library module (no server entry point).",
+    "entry_point_hint": "api/main.py serves as the orchestrator API gateway; agents/profiler_agent/main.py, agents/tracer_agent/main.py, and agents/render_agent/main.py are independent microservice entry points that handle profiling, tracing, and rendering tasks respectively",
     "layer_hints": {
       "presentation": [
-        "app/platform_orchestrator/src/api/",
-        "app/regulatory_agent/src/api/",
-        "app/platform_orchestrator/src/dtos/"
+        "api/routers/",
+        "agents/profiler_agent/routers/",
+        "agents/tracer_agent/routers/",
+        "agents/render_agent/routers/",
+        "frontend/src/"
       ],
       "business": [
-        "app/platform_orchestrator/src/services/",
-        "app/platform_orchestrator/src/factories/",
-        "app/platform_orchestrator/src/strategies/",
-        "app/regulatory_agent/src/services/",
-        "app/regulatory_agent/src/agents/",
-        "app/regulatory_agent/src/tools/"
+        "api/services/",
+        "agents/profiler_agent/services/",
+        "agents/profiler_agent/tools/",
+        "agents/tracer_agent/services/",
+        "agents/tracer_agent/tools/",
+        "agents/render_agent/services/",
+        "agents/render_agent/tools/",
+        "agents/profiler_agent/agent_executor.py",
+        "agents/tracer_agent/agent_executor.py",
+        "agents/render_agent/agent_executor.py"
       ],
       "data": [
-        "app/platform_orchestrator/src/repositories/",
-        "app/platform_orchestrator/src/models/",
-        "app/regulatory_agent/src/models/",
-        "app/regulatory_agent/src/dto/"
+        "api/models/",
+        "agents/profiler_agent/models/",
+        "agents/tracer_agent/models/",
+        "agents/render_agent/models/",
+        "shared/models/"
       ]
     }
   },
@@ -41,103 +46,85 @@
       "layers": {
         "gateway": [
           {
-            "name": "RegisterRequest",
-            "description": "Data transfer object for agent registration requests.",
-            "file_path": "app/platform_orchestrator/src/dtos/register_request.py",
+            "name": "AnalysisRouter",
+            "description": "HTTP endpoint that orchestrates profiling, tracing, and rendering workflows for repository analysis.",
+            "file_path": "api/routers/analysis.py",
             "io": {
               "inputs": [],
               "outputs": []
             },
-            "children": []
+            "children": [
+              "AnalysisService"
+            ]
           },
           {
-            "name": "OrchestrationRequest",
-            "description": "Data transfer object for orchestration requests from clients.",
-            "file_path": "app/platform_orchestrator/src/dtos/orchestration_request.py",
+            "name": "GitHubRouter",
+            "description": "HTTP endpoint for GitHub OAuth callbacks and repository listing.",
+            "file_path": "api/routers/github.py",
             "io": {
               "inputs": [],
               "outputs": []
             },
-            "children": []
+            "children": [
+              "GitHubService"
+            ]
+          },
+          {
+            "name": "ProfilerRouter",
+            "description": "HTTP endpoint that exposes the profiler agent microservice for file tree extraction.",
+            "file_path": "agents/profiler_agent/routers/profiler.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": [
+              "ProfilerService"
+            ]
+          },
+          {
+            "name": "TracerRouter",
+            "description": "HTTP endpoint that exposes the tracer agent microservice for static analysis and diagram generation.",
+            "file_path": "agents/tracer_agent/routers/tracer.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": [
+              "TracerService"
+            ]
+          },
+          {
+            "name": "RenderRouter",
+            "description": "HTTP endpoint that exposes the render agent microservice for converting diagrams to visual formats.",
+            "file_path": "agents/render_agent/routers/render.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": [
+              "MermaidService"
+            ]
           }
         ],
         "services": [
           {
-            "name": "OrchestratorService",
-            "description": "Orchestrates agent execution and handles request routing in the platform orchestrator service.",
-            "file_path": "app/platform_orchestrator/src/services/orchestrator_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "PromptValidationService",
-              "RegistrationService"
-            ]
-          },
-          {
-            "name": "PromptValidationService",
-            "description": "Validates user prompts before processing in the orchestration pipeline.",
-            "file_path": "app/platform_orchestrator/src/services/prompt_validation_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": []
-          },
-          {
-            "name": "RegistrationService",
-            "description": "Manages agent registration and discovery for the platform.",
-            "file_path": "app/platform_orchestrator/src/services/registration_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "AgentRepository",
-              "AgentFetcherService"
-            ]
-          },
-          {
-            "name": "AgentFetcherService",
-            "description": "Fetches agent metadata and configurations from external sources.",
-            "file_path": "app/platform_orchestrator/src/services/agent_fetcher_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": []
-          },
-          {
-            "name": "TableStorageService",
-            "description": "Manages Azure Table Storage operations for persisting agent data.",
-            "file_path": "app/platform_orchestrator/src/services/table_storage_service.py",
+            "name": "AnalysisService",
+            "description": "Orchestrates the analysis workflow by coordinating profiler, tracer, and render microservices.",
+            "file_path": "api/services/analysis_service.py",
             "io": {
               "inputs": [
-                "table_name: str"
+                "AnalyseRequest"
               ],
               "outputs": [
-                "None"
+                "AnalyseResponse"
               ]
             },
             "children": []
           },
           {
-            "name": "RegulatoryAgentExecutor",
-            "description": "Executes regulatory compliance agent with tool support for the regulatory agent service.",
-            "file_path": "app/regulatory_agent/src/agents/a2a_agent_executor.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "RegulatoryAgentService"
-            ]
-          },
-          {
-            "name": "RegulatoryAgentService",
-            "description": "Core service for regulatory compliance checking and agent operations.",
-            "file_path": "app/regulatory_agent/src/services/regulatory_agent_service.py",
+            "name": "GitHubService",
+            "description": "Handles GitHub API interactions for OAuth and repository retrieval.",
+            "file_path": "api/services/github_service.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -145,248 +132,130 @@
             "children": []
           },
           {
-            "name": "BillingCodeService",
-            "description": "Service for retrieving and managing billing code information and edits.",
-            "file_path": "app/regulatory_agent/src/services/billing_code_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": []
-          },
-          {
-            "name": "BillingCodeTool",
-            "description": "Tool for agents to access billing code information and perform lookups.",
-            "file_path": "app/regulatory_agent/src/tools/billing_code_tool.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "BillingCodeService"
-            ]
-          },
-          {
-            "name": "CCIEditService",
-            "description": "Service for handling CCI (Correct Coding Initiative) edits and validations.",
-            "file_path": "app/regulatory_agent/src/services/cci_edit_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "DataPlatformClient"
-            ]
-          },
-          {
-            "name": "CCIEditTool",
-            "description": "Tool for agents to access and apply CCI edit rules.",
-            "file_path": "app/regulatory_agent/src/tools/cci_edit_tool.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "CCIEditService",
-              "DataPlatformClient"
-            ]
-          },
-          {
-            "name": "MueEditService",
-            "description": "Service for managing MUE (Medically Unlikely Edit) rules and edits.",
-            "file_path": "app/regulatory_agent/src/services/mue_edit_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "DataPlatformClient"
-            ]
-          },
-          {
-            "name": "MueEditTool",
-            "description": "Tool for agents to access and apply MUE edit rules.",
-            "file_path": "app/regulatory_agent/src/tools/mue_edit_tool.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "DataPlatformClient",
-              "MueEditService"
-            ]
-          },
-          {
-            "name": "RegulatorySearchService",
-            "description": "Service for searching regulatory documents and compliance information.",
-            "file_path": "app/regulatory_agent/src/services/regulatory_search_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": []
-          },
-          {
-            "name": "RegulatorySearchTool",
-            "description": "Tool for agents to search regulatory databases and documentation.",
-            "file_path": "app/regulatory_agent/src/tools/regulatory_search_tool.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": [
-              "RegulatorySearchService"
-            ]
-          },
-          {
-            "name": "DataPlatformClient",
-            "description": "HTTP client for communicating with external data platform APIs.",
-            "file_path": "app/regulatory_agent/src/services/data_platform_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": []
-          },
-          {
-            "name": "ElixirApiClient",
-            "description": "HTTP client for communicating with the Elixir API for billing code data.",
-            "file_path": "app/regulatory_agent/src/services/elixir_api_service.py",
-            "io": {
-              "inputs": [],
-              "outputs": []
-            },
-            "children": []
-          },
-          {
-            "name": "LaunchDarklyService",
-            "description": "Service for feature flag management using Launch Darkly.",
-            "file_path": "app/regulatory_agent/src/services/launch_darkly_service.py",
+            "name": "ProfilerService",
+            "description": "Agent service that profiles repository structure and extracts layer hints using AI.",
+            "file_path": "agents/profiler_agent/services/profiler_service.py",
             "io": {
               "inputs": [
-                "flag_key: str",
-                "ctx: Context",
-                "default: bool"
+                "ProfileRequest"
               ],
               "outputs": [
-                "bool"
+                "ProfileResponse"
               ]
             },
-            "children": []
+            "children": [
+              "GetFileTreeTool",
+              "GetManifestFilesTool"
+            ]
           },
           {
-            "name": "AgentToolFactory",
-            "description": "Factory for creating A2A agent tools with HTTP client support.",
-            "file_path": "app/platform_orchestrator/src/factories/agent_tool_factory.py",
-            "io": {
-              "inputs": [
-                "agent_card: Any",
-                "register_request: RegisterRequest",
-                "http_client: httpx.AsyncClient"
-              ],
-              "outputs": [
-                "FunctionTool"
-              ]
-            },
-            "children": []
-          },
-          {
-            "name": "AzureAIClientFactory",
-            "description": "Factory for creating Azure OpenAI chat clients with authentication.",
-            "file_path": "app/platform_orchestrator/src/factories/azure_ai_client_factory.py",
-            "io": {
-              "inputs": [],
-              "outputs": [
-                "AzureOpenAIChatClient",
-                "DefaultAzureCredential"
-              ]
-            },
-            "children": []
-          },
-          {
-            "name": "TableStorageClientFactory",
-            "description": "Factory for creating Azure Table Storage service clients.",
-            "file_path": "app/platform_orchestrator/src/factories/table_storage_client_factory.py",
-            "io": {
-              "inputs": [],
-              "outputs": [
-                "TableServiceClient"
-              ]
-            },
-            "children": []
-          },
-          {
-            "name": "CitationContext",
-            "description": "Context class for managing citation strategy in agent responses.",
-            "file_path": "app/platform_orchestrator/src/strategies/citation_context.py",
-            "io": {
-              "inputs": [
-                "strategy: CitationStrategy"
-              ],
-              "outputs": [
-                "None"
-              ]
-            },
-            "children": []
-          },
-          {
-            "name": "CitationStrategy",
-            "description": "Abstract base class for citation formatting strategies.",
-            "file_path": "app/platform_orchestrator/src/strategies/citation_strategy.py",
+            "name": "FileTreeService",
+            "description": "Utility service for building and manipulating file tree structures.",
+            "file_path": "agents/profiler_agent/services/file_tree_service.py",
             "io": {
               "inputs": [],
               "outputs": []
             },
             "children": []
-          }
-        ],
-        "data": [
+          },
           {
-            "name": "AgentRepository",
-            "description": "Repository for managing agent persistence and discovery in storage.",
-            "file_path": "app/platform_orchestrator/src/repositories/agent_repository.py",
+            "name": "GetFileTreeTool",
+            "description": "Tool for extracting the complete file tree from a repository.",
+            "file_path": "agents/profiler_agent/tools/get_file_tree_tool.py",
             "io": {
               "inputs": [],
               "outputs": []
             },
             "children": [
-              "AgentToolFactory",
-              "AgentEntity",
-              "AgentFetcherService",
-              "TableStorageService"
+              "FileTreeService"
             ]
           },
           {
-            "name": "AgentEntity",
-            "description": "Domain model representing an agent with registration metadata.",
-            "file_path": "app/platform_orchestrator/src/models/agent_entity.py",
+            "name": "GetManifestFilesTool",
+            "description": "Tool for identifying and extracting manifest files from the repository.",
+            "file_path": "agents/profiler_agent/tools/get_manifest_tool.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": [
+              "FileTreeService"
+            ]
+          },
+          {
+            "name": "TracerService",
+            "description": "Agent service that performs static analysis and generates architecture diagrams with AI-powered validation.",
+            "file_path": "agents/tracer_agent/services/tracer_service.py",
             "io": {
               "inputs": [
-                "req: RegisterRequest"
+                "TracerRequest"
               ],
               "outputs": [
-                "AgentEntity",
+                "TracerResponse"
+              ]
+            },
+            "children": [
+              "BuildCallGraphTool",
+              "BuildEvidenceTool",
+              "FetchLayerFilesTool",
+              "GetDiagramTemplateTool",
+              "CorrectionPromptBuilder",
+              "GraphValidator"
+            ]
+          },
+          {
+            "name": "AstService",
+            "description": "Service for parsing Python AST and extracting function signatures and import relationships.",
+            "file_path": "agents/tracer_agent/services/ast_service.py",
+            "io": {
+              "inputs": [
+                "filepath: str",
+                "content: str"
+              ],
+              "outputs": [
                 "dict"
               ]
             },
             "children": []
           },
           {
-            "name": "FetchResult",
-            "description": "DTO representing the result of fetching agent data from external sources.",
-            "file_path": "app/platform_orchestrator/src/dtos/fetch_result.py",
+            "name": "CallGraphService",
+            "description": "Service for building call graphs from Python source code.",
+            "file_path": "agents/tracer_agent/services/call_graph_service.py",
             "io": {
-              "inputs": [],
+              "inputs": [
+                "temp_dir: str",
+                "entry_files: list[str]",
+                "entry_point_hint: str | None"
+              ],
               "outputs": [
-                "bool"
+                "dict"
               ]
             },
             "children": []
           },
           {
-            "name": "RegistrationResult",
-            "description": "DTO representing the result of agent registration.",
-            "file_path": "app/platform_orchestrator/src/dtos/registration_result.py",
+            "name": "EvidenceService",
+            "description": "Service for building evidence bundles containing signatures, imports, and call edges.",
+            "file_path": "agents/tracer_agent/services/evidence_service.py",
+            "io": {
+              "inputs": [
+                "file_paths: list[str]",
+                "call_graph: dict",
+                "temp_dir: str"
+              ],
+              "outputs": [
+                "dict"
+              ]
+            },
+            "children": [
+              "AstService"
+            ]
+          },
+          {
+            "name": "FileFetchService",
+            "description": "Service for fetching and managing source files from repositories.",
+            "file_path": "agents/tracer_agent/services/file_fetch_service.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -394,9 +263,75 @@
             "children": []
           },
           {
-            "name": "ChatContentHistory",
-            "description": "DTO for storing message history in orchestration requests.",
-            "file_path": "app/platform_orchestrator/src/dtos/orchestration_request.py",
+            "name": "GraphValidator",
+            "description": "Service for validating architecture diagrams against evidence and rules.",
+            "file_path": "agents/tracer_agent/services/graph_validator.py",
+            "io": {
+              "inputs": [
+                "spec: DiagramSpec",
+                "evidence: dict"
+              ],
+              "outputs": [
+                "ValidationResult"
+              ]
+            },
+            "children": []
+          },
+          {
+            "name": "CorrectionPromptBuilder",
+            "description": "Service for building corrective prompts for AI-based graph validation.",
+            "file_path": "agents/tracer_agent/services/correction_prompt_builder.py",
+            "io": {
+              "inputs": [
+                "result: ValidationResult",
+                "attempt: int"
+              ],
+              "outputs": [
+                "str | None"
+              ]
+            },
+            "children": []
+          },
+          {
+            "name": "BuildCallGraphTool",
+            "description": "Tool for invoking call graph building during agent execution.",
+            "file_path": "agents/tracer_agent/tools/build_call_graph_tool.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": [
+              "CallGraphService"
+            ]
+          },
+          {
+            "name": "BuildEvidenceTool",
+            "description": "Tool for invoking evidence bundle building during agent execution.",
+            "file_path": "agents/tracer_agent/tools/build_evidence_tool.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": [
+              "EvidenceService"
+            ]
+          },
+          {
+            "name": "FetchLayerFilesTool",
+            "description": "Tool for fetching layer files during agent execution.",
+            "file_path": "agents/tracer_agent/tools/fetch_layer_files_tool.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": [
+              "FileFetchService"
+            ]
+          },
+          {
+            "name": "GetDiagramTemplateTool",
+            "description": "Tool for retrieving diagram templates during agent execution.",
+            "file_path": "agents/tracer_agent/tools/get_diagram_template_tool.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -404,9 +339,37 @@
             "children": []
           },
           {
-            "name": "OrchestrationResponse",
-            "description": "DTO for responding with orchestrated agent results.",
-            "file_path": "app/platform_orchestrator/src/dtos/orchestration_response.py",
+            "name": "ParseAstTool",
+            "description": "Tool for parsing AST during agent execution.",
+            "file_path": "agents/tracer_agent/tools/parse_ast_tool.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": [
+              "AstService"
+            ]
+          },
+          {
+            "name": "MermaidService",
+            "description": "Service for rendering architecture diagrams to Mermaid format.",
+            "file_path": "agents/render_agent/services/mermaid_service.py",
+            "io": {
+              "inputs": [
+                "spec: DiagramSpec"
+              ],
+              "outputs": [
+                "str"
+              ]
+            },
+            "children": []
+          }
+        ],
+        "data": [
+          {
+            "name": "ProfileRequest",
+            "description": "Model for profiler service requests containing repository paths and layer hints.",
+            "file_path": "agents/profiler_agent/models/profiler_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -414,9 +377,9 @@
             "children": []
           },
           {
-            "name": "ToolCall",
-            "description": "DTO representing a tool invocation by the agent.",
-            "file_path": "app/platform_orchestrator/src/dtos/orchestration_response.py",
+            "name": "RenderRequest",
+            "description": "Model for render service requests containing diagram specifications.",
+            "file_path": "agents/render_agent/models/render_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -424,9 +387,9 @@
             "children": []
           },
           {
-            "name": "AgentResponse",
-            "description": "DTO for agent responses with citations and content.",
-            "file_path": "app/regulatory_agent/src/dto/agent_response.py",
+            "name": "RenderResponse",
+            "description": "Model for render service responses with rendered diagram data.",
+            "file_path": "agents/render_agent/models/render_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -434,9 +397,9 @@
             "children": []
           },
           {
-            "name": "Citation",
-            "description": "DTO representing a source citation in agent responses.",
-            "file_path": "app/regulatory_agent/src/dto/citation.py",
+            "name": "TracerResponse",
+            "description": "Model for tracer service responses containing validated diagram specifications.",
+            "file_path": "agents/tracer_agent/models/tracer_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -444,9 +407,9 @@
             "children": []
           },
           {
-            "name": "SearchServiceResult",
-            "description": "DTO for search results from regulatory document service.",
-            "file_path": "app/regulatory_agent/src/dto/search_service_result.py",
+            "name": "AnalyseRequest",
+            "description": "Model for analysis API requests containing repository information and profiling data.",
+            "file_path": "api/models/analysis_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -454,9 +417,9 @@
             "children": []
           },
           {
-            "name": "BillingCodeResponse",
-            "description": "Domain model for billing code lookup response data.",
-            "file_path": "app/regulatory_agent/src/models/billing_models.py",
+            "name": "AnalyseResponse",
+            "description": "Model for analysis API responses with profiling and tracing results.",
+            "file_path": "api/models/analysis_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -464,9 +427,9 @@
             "children": []
           },
           {
-            "name": "Category",
-            "description": "Domain model for billing code categories.",
-            "file_path": "app/regulatory_agent/src/models/billing_models.py",
+            "name": "GitHubCallbackRequest",
+            "description": "Model for GitHub OAuth callback requests.",
+            "file_path": "api/models/github_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -474,9 +437,9 @@
             "children": []
           },
           {
-            "name": "CodeDetailsResponse",
-            "description": "Domain model for detailed billing code information.",
-            "file_path": "app/regulatory_agent/src/models/billing_models.py",
+            "name": "GitHubCallbackResponse",
+            "description": "Model for GitHub OAuth callback responses.",
+            "file_path": "api/models/github_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -484,9 +447,9 @@
             "children": []
           },
           {
-            "name": "ItemDetail",
-            "description": "Domain model for item details in billing code responses.",
-            "file_path": "app/regulatory_agent/src/models/billing_models.py",
+            "name": "RepositoryResponse",
+            "description": "Model for individual GitHub repository information.",
+            "file_path": "api/models/github_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -494,9 +457,9 @@
             "children": []
           },
           {
-            "name": "ReplacementCode",
-            "description": "Domain model for replacement billing codes.",
-            "file_path": "app/regulatory_agent/src/models/billing_models.py",
+            "name": "RepositoriesResponse",
+            "description": "Model for GitHub repositories list response.",
+            "file_path": "api/models/github_model.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -504,9 +467,9 @@
             "children": []
           },
           {
-            "name": "ApplicableModifier",
-            "description": "Domain model for applicable modifiers on billing codes.",
-            "file_path": "app/regulatory_agent/src/models/billing_models.py",
+            "name": "DiagramSpec",
+            "description": "Shared model defining the complete architecture diagram specification with layers, edges, and external actors.",
+            "file_path": "shared/models/diagram_spec.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -514,9 +477,9 @@
             "children": []
           },
           {
-            "name": "CCIEdit",
-            "description": "Domain model for CCI edit rules.",
-            "file_path": "app/regulatory_agent/src/models/cci_models.py",
+            "name": "Component",
+            "description": "Shared model representing a single architecture component with IO and children.",
+            "file_path": "shared/models/diagram_spec.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -524,9 +487,9 @@
             "children": []
           },
           {
-            "name": "CCIEditResponse",
-            "description": "Domain model for CCI edit validation responses.",
-            "file_path": "app/regulatory_agent/src/models/cci_models.py",
+            "name": "Edge",
+            "description": "Shared model representing a directed edge between components.",
+            "file_path": "shared/models/diagram_spec.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -534,9 +497,9 @@
             "children": []
           },
           {
-            "name": "MueValue",
-            "description": "Domain model for MUE edit value data.",
-            "file_path": "app/regulatory_agent/src/models/mue_models.py",
+            "name": "ExternalActor",
+            "description": "Shared model representing external systems like databases and APIs.",
+            "file_path": "shared/models/diagram_spec.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -544,9 +507,9 @@
             "children": []
           },
           {
-            "name": "MueApiResponse",
-            "description": "Domain model for MUE API responses.",
-            "file_path": "app/regulatory_agent/src/models/mue_models.py",
+            "name": "ComponentIO",
+            "description": "Shared model defining input and output types for components.",
+            "file_path": "shared/models/diagram_spec.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -554,9 +517,39 @@
             "children": []
           },
           {
-            "name": "MueEditResult",
-            "description": "Domain model for MUE edit validation results.",
-            "file_path": "app/regulatory_agent/src/models/mue_models.py",
+            "name": "LayerHints",
+            "description": "Shared model containing directory mappings for architecture layer assignment.",
+            "file_path": "shared/models/layer_hints.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": []
+          },
+          {
+            "name": "ProfileResponse",
+            "description": "Shared model for profiler responses containing extracted layer hints.",
+            "file_path": "shared/models/profiler_response.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": []
+          },
+          {
+            "name": "TracerRequest",
+            "description": "Shared model for tracer service requests with layer hints and repository configuration.",
+            "file_path": "shared/models/tracer_request.py",
+            "io": {
+              "inputs": [],
+              "outputs": []
+            },
+            "children": []
+          },
+          {
+            "name": "ValidationResult",
+            "description": "Model for validation results containing errors and attempted specifications.",
+            "file_path": "agents/tracer_agent/services/graph_validator.py",
             "io": {
               "inputs": [],
               "outputs": []
@@ -567,178 +560,126 @@
       },
       "edges": [
         {
-          "source": "OrchestratorService",
-          "target": "PromptValidationService",
+          "source": "AnalysisRouter",
+          "target": "AnalysisService",
           "edge_type": "call"
         },
         {
-          "source": "OrchestratorService",
-          "target": "RegistrationService",
+          "source": "GitHubRouter",
+          "target": "GitHubService",
           "edge_type": "call"
         },
         {
-          "source": "RegistrationService",
-          "target": "AgentRepository",
+          "source": "ProfilerRouter",
+          "target": "ProfilerService",
           "edge_type": "call"
         },
         {
-          "source": "RegistrationService",
-          "target": "AgentFetcherService",
+          "source": "TracerRouter",
+          "target": "TracerService",
           "edge_type": "call"
         },
         {
-          "source": "AgentRepository",
-          "target": "AgentToolFactory",
+          "source": "RenderRouter",
+          "target": "MermaidService",
           "edge_type": "call"
         },
         {
-          "source": "AgentRepository",
-          "target": "AgentEntity",
+          "source": "ProfilerService",
+          "target": "GetFileTreeTool",
           "edge_type": "call"
         },
         {
-          "source": "AgentRepository",
-          "target": "AgentFetcherService",
+          "source": "ProfilerService",
+          "target": "GetManifestFilesTool",
           "edge_type": "call"
         },
         {
-          "source": "AgentRepository",
-          "target": "TableStorageService",
+          "source": "GetFileTreeTool",
+          "target": "FileTreeService",
           "edge_type": "call"
         },
         {
-          "source": "RegulatoryAgentExecutor",
-          "target": "RegulatoryAgentService",
+          "source": "GetManifestFilesTool",
+          "target": "FileTreeService",
           "edge_type": "call"
         },
         {
-          "source": "BillingCodeTool",
-          "target": "BillingCodeService",
+          "source": "TracerService",
+          "target": "BuildCallGraphTool",
           "edge_type": "call"
         },
         {
-          "source": "CCIEditTool",
-          "target": "CCIEditService",
+          "source": "TracerService",
+          "target": "BuildEvidenceTool",
           "edge_type": "call"
         },
         {
-          "source": "CCIEditTool",
-          "target": "DataPlatformClient",
+          "source": "TracerService",
+          "target": "FetchLayerFilesTool",
           "edge_type": "call"
         },
         {
-          "source": "CCIEditService",
-          "target": "DataPlatformClient",
+          "source": "TracerService",
+          "target": "GetDiagramTemplateTool",
           "edge_type": "call"
         },
         {
-          "source": "MueEditTool",
-          "target": "DataPlatformClient",
+          "source": "TracerService",
+          "target": "CorrectionPromptBuilder",
           "edge_type": "call"
         },
         {
-          "source": "MueEditTool",
-          "target": "MueEditService",
+          "source": "TracerService",
+          "target": "GraphValidator",
           "edge_type": "call"
         },
         {
-          "source": "MueEditService",
-          "target": "DataPlatformClient",
+          "source": "BuildCallGraphTool",
+          "target": "CallGraphService",
           "edge_type": "call"
         },
         {
-          "source": "RegulatorySearchTool",
-          "target": "RegulatorySearchService",
+          "source": "BuildEvidenceTool",
+          "target": "EvidenceService",
           "edge_type": "call"
         },
         {
-          "source": "CitationContext",
-          "target": "CitationStrategy",
+          "source": "FetchLayerFilesTool",
+          "target": "FileFetchService",
           "edge_type": "call"
         },
         {
-          "source": "AgentToolFactory",
-          "target": "RegisterRequest",
-          "edge_type": "import"
-        },
-        {
-          "source": "AgentEntity",
-          "target": "RegisterRequest",
-          "edge_type": "import"
-        },
-        {
-          "source": "AgentRepository",
-          "target": "RegisterRequest",
-          "edge_type": "import"
-        },
-        {
-          "source": "OrchestratorService",
-          "target": "OrchestrationRequest",
-          "edge_type": "import"
-        },
-        {
-          "source": "ElixirApiClient",
-          "target": "BillingCodeResponse",
-          "edge_type": "import"
-        },
-        {
-          "source": "BillingCodeService",
-          "target": "BillingCodeResponse",
-          "edge_type": "import"
-        },
-        {
-          "source": "RegulatoryAgentService",
-          "target": "LaunchDarklyService",
+          "source": "EvidenceService",
+          "target": "AstService",
           "edge_type": "call"
         },
         {
-          "source": "TableStorageService",
-          "target": "TableStorageClientFactory",
-          "edge_type": "call"
-        },
-        {
-          "source": "OrchestratorService",
-          "target": "AzureAIClientFactory",
+          "source": "ParseAstTool",
+          "target": "AstService",
           "edge_type": "call"
         }
       ],
       "external_actors": [
         {
-          "name": "Azure Table Storage",
-          "type": "database",
-          "description": "Persistent data store for agent registration and configuration metadata."
+          "name": "GitHub",
+          "type": "api",
+          "description": "GitHub API for OAuth authentication and repository metadata retrieval."
         },
         {
-          "name": "Azure OpenAI Service",
+          "name": "OpenAI",
           "type": "api",
-          "description": "LLM service for generating agent responses and orchestrating conversations."
-        },
-        {
-          "name": "Data Platform API",
-          "type": "api",
-          "description": "External API for CCI and MUE edit rules and healthcare compliance data."
-        },
-        {
-          "name": "Elixir API",
-          "type": "api",
-          "description": "External API providing billing code information and healthcare coding standards."
-        },
-        {
-          "name": "Azure Cognitive Search",
-          "type": "api",
-          "description": "Vector search service for regulatory document retrieval and compliance information."
-        },
-        {
-          "name": "Launch Darkly",
-          "type": "api",
-          "description": "Feature flag management service for controlling regulatory agent behavior."
+          "description": "LLM API for AI-powered code profiling, analysis, and diagram validation."
         }
       ],
       "entry_points": [
-        "OrchestratorService",
-        "RegulatoryAgentExecutor"
+        "AnalysisRouter",
+        "GitHubRouter",
+        "ProfilerRouter",
+        "TracerRouter",
+        "RenderRouter"
       ]
     }
   },
-  "mermaid": "flowchart TD\n    subgraph External[External Systems]\n        Azure_Table_Storage[(\"Azure Table Storage\")]\n        Azure_OpenAI_Service([\"Azure OpenAI Service\"])\n        Data_Platform_API([\"Data Platform API\"])\n        Elixir_API([\"Elixir API\"])\n        Azure_Cognitive_Search([\"Azure Cognitive Search\"])\n        Launch_Darkly([\"Launch Darkly\"])\n    end\n    subgraph gateway[\"Gateway Layer\"]\n        RegisterRequest[\"RegisterRequest\"]\n        OrchestrationRequest[\"OrchestrationRequest\"]\n    end\n    subgraph services[\"Services Layer\"]\n        subgraph OrchestratorService_grp[\"OrchestratorService\"]\n            OrchestratorService_node[\"OrchestratorService\"]\n            PromptValidationService[\"PromptValidationService\"]\n            subgraph RegistrationService_grp[\"RegistrationService\"]\n                RegistrationService_node[\"RegistrationService\"]\n                AgentFetcherService[\"AgentFetcherService\"]\n            end\n        end\n        TableStorageService[\"TableStorageService\"]\n        subgraph RegulatoryAgentExecutor_grp[\"RegulatoryAgentExecutor\"]\n            RegulatoryAgentExecutor_node[\"RegulatoryAgentExecutor\"]\n            RegulatoryAgentService[\"RegulatoryAgentService\"]\n        end\n        subgraph BillingCodeTool_grp[\"BillingCodeTool\"]\n            BillingCodeTool_node[\"BillingCodeTool\"]\n            BillingCodeService[\"BillingCodeService\"]\n        end\n        subgraph CCIEditTool_grp[\"CCIEditTool\"]\n            CCIEditTool_node[\"CCIEditTool\"]\n            subgraph CCIEditService_grp[\"CCIEditService\"]\n                CCIEditService_node[\"CCIEditService\"]\n                DataPlatformClient[\"DataPlatformClient\"]\n            end\n            DataPlatformClient[\"DataPlatformClient\"]\n        end\n        subgraph MueEditTool_grp[\"MueEditTool\"]\n            MueEditTool_node[\"MueEditTool\"]\n            DataPlatformClient[\"DataPlatformClient\"]\n            subgraph MueEditService_grp[\"MueEditService\"]\n                MueEditService_node[\"MueEditService\"]\n                DataPlatformClient[\"DataPlatformClient\"]\n            end\n        end\n        subgraph RegulatorySearchTool_grp[\"RegulatorySearchTool\"]\n            RegulatorySearchTool_node[\"RegulatorySearchTool\"]\n            RegulatorySearchService[\"RegulatorySearchService\"]\n        end\n        ElixirApiClient[\"ElixirApiClient\"]\n        LaunchDarklyService[\"LaunchDarklyService\"]\n        AgentToolFactory[\"AgentToolFactory\"]\n        AzureAIClientFactory[\"AzureAIClientFactory\"]\n        TableStorageClientFactory[\"TableStorageClientFactory\"]\n        CitationContext[\"CitationContext\"]\n        CitationStrategy[\"CitationStrategy\"]\n    end\n    subgraph data[\"Data Layer\"]\n        subgraph AgentRepository_grp[\"AgentRepository\"]\n            AgentRepository_node[\"AgentRepository\"]\n            AgentEntity[\"AgentEntity\"]\n        end\n        FetchResult[\"FetchResult\"]\n        RegistrationResult[\"RegistrationResult\"]\n        ChatContentHistory[\"ChatContentHistory\"]\n        OrchestrationResponse[\"OrchestrationResponse\"]\n        ToolCall[\"ToolCall\"]\n        AgentResponse[\"AgentResponse\"]\n        Citation[\"Citation\"]\n        SearchServiceResult[\"SearchServiceResult\"]\n        BillingCodeResponse[\"BillingCodeResponse\"]\n        Category[\"Category\"]\n        CodeDetailsResponse[\"CodeDetailsResponse\"]\n        ItemDetail[\"ItemDetail\"]\n        ReplacementCode[\"ReplacementCode\"]\n        ApplicableModifier[\"ApplicableModifier\"]\n        CCIEdit[\"CCIEdit\"]\n        CCIEditResponse[\"CCIEditResponse\"]\n        MueValue[\"MueValue\"]\n        MueApiResponse[\"MueApiResponse\"]\n        MueEditResult[\"MueEditResult\"]\n    end\n    OrchestratorService_node --> PromptValidationService\n    OrchestratorService_node --> RegistrationService_node\n    RegistrationService_node --> AgentRepository_node\n    RegistrationService_node --> AgentFetcherService\n    AgentRepository_node --> AgentToolFactory\n    AgentRepository_node --> AgentEntity\n    AgentRepository_node --> AgentFetcherService\n    AgentRepository_node --> TableStorageService\n    RegulatoryAgentExecutor_node --> RegulatoryAgentService\n    BillingCodeTool_node --> BillingCodeService\n    CCIEditTool_node --> CCIEditService_node\n    CCIEditTool_node --> DataPlatformClient\n    CCIEditService_node --> DataPlatformClient\n    MueEditTool_node --> DataPlatformClient\n    MueEditTool_node --> MueEditService_node\n    MueEditService_node --> DataPlatformClient\n    RegulatorySearchTool_node --> RegulatorySearchService\n    CitationContext --> CitationStrategy\n    AgentToolFactory -.-> RegisterRequest\n    AgentEntity -.-> RegisterRequest\n    AgentRepository_node -.-> RegisterRequest\n    OrchestratorService_node -.-> OrchestrationRequest\n    ElixirApiClient -.-> BillingCodeResponse\n    BillingCodeService -.-> BillingCodeResponse\n    RegulatoryAgentService --> LaunchDarklyService\n    TableStorageService --> TableStorageClientFactory\n    OrchestratorService_node --> AzureAIClientFactory"
+  "mermaid": "flowchart TD\n    subgraph External[External Systems]\n        GitHub([\"GitHub\"])\n        OpenAI([\"OpenAI\"])\n    end\n    subgraph gateway[\"Gateway Layer\"]\n        AnalysisRouter((\"AnalysisRouter\"))\n        GitHubRouter((\"GitHubRouter\"))\n        ProfilerRouter((\"ProfilerRouter\"))\n        TracerRouter((\"TracerRouter\"))\n        RenderRouter((\"RenderRouter\"))\n    end\n    subgraph services[\"Services Layer\"]\n        AnalysisService[\"AnalysisService\"]\n        GitHubService[\"GitHubService\"]\n        subgraph ProfilerService_grp[\"ProfilerService\"]\n            ProfilerService_node[\"ProfilerService\"]\n            subgraph GetFileTreeTool_grp[\"GetFileTreeTool\"]\n                GetFileTreeTool_node[\"GetFileTreeTool\"]\n                FileTreeService[\"FileTreeService\"]\n            end\n            subgraph GetManifestFilesTool_grp[\"GetManifestFilesTool\"]\n                GetManifestFilesTool_node[\"GetManifestFilesTool\"]\n                FileTreeService[\"FileTreeService\"]\n            end\n        end\n        subgraph TracerService_grp[\"TracerService\"]\n            TracerService_node[\"TracerService\"]\n            subgraph BuildCallGraphTool_grp[\"BuildCallGraphTool\"]\n                BuildCallGraphTool_node[\"BuildCallGraphTool\"]\n                CallGraphService[\"CallGraphService\"]\n            end\n            subgraph BuildEvidenceTool_grp[\"BuildEvidenceTool\"]\n                BuildEvidenceTool_node[\"BuildEvidenceTool\"]\n                subgraph EvidenceService_grp[\"EvidenceService\"]\n                    EvidenceService_node[\"EvidenceService\"]\n                    AstService[\"AstService\"]\n                end\n            end\n            subgraph FetchLayerFilesTool_grp[\"FetchLayerFilesTool\"]\n                FetchLayerFilesTool_node[\"FetchLayerFilesTool\"]\n                FileFetchService[\"FileFetchService\"]\n            end\n            GetDiagramTemplateTool[\"GetDiagramTemplateTool\"]\n            CorrectionPromptBuilder[\"CorrectionPromptBuilder\"]\n            GraphValidator[\"GraphValidator\"]\n        end\n        subgraph ParseAstTool_grp[\"ParseAstTool\"]\n            ParseAstTool_node[\"ParseAstTool\"]\n            AstService[\"AstService\"]\n        end\n        MermaidService[\"MermaidService\"]\n    end\n    subgraph data[\"Data Layer\"]\n        ProfileRequest[\"ProfileRequest\"]\n        RenderRequest[\"RenderRequest\"]\n        RenderResponse[\"RenderResponse\"]\n        TracerResponse[\"TracerResponse\"]\n        AnalyseRequest[\"AnalyseRequest\"]\n        AnalyseResponse[\"AnalyseResponse\"]\n        GitHubCallbackRequest[\"GitHubCallbackRequest\"]\n        GitHubCallbackResponse[\"GitHubCallbackResponse\"]\n        RepositoryResponse[\"RepositoryResponse\"]\n        RepositoriesResponse[\"RepositoriesResponse\"]\n        DiagramSpec[\"DiagramSpec\"]\n        Component[\"Component\"]\n        Edge[\"Edge\"]\n        ExternalActor[\"ExternalActor\"]\n        ComponentIO[\"ComponentIO\"]\n        LayerHints[\"LayerHints\"]\n        ProfileResponse[\"ProfileResponse\"]\n        TracerRequest[\"TracerRequest\"]\n        ValidationResult[\"ValidationResult\"]\n    end\n    AnalysisRouter --> AnalysisService\n    GitHubRouter --> GitHubService\n    ProfilerRouter --> ProfilerService_node\n    TracerRouter --> TracerService_node\n    RenderRouter --> MermaidService\n    ProfilerService_node --> GetFileTreeTool_node\n    ProfilerService_node --> GetManifestFilesTool_node\n    GetFileTreeTool_node --> FileTreeService\n    GetManifestFilesTool_node --> FileTreeService\n    TracerService_node --> BuildCallGraphTool_node\n    TracerService_node --> BuildEvidenceTool_node\n    TracerService_node --> FetchLayerFilesTool_node\n    TracerService_node --> GetDiagramTemplateTool\n    TracerService_node --> CorrectionPromptBuilder\n    TracerService_node --> GraphValidator\n    BuildCallGraphTool_node --> CallGraphService\n    BuildEvidenceTool_node --> EvidenceService_node\n    FetchLayerFilesTool_node --> FileFetchService\n    EvidenceService_node --> AstService\n    ParseAstTool_node --> AstService"
 }
