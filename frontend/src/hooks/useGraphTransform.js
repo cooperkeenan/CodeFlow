@@ -1,316 +1,234 @@
 import { useMemo } from 'react'
 import dagre from 'dagre'
+import { MODULE_PALETTE, EXTERNAL_COLOR } from '../constants'
 
-const NODE_W = 190
-const NODE_H = 64
-const NODE_X_GAP = 60
-const LAYER_Y_GAP = 100
-const GROUP_PADDING = 24
-const GROUP_HEADER = 28
-const EXTERNAL_X_OFFSET = 160
-
+const NODE_W = 180
+const NODE_H = 58
+const CX = 24
+const CY = 20
+const ZPADX = 14
+const ZPADY = 12
+const ZHEAD = 22
+const ZGAP = 14
+const MPAD = 16
+const MHEAD = 32
+const MGAP = 44
+const PER_ROW = 3
 const DRILL_DOWN_THRESHOLD = 3
 
-function applyDagreLayout(nodes, edges) {
-  const g = new dagre.graphlib.Graph()
-  g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 80, marginx: 40, marginy: 40 })
-  nodes.forEach(n => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
-  edges.forEach(e => {
-    if (g.hasNode(e.source) && g.hasNode(e.target)) g.setEdge(e.source, e.target)
-  })
-  dagre.layout(g)
-  return nodes.map(n => ({
-    ...n,
-    position: { x: g.node(n.id).x - NODE_W / 2, y: g.node(n.id).y - NODE_H / 2 },
-  }))
+function chunk(arr, size) {
+  const out = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
 }
 
-const ROW_HEIGHT = NODE_H + 40
+function flattenComponents(spec) {
+  return spec.modules.flatMap(m =>
+    Object.entries(m.zones).flatMap(([zone, comps]) =>
+      comps.map(c => ({ ...c, module: m.name, zone }))
+    )
+  )
+}
 
-// Custom layout for system view — stacks layers vertically, within each layer
-// arranges nodes in rows by their parent-child depth so hierarchy is visible.
-function applySystemLayout(rawNodes, layerOrder) {
-  const byLayer = {}
-  const externalNodes = []
+function colorForModule(spec, moduleName) {
+  const i = spec.modules.findIndex(m => m.name === moduleName)
+  return MODULE_PALETTE[(i < 0 ? 0 : i) % MODULE_PALETTE.length]
+}
 
-  for (const node of rawNodes) {
-    const layer = node.data.layer
-    if (layer === 'external') {
-      externalNodes.push(node)
-    } else {
-      if (!byLayer[layer]) byLayer[layer] = []
-      byLayer[layer].push(node)
-    }
-  }
+function isDrillable(comp) {
+  return (comp.children?.length ?? 0) >= DRILL_DOWN_THRESHOLD
+}
 
-  const layerWidths = layerOrder.map(l => {
-    const layerNodes = byLayer[l] ?? []
-    const byDepth = {}
-    for (const n of layerNodes) {
-      const d = n.data.depth ?? 0
-      if (!byDepth[d]) byDepth[d] = []
-      byDepth[d].push(n)
-    }
-    return Math.max(...Object.values(byDepth).map(ns => ns.length * NODE_W + (ns.length - 1) * NODE_X_GAP), 0)
+function layoutModule(module, color) {
+  const zones = Object.entries(module.zones).filter(([, comps]) => comps.length)
+  const zoneLayouts = zones.map(([zone, comps]) => {
+    const rows = chunk(comps, PER_ROW)
+    const contentW = Math.max(...rows.map(r => r.length * NODE_W + (r.length - 1) * CX))
+    const contentH = rows.length * NODE_H + (rows.length - 1) * CY
+    return { zone, rows, contentW, contentH }
   })
-  const maxLayerWidth = Math.max(...layerWidths, 0)
+  const innerW = Math.max(0, ...zoneLayouts.map(z => z.contentW))
+  const boxW = innerW + 2 * ZPADX
 
-  const positioned = []
-  let currentY = 0
-
-  for (const layer of layerOrder) {
-    const layerNodes = byLayer[layer] ?? []
-    if (layerNodes.length === 0) continue
-
-    const byDepth = {}
-    for (const n of layerNodes) {
-      const d = n.data.depth ?? 0
-      if (!byDepth[d]) byDepth[d] = []
-      byDepth[d].push(n)
-    }
-
-    const maxDepth = Math.max(...Object.keys(byDepth).map(Number), 0)
-    let rowY = currentY
-    for (let d = 0; d <= maxDepth; d++) {
-      const rowNodes = byDepth[d] ?? []
-      if (rowNodes.length === 0) continue
-      const rowWidth = rowNodes.length * NODE_W + (rowNodes.length - 1) * NODE_X_GAP
-      let x = (maxLayerWidth - rowWidth) / 2
-      for (const node of rowNodes) {
-        positioned.push({ ...node, position: { x, y: rowY } })
-        x += NODE_W + NODE_X_GAP
+  let zy = MHEAD
+  for (const z of zoneLayouts) {
+    z.boxW = boxW
+    z.boxH = ZHEAD + ZPADY + z.contentH + ZPADY
+    z.relX = MPAD
+    z.relY = zy
+    z.placed = []
+    let cy = ZHEAD + ZPADY
+    for (const row of z.rows) {
+      const rowW = row.length * NODE_W + (row.length - 1) * CX
+      let cx = ZPADX + (innerW - rowW) / 2
+      for (const c of row) {
+        z.placed.push({ c, x: cx, y: cy })
+        cx += NODE_W + CX
       }
-      rowY += ROW_HEIGHT
+      cy += NODE_H + CY
     }
-    currentY = rowY + LAYER_Y_GAP
+    zy += z.boxH + ZGAP
   }
 
-  // Place external nodes to the right, vertically centred on the main content
-  const mainHeight = currentY - LAYER_Y_GAP
-  const externalTotalHeight = externalNodes.length * NODE_H + (externalNodes.length - 1) * 40
-  const externalX = maxLayerWidth + EXTERNAL_X_OFFSET
-  let ey = (mainHeight - externalTotalHeight) / 2
-
-  for (const node of externalNodes) {
-    positioned.push({ ...node, position: { x: externalX, y: ey } })
-    ey += NODE_H + 40
-  }
-
-  return positioned
+  return { name: module.name, color, zoneLayouts, width: boxW + 2 * MPAD, height: zy - ZGAP + MPAD }
 }
 
-function buildGroups(laidOut) {
-  const bounds = {}
-  for (const node of laidOut) {
-    const layer = node.data.layer
-    if (!bounds[layer]) bounds[layer] = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
-    const b = bounds[layer]
-    b.minX = Math.min(b.minX, node.position.x)
-    b.minY = Math.min(b.minY, node.position.y)
-    b.maxX = Math.max(b.maxX, node.position.x + NODE_W)
-    b.maxY = Math.max(b.maxY, node.position.y + NODE_H)
-  }
-
-  const groupNodes = Object.entries(bounds).map(([layer, b]) => ({
-    id: `group_${layer}`,
-    type: 'layerGroup',
-    selectable: false,
-    position: { x: b.minX - GROUP_PADDING, y: b.minY - GROUP_PADDING - GROUP_HEADER },
-    style: {
-      width: b.maxX - b.minX + GROUP_PADDING * 2,
-      height: b.maxY - b.minY + GROUP_PADDING * 2 + GROUP_HEADER,
-      pointerEvents: 'none',
-      zIndex: -1,
-    },
-    data: { layer },
-  }))
-
-  const adjustedNodes = laidOut.map(node => {
-    const layer = node.data.layer
-    const b = bounds[layer]
-    const groupX = b.minX - GROUP_PADDING
-    const groupY = b.minY - GROUP_PADDING - GROUP_HEADER
-    return {
-      ...node,
-      parentNode: `group_${layer}`,
-      extent: 'parent',
-      position: { x: node.position.x - groupX, y: node.position.y - groupY },
+function packModules(layouts) {
+  const cols = Math.max(1, Math.ceil(Math.sqrt(layouts.length)))
+  let y = 0
+  let maxRight = 0
+  for (const row of chunk(layouts, cols)) {
+    let x = 0
+    let rowH = 0
+    for (const ml of row) {
+      ml.absX = x
+      ml.absY = y
+      x += ml.width + MGAP
+      rowH = Math.max(rowH, ml.height)
     }
-  })
+    maxRight = Math.max(maxRight, x - MGAP)
+    y += rowH + MGAP
+  }
+  return { maxRight }
+}
 
-  return { groupNodes, adjustedNodes }
+function emitModule(ml, entry) {
+  const moduleNode = {
+    id: `mod__${ml.name}`, type: 'moduleGroup', selectable: false, draggable: false,
+    position: { x: ml.absX, y: ml.absY }, style: { width: ml.width, height: ml.height, zIndex: -2 },
+    data: { label: ml.name, color: ml.color },
+  }
+  const zoneNodes = []
+  const compNodes = []
+  for (const z of ml.zoneLayouts) {
+    const zid = `zone__${ml.name}__${z.zone}`
+    zoneNodes.push({
+      id: zid, type: 'zoneGroup', selectable: false, draggable: false,
+      parentNode: `mod__${ml.name}`, extent: 'parent',
+      position: { x: z.relX, y: z.relY }, style: { width: z.boxW, height: z.boxH, zIndex: -1 },
+      data: { label: z.zone, color: ml.color },
+    })
+    for (const { c, x, y } of z.placed) {
+      compNodes.push({
+        id: c.name, type: 'custom', parentNode: zid, extent: 'parent', position: { x, y },
+        data: {
+          label: c.name, module: ml.name, zone: z.zone, color: ml.color,
+          isEntry: entry.has(c.name), drillable: isDrillable(c),
+          description: c.description, file_path: c.file_path, io: c.io,
+        },
+      })
+    }
+  }
+  return { moduleNode, zoneNodes, compNodes }
+}
+
+function actorNode(actor, x, y) {
+  return {
+    id: actor.name, type: 'custom', position: { x, y },
+    data: {
+      label: actor.name, module: 'external', zone: actor.type, color: EXTERNAL_COLOR,
+      isEntry: false, drillable: false, actorType: actor.type, description: actor.description,
+    },
+  }
 }
 
 function toRFEdge(e) {
-  const isAnimated = e.edge_type === 'http' || e.edge_type === 'event'
-  const showLabel = e.edge_type !== 'call'
+  const animated = e.edge_type === 'http' || e.edge_type === 'event'
   return {
-    id: `${e.source}→${e.target}`,
+    id: `${e.source}->${e.target}`,
     source: e.source,
     target: e.target,
-    label: showLabel ? e.edge_type : undefined,
+    label: e.edge_type !== 'call' ? e.edge_type : undefined,
     type: 'smoothstep',
-    animated: isAnimated,
+    animated,
     style: { stroke: '#2a2a2a', strokeWidth: 1.5 },
     labelStyle: { fill: '#555', fontSize: 9, fontFamily: 'IBM Plex Mono, monospace' },
     labelBgStyle: { fill: '#0a0a0a', fillOpacity: 0.8 },
   }
 }
 
-function toRFNode(id, data) {
-  return { id, type: 'custom', data, position: { x: 0, y: 0 } }
-}
-
-function flattenComponents(layers) {
-  return Object.entries(layers).flatMap(([layer, components]) =>
-    components.map(c => ({ ...c, layer }))
-  )
+function buildEdges(rawEdges, nodeIds) {
+  const seen = new Set()
+  return rawEdges.filter(e => {
+    if (e.source === e.target) return false
+    if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) return false
+    const k = `${e.source}->${e.target}`
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  }).map(toRFEdge)
 }
 
 function buildSystemGraph(spec) {
-  const components = flattenComponents(spec.layers)
-  const componentMap = Object.fromEntries(components.map(c => [c.name, c]))
+  const layouts = spec.modules.map((m, i) => layoutModule(m, MODULE_PALETTE[i % MODULE_PALETTE.length]))
+  const { maxRight } = packModules(layouts)
+  const entry = new Set(spec.entry_points)
 
-  // Roots: not a child of any other component
-  const allChildNames = new Set(components.flatMap(c => c.children ?? []))
-  const rootComponents = components.filter(c => !allChildNames.has(c.name))
-
-  // BFS expansion: add component to visible set.
-  // If it has < DRILL_DOWN_THRESHOLD children, also inline-expand those children.
-  // If it has >= DRILL_DOWN_THRESHOLD children, it is collapsed (drill-down only).
-  const visibleNames = new Set()
-  const collapsedNames = new Set()
-
-  function expand(name) {
-    if (visibleNames.has(name)) return
-    visibleNames.add(name)
-    const c = componentMap[name]
-    if (!c) return
-    if ((c.children ?? []).length >= DRILL_DOWN_THRESHOLD) {
-      collapsedNames.add(name)
-    } else {
-      for (const child of c.children ?? []) expand(child)
-    }
+  const moduleNodes = []
+  const zoneNodes = []
+  const compNodes = []
+  for (const ml of layouts) {
+    const e = emitModule(ml, entry)
+    moduleNodes.push(e.moduleNode)
+    zoneNodes.push(...e.zoneNodes)
+    compNodes.push(...e.compNodes)
   }
+  const actorNodes = spec.external_actors.map((a, i) => actorNode(a, maxRight + MGAP, i * (NODE_H + 24)))
+  const ids = new Set([...compNodes, ...actorNodes].map(n => n.id))
+  return { nodes: [...moduleNodes, ...zoneNodes, ...compNodes, ...actorNodes], edges: buildEdges(spec.edges, ids) }
+}
 
-  for (const root of rootComponents) expand(root.name)
+function buildModuleGraph(spec, moduleName) {
+  const idx = spec.modules.findIndex(m => m.name === moduleName)
+  if (idx < 0) return { nodes: [], edges: [] }
+  const ml = layoutModule(spec.modules[idx], MODULE_PALETTE[idx % MODULE_PALETTE.length])
+  ml.absX = 0
+  ml.absY = 0
+  const { moduleNode, zoneNodes, compNodes } = emitModule(ml, new Set(spec.entry_points))
+  const compIds = new Set(compNodes.map(n => n.id))
+  const actorNodes = spec.external_actors.map((a, i) => actorNode(a, ml.width + MGAP, i * (NODE_H + 24)))
+  const ids = new Set([...compIds, ...actorNodes.map(n => n.id)])
+  const edges = buildEdges(spec.edges.filter(e => compIds.has(e.source) && ids.has(e.target)), ids)
+  return { nodes: [moduleNode, ...zoneNodes, ...compNodes, ...actorNodes], edges }
+}
 
-  // Parent map — used to reroute edges that target hidden children up to their
-  // collapsed visible ancestor.
-  const parentOf = {}
-  for (const c of components) {
-    for (const child of c.children ?? []) parentOf[child] = c.name
-  }
-
-  function resolveVisible(name) {
-    let cur = name
-    while (cur && !visibleNames.has(cur)) cur = parentOf[cur]
-    return cur ?? name
-  }
-
-  const actorNames = new Set(spec.external_actors.map(a => a.name))
-  const allVisible = new Set([...visibleNames, ...actorNames])
-
-  // Compute within-layer depth for each visible node so the layout can arrange
-  // nodes in multiple rows (parents above children) within each layer band.
-  const depthMap = {}
-  for (const [, layerComponents] of Object.entries(spec.layers)) {
-    const layerVisible = layerComponents.filter(c => visibleNames.has(c.name)).map(c => c.name)
-    const layerSet = new Set(layerVisible)
-    const parentCount = Object.fromEntries(layerVisible.map(n => [n, 0]))
-    for (const name of layerVisible) {
-      for (const child of (componentMap[name]?.children ?? [])) {
-        if (layerSet.has(child)) parentCount[child] = (parentCount[child] ?? 0) + 1
-      }
-    }
-    const queue = layerVisible.filter(n => !parentCount[n]).map(n => [n, 0])
-    const seen = new Set()
-    while (queue.length) {
-      const [name, depth] = queue.shift()
-      if (seen.has(name)) continue
-      seen.add(name)
-      depthMap[name] = depth
-      for (const child of (componentMap[name]?.children ?? [])) {
-        if (layerSet.has(child) && !seen.has(child)) queue.push([child, depth + 1])
-      }
-    }
-    for (const name of layerVisible) if (depthMap[name] === undefined) depthMap[name] = 0
-  }
-
-  const nodes = [
-    ...components
-      .filter(c => visibleNames.has(c.name))
-      .map(c => toRFNode(c.name, {
-        label: c.name, layer: c.layer,
-        isEntry: spec.entry_points.includes(c.name),
-        drillable: collapsedNames.has(c.name),
-        description: c.description, file_path: c.file_path, io: c.io,
-        depth: depthMap[c.name] ?? 0,
-      })),
-    ...spec.external_actors.map(a => toRFNode(a.name, {
-      label: a.name, layer: 'external',
-      isEntry: false, drillable: false,
-      description: a.description, actorType: a.type,
-    })),
-  ]
-
-  const seenEdgeKeys = new Set()
-  const edges = spec.edges
-    .map(e => ({ ...e, source: resolveVisible(e.source), target: resolveVisible(e.target) }))
-    .filter(e => {
-      if (e.source === e.target) return false
-      if (!allVisible.has(e.source) || !allVisible.has(e.target)) return false
-      const key = `${e.source}→${e.target}`
-      if (seenEdgeKeys.has(key)) return false
-      seenEdgeKeys.add(key)
-      return true
-    })
-    .map(toRFEdge)
-
-  const layerOrder = Object.keys(spec.layers)
-  const laidOut = applySystemLayout(nodes, layerOrder)
-  const { groupNodes, adjustedNodes } = buildGroups(laidOut)
-  return { nodes: [...groupNodes, ...adjustedNodes], edges }
+function applyDagreLayout(nodes, edges) {
+  const g = new dagre.graphlib.Graph()
+  g.setDefaultEdgeLabel(() => ({}))
+  g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 80, marginx: 40, marginy: 40 })
+  nodes.forEach(n => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
+  edges.forEach(e => { if (g.hasNode(e.source) && g.hasNode(e.target)) g.setEdge(e.source, e.target) })
+  dagre.layout(g)
+  return nodes.map(n => ({ ...n, position: { x: g.node(n.id).x - NODE_W / 2, y: g.node(n.id).y - NODE_H / 2 } }))
 }
 
 function buildComponentGraph(spec, componentName) {
-  const componentMap = Object.fromEntries(
-    flattenComponents(spec.layers).map(c => [c.name, c])
-  )
-  const root = componentMap[componentName]
+  const map = Object.fromEntries(flattenComponents(spec).map(c => [c.name, c]))
+  const root = map[componentName]
   if (!root) return { nodes: [], edges: [] }
-
-  // A child that also appears in another sibling's children list is a grandchild —
-  // exclude it so it only appears when the user drills into the intermediate parent.
-  const directChildren = root.children ?? []
-  const grandchildren = new Set(
-    directChildren.flatMap(name => componentMap[name]?.children ?? [])
-  )
-  const trueDirectChildren = directChildren.filter(name => !grandchildren.has(name))
-  const involved = new Set([componentName, ...trueDirectChildren])
+  const involved = new Set([componentName, ...(root.children ?? [])])
   const nodes = [...involved].map(name => {
-    const c = componentMap[name]
-    const isRoot = name === componentName
-    return toRFNode(name, {
-      label: name, layer: c?.layer ?? 'business',
-      isEntry: isRoot,
-      drillable: !isRoot && (c?.children?.length ?? 0) > 0,
-      description: c?.description, file_path: c?.file_path, io: c?.io,
-    })
+    const c = map[name]
+    return {
+      id: name, type: 'custom', position: { x: 0, y: 0 },
+      data: {
+        label: name, module: c?.module, zone: c?.zone,
+        color: c ? colorForModule(spec, c.module) : MODULE_PALETTE[0],
+        isEntry: name === componentName,
+        drillable: name !== componentName && c ? isDrillable(c) : false,
+        description: c?.description, file_path: c?.file_path, io: c?.io,
+      },
+    }
   })
-  const edges = spec.edges
-    .filter(e => involved.has(e.source) && involved.has(e.target))
-    .map(toRFEdge)
-
+  const edges = buildEdges(spec.edges.filter(e => involved.has(e.source) && involved.has(e.target)), involved)
   return { nodes: applyDagreLayout(nodes, edges), edges }
 }
 
-export function useGraphTransform(spec, focusComponent) {
+export function useGraphTransform(spec, focus) {
   return useMemo(() => {
     if (!spec) return { nodes: [], edges: [] }
-    return focusComponent
-      ? buildComponentGraph(spec, focusComponent)
-      : buildSystemGraph(spec)
-  }, [spec, focusComponent])
+    if (!focus) return buildSystemGraph(spec)
+    if (focus.kind === 'module') return buildModuleGraph(spec, focus.id)
+    return buildComponentGraph(spec, focus.id)
+  }, [spec, focus])
 }

@@ -8,19 +8,23 @@ export default function DiagramExplorer({ spec }) {
   const [viewStack, setViewStack] = useState([])
   const [detailPanel, setDetailPanel] = useState(null)
 
-  const focusComponent = viewStack.at(-1) ?? null
-  const { nodes, edges } = useGraphTransform(spec, focusComponent)
-  const graphKey = focusComponent ?? 'system'
+  const focus = viewStack.at(-1) ?? null
+  const { nodes, edges } = useGraphTransform(spec, focus)
+  const graphKey = focus ? `${focus.kind}:${focus.id}` : 'system'
 
   const handleNodeClick = useCallback((_, node) => {
-    const { drillable, label } = node.data
-    if (drillable) {
-      setViewStack(prev => [...prev, label])
+    const { label, drillable } = node.data
+    if (node.type === 'moduleGroup') {
+      if (focus?.kind === 'module' && focus.id === label) return
+      setViewStack(prev => [...prev, { kind: 'module', id: label }])
+      setDetailPanel(null)
+    } else if (drillable) {
+      setViewStack(prev => [...prev, { kind: 'component', id: label }])
       setDetailPanel(null)
     } else {
       setDetailPanel(prev => prev?.label === label ? null : node.data)
     }
-  }, [])
+  }, [focus])
 
   const navigateTo = useCallback(index => {
     setViewStack(prev => prev.slice(0, index))
