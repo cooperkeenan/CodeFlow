@@ -9,50 +9,67 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import CustomNode from './CustomNode'
 
-const NODE_W = 190
-const NODE_H = 64
+const NODE_W = 180
+const NODE_H = 58
 
-const LAYER_COLORS = {
-  presentation: { border: '#0d3b6e', bg: '#0d3b6e18', label: '#35a0f1' },
-  business:     { border: '#0d4a28', bg: '#0d4a2818', label: '#35f1a0' },
-  data:         { border: '#4a2e0d', bg: '#4a2e0d18', label: '#f1a035' },
-  external:     { border: '#3a0d4a', bg: '#3a0d4a18', label: '#c035f1' },
-}
-
-const LAYER_ALIAS = {
-  gateway: 'presentation', frontend: 'presentation', public_api: 'presentation',
-  services: 'business', api: 'business', core: 'business',
-  utilities: 'data',
-}
-
-function LayerGroupNode({ data }) {
-  const theme = LAYER_COLORS[LAYER_ALIAS[data.layer] ?? data.layer] ?? { border: '#2a2a2a', bg: '#2a2a2a18', label: '#888' }
+function ModuleGroupNode({ data }) {
+  const { color } = data
   return (
     <div style={{
       width: '100%', height: '100%',
-      border: `1px solid ${theme.border}`,
-      borderRadius: 4,
-      background: theme.bg,
-      padding: '6px 10px',
+      border: `1px solid ${color.border}`,
+      borderRadius: 6,
+      background: `${color.bg}55`,
+      pointerEvents: 'none',
       boxSizing: 'border-box',
     }}>
-      <span style={{
-        fontFamily: 'IBM Plex Mono, monospace',
-        fontSize: 9, letterSpacing: '0.14em',
-        textTransform: 'uppercase',
-        color: theme.label, fontWeight: 600,
-      }}>
-        {data.layer}
+      <span
+        className="nodrag"
+        title="Click to focus this module"
+        style={{
+          position: 'absolute', top: 6, left: 10,
+          fontFamily: 'IBM Plex Mono, monospace',
+          fontSize: 11, letterSpacing: '0.08em',
+          color: color.accent, fontWeight: 700,
+          pointerEvents: 'auto', cursor: 'pointer',
+          padding: '2px 4px', borderRadius: 3,
+        }}
+      >
+        {data.label} <span style={{ opacity: 0.5, fontSize: 9 }}>⤢</span>
       </span>
     </div>
   )
 }
 
-const NODE_TYPES = { custom: CustomNode, layerGroup: LayerGroupNode }
-const FIT_VIEW_OPTIONS = { padding: 0.4, maxZoom: 1 }
+function ZoneGroupNode({ data }) {
+  const { color } = data
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      border: `1px dashed ${color.border}`,
+      borderRadius: 4,
+      background: 'transparent',
+      pointerEvents: 'none',
+      boxSizing: 'border-box',
+    }}>
+      <span style={{
+        position: 'absolute', top: 5, left: 9,
+        fontFamily: 'IBM Plex Mono, monospace',
+        fontSize: 8, letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        color: '#777', fontWeight: 600,
+      }}>
+        {data.label}
+      </span>
+    </div>
+  )
+}
+
+const NODE_TYPES = { custom: CustomNode, moduleGroup: ModuleGroupNode, zoneGroup: ZoneGroupNode }
+const FIT_VIEW_OPTIONS = { padding: 0.3, maxZoom: 1 }
 
 
-export default function FlowGraph({ nodes: externalNodes, edges: externalEdges, graphKey, onNodeClick }) {
+export default function FlowGraph({ nodes: externalNodes, edges: externalEdges, onNodeClick }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(externalNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(externalEdges)
   const rfInstance = useRef(null)
@@ -61,12 +78,13 @@ export default function FlowGraph({ nodes: externalNodes, edges: externalEdges, 
     setNodes(externalNodes)
     setEdges(externalEdges)
     setTimeout(() => {
-      rfInstance.current?.fitView({ padding: 0.4, maxZoom: 1, duration: 300 })
+      rfInstance.current?.fitView({ padding: 0.3, maxZoom: 1, duration: 300 })
     }, 50)
   }, [externalNodes, externalEdges, setNodes, setEdges])
 
   const handleNodeClick = useCallback((event, node) => {
-    if (node.type !== 'layerGroup' && rfInstance.current && !node.data.drillable) {
+    if (node.type === 'zoneGroup') return
+    if (rfInstance.current && node.type !== 'moduleGroup' && !node.data.drillable) {
       const { zoom } = rfInstance.current.getViewport()
       const absX = (node.positionAbsolute?.x ?? node.position.x) + NODE_W / 2
       const absY = (node.positionAbsolute?.y ?? node.position.y) + NODE_H / 2
@@ -93,7 +111,7 @@ export default function FlowGraph({ nodes: externalNodes, edges: externalEdges, 
       <Controls style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: 3 }} />
       <MiniMap
         style={{ background: '#0a0a0a', border: '1px solid #1e1e1e' }}
-        nodeColor={n => ({ presentation: '#35a0f1', business: '#35f1a0', data: '#f1a035', external: '#c035f1' })[LAYER_ALIAS[n.data?.layer] ?? n.data?.layer] ?? '#333'}
+        nodeColor={n => n.data?.color?.accent ?? '#333'}
         maskColor="#00000088"
       />
     </ReactFlow>

@@ -1,5 +1,0 @@
-{
-  "zones": ["public_api", "core", "utilities"],
-  "edge_types": ["import", "call"],
-  "description": "Library: public API surface, core logic, utility components"
-}
