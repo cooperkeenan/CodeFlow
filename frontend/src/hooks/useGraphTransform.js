@@ -9,7 +9,6 @@ const GROUP_PADDING = 24
 const GROUP_HEADER = 28
 const EXTERNAL_X_OFFSET = 160
 
-const LAYER_ORDER = ['presentation', 'business', 'data']
 const DRILL_DOWN_THRESHOLD = 3
 
 function applyDagreLayout(nodes, edges) {
@@ -27,8 +26,11 @@ function applyDagreLayout(nodes, edges) {
   }))
 }
 
-// Custom layout for system view — stacks layers vertically, external to the right
-function applySystemLayout(rawNodes) {
+const ROW_HEIGHT = NODE_H + 40
+
+// Custom layout for system view — stacks layers vertically, within each layer
+// arranges nodes in rows by their parent-child depth so hierarchy is visible.
+function applySystemLayout(rawNodes, layerOrder) {
   const byLayer = {}
   const externalNodes = []
 
@@ -42,25 +44,46 @@ function applySystemLayout(rawNodes) {
     }
   }
 
-  const layerWidths = LAYER_ORDER.map(l => {
-    const count = (byLayer[l] ?? []).length
-    return count > 0 ? count * NODE_W + (count - 1) * NODE_X_GAP : 0
+  const layerWidths = layerOrder.map(l => {
+    const layerNodes = byLayer[l] ?? []
+    const byDepth = {}
+    for (const n of layerNodes) {
+      const d = n.data.depth ?? 0
+      if (!byDepth[d]) byDepth[d] = []
+      byDepth[d].push(n)
+    }
+    return Math.max(...Object.values(byDepth).map(ns => ns.length * NODE_W + (ns.length - 1) * NODE_X_GAP), 0)
   })
   const maxLayerWidth = Math.max(...layerWidths, 0)
 
   const positioned = []
   let currentY = 0
 
-  for (const layer of LAYER_ORDER) {
+  for (const layer of layerOrder) {
     const layerNodes = byLayer[layer] ?? []
     if (layerNodes.length === 0) continue
-    const layerWidth = layerNodes.length * NODE_W + (layerNodes.length - 1) * NODE_X_GAP
-    let x = (maxLayerWidth - layerWidth) / 2
-    for (const node of layerNodes) {
-      positioned.push({ ...node, position: { x, y: currentY } })
-      x += NODE_W + NODE_X_GAP
+
+    const byDepth = {}
+    for (const n of layerNodes) {
+      const d = n.data.depth ?? 0
+      if (!byDepth[d]) byDepth[d] = []
+      byDepth[d].push(n)
     }
-    currentY += NODE_H + LAYER_Y_GAP
+
+    const maxDepth = Math.max(...Object.keys(byDepth).map(Number), 0)
+    let rowY = currentY
+    for (let d = 0; d <= maxDepth; d++) {
+      const rowNodes = byDepth[d] ?? []
+      if (rowNodes.length === 0) continue
+      const rowWidth = rowNodes.length * NODE_W + (rowNodes.length - 1) * NODE_X_GAP
+      let x = (maxLayerWidth - rowWidth) / 2
+      for (const node of rowNodes) {
+        positioned.push({ ...node, position: { x, y: rowY } })
+        x += NODE_W + NODE_X_GAP
+      }
+      rowY += ROW_HEIGHT
+    }
+    currentY = rowY + LAYER_Y_GAP
   }
 
   // Place external nodes to the right, vertically centred on the main content
@@ -189,6 +212,32 @@ function buildSystemGraph(spec) {
   const actorNames = new Set(spec.external_actors.map(a => a.name))
   const allVisible = new Set([...visibleNames, ...actorNames])
 
+  // Compute within-layer depth for each visible node so the layout can arrange
+  // nodes in multiple rows (parents above children) within each layer band.
+  const depthMap = {}
+  for (const [, layerComponents] of Object.entries(spec.layers)) {
+    const layerVisible = layerComponents.filter(c => visibleNames.has(c.name)).map(c => c.name)
+    const layerSet = new Set(layerVisible)
+    const parentCount = Object.fromEntries(layerVisible.map(n => [n, 0]))
+    for (const name of layerVisible) {
+      for (const child of (componentMap[name]?.children ?? [])) {
+        if (layerSet.has(child)) parentCount[child] = (parentCount[child] ?? 0) + 1
+      }
+    }
+    const queue = layerVisible.filter(n => !parentCount[n]).map(n => [n, 0])
+    const seen = new Set()
+    while (queue.length) {
+      const [name, depth] = queue.shift()
+      if (seen.has(name)) continue
+      seen.add(name)
+      depthMap[name] = depth
+      for (const child of (componentMap[name]?.children ?? [])) {
+        if (layerSet.has(child) && !seen.has(child)) queue.push([child, depth + 1])
+      }
+    }
+    for (const name of layerVisible) if (depthMap[name] === undefined) depthMap[name] = 0
+  }
+
   const nodes = [
     ...components
       .filter(c => visibleNames.has(c.name))
@@ -197,6 +246,7 @@ function buildSystemGraph(spec) {
         isEntry: spec.entry_points.includes(c.name),
         drillable: collapsedNames.has(c.name),
         description: c.description, file_path: c.file_path, io: c.io,
+        depth: depthMap[c.name] ?? 0,
       })),
     ...spec.external_actors.map(a => toRFNode(a.name, {
       label: a.name, layer: 'external',
@@ -218,7 +268,8 @@ function buildSystemGraph(spec) {
     })
     .map(toRFEdge)
 
-  const laidOut = applySystemLayout(nodes)
+  const layerOrder = Object.keys(spec.layers)
+  const laidOut = applySystemLayout(nodes, layerOrder)
   const { groupNodes, adjustedNodes } = buildGroups(laidOut)
   return { nodes: [...groupNodes, ...adjustedNodes], edges }
 }

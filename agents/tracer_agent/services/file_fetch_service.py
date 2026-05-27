@@ -22,51 +22,67 @@ class FileFetchService:
         repo_name: str,
         directories: list[str],
     ) -> tuple[str, list[str]]:
-        """
-        Fetches files from GitHub and writes them to a temp directory.
-        Returns (temp_dir_path, list_of_written_file_paths).
-        """
         owner, repo = repo_name.split("/")
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/vnd.github.v3+json",
         }
 
+        tree_items = await self._get_recursive_tree(owner, repo, headers)
+        matching_items = self._filter_items(tree_items, directories)
+
         temp_dir = tempfile.mkdtemp()
         written_files = []
 
-        for directory in directories:
-            logger.info("Fetching files in %s", directory)
+        for item in matching_items:
+            content = await self._fetch_blob(item["url"], headers)
+            if content is None:
+                continue
+            file_path = Path(temp_dir) / item["path"]
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text(content)
+            written_files.append(str(file_path))
+            logger.info("Written %s", item["path"])
+
+        logger.info("Fetched %d files from GitHub", len(written_files))
+        return temp_dir, written_files
+
+    async def _get_recursive_tree(
+        self, owner: str, repo: str, headers: dict
+    ) -> list[dict]:
+        for branch in ("main", "master"):
             response = await self._http.get(
-                f"{_API_URL}/repos/{owner}/{repo}/contents/{directory.rstrip('/')}",
+                f"{_API_URL}/repos/{owner}/{repo}/git/trees/{branch}?recursive=1",
                 headers=headers,
             )
-            if response.status_code != 200:
-                logger.warning("Could not fetch directory %s", directory)
+            if response.status_code == 200:
+                return response.json().get("tree", [])
+        logger.warning("Could not fetch git tree for %s/%s", owner, repo)
+        return []
+
+    def _filter_items(
+        self, tree_items: list[dict], directories: list[str]
+    ) -> list[dict]:
+        norm_dirs = [d.rstrip("/") for d in directories]
+        results = []
+        for item in tree_items:
+            if item["type"] != "blob":
                 continue
+            path = item["path"]
+            if not path.endswith(".py"):
+                continue
+            parts = path.split("/")
+            if parts[-1] in _EXCLUDED_FILES:
+                continue
+            if any(ex in parts for ex in _EXCLUDED_DIRS):
+                continue
+            if any(path == d or path.startswith(d + "/") for d in norm_dirs):
+                results.append(item)
+        return results
 
-            for item in response.json():
-                if item["type"] != "file":
-                    continue
-                if not item["name"].endswith(".py"):
-                    continue
-                if item["name"] in _EXCLUDED_FILES:
-                    continue
-                if any(ex in item["path"].split("/") for ex in _EXCLUDED_DIRS):
-                    continue
-
-                file_response = await self._http.get(item["url"], headers=headers)
-                if file_response.status_code != 200:
-                    continue
-
-                content = base64.b64decode(
-                    file_response.json()["content"]
-                ).decode("utf-8")
-
-                file_path = Path(temp_dir) / item["path"]
-                file_path.parent.mkdir(parents=True, exist_ok=True)
-                file_path.write_text(content)
-                written_files.append(str(file_path))
-                logger.info("Written %s", item["path"])
-
-        return temp_dir, written_files
+    async def _fetch_blob(self, url: str, headers: dict) -> str | None:
+        response = await self._http.get(url, headers=headers)
+        if response.status_code != 200:
+            logger.warning("Could not fetch blob from %s", url)
+            return None
+        return base64.b64decode(response.json()["content"]).decode("utf-8")
