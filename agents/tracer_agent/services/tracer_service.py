@@ -56,9 +56,18 @@ class TracerService:
             io["outputs"] = [v for v in io.get("outputs", []) if v is not None]
         return result
 
+    def _sanitise_edges(self, result: dict) -> dict:
+        edges = result.get("edges", [])
+        valid = [e for e in edges if isinstance(e, dict) and e.get("source") and e.get("target")]
+        dropped = len(edges) - len(valid)
+        if dropped:
+            logger.warning("Dropped %d malformed edge(s) missing source or target", dropped)
+        result["edges"] = valid
+        return result
+
     def _parse_spec(self, raw: dict, request: TracerRequest) -> DiagramSpec:
         raw["architecture_type"] = request.architecture_type
-        return DiagramSpec.model_validate(self._sanitise_io(raw))
+        return DiagramSpec.model_validate(self._sanitise_edges(self._sanitise_io(raw)))
 
     async def _correction_loop(
         self, raw: dict, messages: list, request: TracerRequest
