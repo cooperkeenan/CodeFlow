@@ -30,9 +30,16 @@ class ExternalActor(BaseModel):
     description: str
 
 
+class Module(BaseModel):
+    name: str
+    description: str = ""
+    root_path: str
+    zones: dict[str, list[Component]] = {}
+
+
 class DiagramSpec(BaseModel):
     architecture_type: str
-    layers: dict[str, list[Component]]
+    modules: list[Module]
     edges: list[Edge]
     external_actors: list[ExternalActor] = []
     entry_points: list[str] = []
