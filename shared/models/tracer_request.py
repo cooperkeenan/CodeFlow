@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from shared.models.layer_hints import LayerHints
+from shared.models.repo_blueprint import RepoBlueprint
 
 
 class TracerRequest(BaseModel):
@@ -9,5 +9,5 @@ class TracerRequest(BaseModel):
     local_path: str | None = None
     architecture_type: str
     language: str
-    entry_point_hint: str
-    layer_hints: LayerHints
+    entry_point_hint: str = ""
+    blueprint: RepoBlueprint
