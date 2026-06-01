@@ -45,9 +45,22 @@ class GetFileTreeTool:
     def _get_local_tree(self, local_path: str) -> list[str]:
         root = Path(local_path)
         excluded = {".git", "__pycache__", "node_modules", ".venv", "venv"}
+        excluded |= self._embedded_repo_dirs(root)
         paths = []
         for path in root.rglob("*"):
             if path.is_file() and not any(ex in path.parts for ex in excluded):
                 paths.append(str(path.relative_to(root)))
         logger.info("Found %d files in local path", len(paths))
         return paths
+
+    def _embedded_repo_dirs(self, root: Path) -> set[str]:
+        _manifests = {"requirements.txt", "pyproject.toml", "go.mod", "Cargo.toml"}
+        _deploy = {"Dockerfile", "docker-compose.yml", "docker-compose.yaml"}
+        embedded = set()
+        for d in root.iterdir():
+            if not d.is_dir():
+                continue
+            if any((d / m).exists() for m in _manifests) and any((d / m).exists() for m in _deploy):
+                embedded.add(d.name)
+                logger.info("Excluding embedded repo directory: %s", d.name)
+        return embedded
