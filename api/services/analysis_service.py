@@ -55,8 +55,7 @@ class AnalysisService:
             access_token=access_token,
             architecture_type=profile.architecture_type,
             language=profile.language,
-            entry_point_hint=profile.entry_point_hint,
-            layer_hints=profile.layer_hints,
+            blueprint=profile,
         )
         trace = await self._tracer.trace(tracer_request)
         mermaid = await self._render.render(trace["architecture_type"], trace["diagram_spec"])
