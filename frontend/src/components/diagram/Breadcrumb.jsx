@@ -11,7 +11,7 @@ const BASE = {
 export default function Breadcrumb({ viewStack, onNavigate }) {
   const crumbs = [
     { label: 'system', index: 0 },
-    ...viewStack.map((name, i) => ({ label: name, index: i + 1 })),
+    ...viewStack.map((entry, i) => ({ label: entry.id, index: i + 1 })),
   ]
 
   return (

@@ -6,7 +6,9 @@ import LocalPage from './pages/LocalPage'
 import DiagramPage from './pages/DiagramPage'
 
 export default function App() {
-  const [view, setView] = useState('home')
+  const [view, setView] = useState(
+    () => new URLSearchParams(window.location.search).has('code') ? 'github' : 'home'
+  )
   const { analysis, loading, error, run, reset } = useAnalysis()
 
   const goHome = () => { reset(); setView('home') }
