@@ -1,22 +1,9 @@
 import { Handle, Position } from 'reactflow'
 
-const LAYER_THEME = {
-  presentation: { bg: '#0a1929', border: '#0d3b6e', accent: '#35a0f1', label: '#35a0f1' },
-  business:     { bg: '#0a1f14', border: '#0d4a28', accent: '#35f1a0', label: '#35f1a0' },
-  data:         { bg: '#1f130a', border: '#4a2e0d', accent: '#f1a035', label: '#f1a035' },
-  external:     { bg: '#150a1f', border: '#3a0d4a', accent: '#c035f1', label: '#c035f1' },
-}
-
-const LAYER_ALIAS = {
-  gateway: 'presentation', frontend: 'presentation', public_api: 'presentation',
-  services: 'business', api: 'business', core: 'business',
-  utilities: 'data',
-}
-
-const fallback = { bg: '#0f0f0f', border: '#2a2a2a', accent: '#c8f135', label: '#c8f135' }
+const FALLBACK = { bg: '#0f0f0f', border: '#2a2a2a', accent: '#c8f135' }
 
 export default function CustomNode({ data, selected }) {
-  const theme = LAYER_THEME[LAYER_ALIAS[data.layer] ?? data.layer] ?? fallback
+  const theme = data.color ?? FALLBACK
 
   return (
     <div style={{
@@ -24,12 +11,12 @@ export default function CustomNode({ data, selected }) {
       border: `1px solid ${selected ? theme.accent : theme.border}`,
       borderRadius: 3,
       padding: '9px 13px',
-      width: 190,
+      width: 180,
       boxShadow: data.isEntry ? `0 0 0 2px ${theme.accent}40` : 'none',
       outline: data.isEntry ? `1px solid ${theme.accent}` : 'none',
       outlineOffset: 3,
       transition: 'border-color 120ms ease',
-      cursor: data.drillable ? 'pointer' : 'default',
+      cursor: 'pointer',
     }}>
       <Handle
         type="target"
@@ -71,11 +58,11 @@ export default function CustomNode({ data, selected }) {
         marginTop: 4,
         fontFamily: 'IBM Plex Mono, monospace',
         fontSize: 9,
-        color: theme.label,
+        color: theme.accent,
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
       }}>
-        {data.actorType ?? data.layer}
+        {data.actorType ?? data.zone}
       </div>
 
       <Handle

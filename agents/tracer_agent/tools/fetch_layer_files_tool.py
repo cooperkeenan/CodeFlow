@@ -24,7 +24,7 @@ FETCH_LAYER_FILES_SCHEMA = {
             "directories": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "List of directory paths from layer_hints",
+                "description": "List of directory paths from the blueprint zones",
             },
         },
         "required": ["directories"],
