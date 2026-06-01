@@ -13,6 +13,25 @@ MANIFEST_FILES = {
 }
 _API_URL = "https://api.github.com"
 
+_EMBED_MANIFESTS = frozenset({"requirements.txt", "pyproject.toml", "go.mod", "Cargo.toml"})
+_EMBED_DEPLOY = frozenset({"Dockerfile", "docker-compose.yml", "docker-compose.yaml"})
+
+
+def _embedded_repo_dirs(paths: list[str]) -> set[str]:
+    """Return top-level directory names that look like vendored/embedded repos."""
+    by_dir: dict[str, set[str]] = {}
+    for path in paths:
+        parts = path.split("/")
+        if len(parts) > 1:
+            top, filename = parts[0], parts[-1]
+            by_dir.setdefault(top, set()).add(filename)
+    embedded = set()
+    for dir_name, filenames in by_dir.items():
+        if filenames & _EMBED_MANIFESTS and filenames & _EMBED_DEPLOY:
+            embedded.add(dir_name)
+            logger.info("Excluding embedded repo directory: %s", dir_name)
+    return embedded
+
 
 class FileTreeService:
     def __init__(self, http_client: httpx.AsyncClient):
@@ -34,12 +53,14 @@ class FileTreeService:
                 break
 
         response.raise_for_status()
-        paths = [
+        raw_paths = [
             item["path"] for item in response.json().get("tree", [])
             if item["type"] == "blob"
             and not any(ex in item["path"].split("/") for ex in EXCLUDED)
         ]
-        logger.info("Found %d files in %s", len(paths), repo_name)
+        embedded = _embedded_repo_dirs(raw_paths)
+        paths = [p for p in raw_paths if not embedded or p.split("/")[0] not in embedded]
+        logger.info("Found %d files in %s (%d embedded dirs excluded)", len(paths), repo_name, len(embedded))
         return paths
 
     async def get_manifest_files(self, access_token: str, repo_name: str, paths: list[str]) -> dict[str, str]:

@@ -19,8 +19,14 @@ const LAYER_COLORS = {
   external:     { border: '#3a0d4a', bg: '#3a0d4a18', label: '#c035f1' },
 }
 
+const LAYER_ALIAS = {
+  gateway: 'presentation', frontend: 'presentation', public_api: 'presentation',
+  services: 'business', api: 'business', core: 'business',
+  utilities: 'data',
+}
+
 function LayerGroupNode({ data }) {
-  const theme = LAYER_COLORS[data.layer] ?? { border: '#2a2a2a', bg: '#2a2a2a18', label: '#888' }
+  const theme = LAYER_COLORS[LAYER_ALIAS[data.layer] ?? data.layer] ?? { border: '#2a2a2a', bg: '#2a2a2a18', label: '#888' }
   return (
     <div style={{
       width: '100%', height: '100%',
@@ -87,7 +93,7 @@ export default function FlowGraph({ nodes: externalNodes, edges: externalEdges, 
       <Controls style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: 3 }} />
       <MiniMap
         style={{ background: '#0a0a0a', border: '1px solid #1e1e1e' }}
-        nodeColor={n => ({ presentation: '#35a0f1', business: '#35f1a0', data: '#f1a035', external: '#c035f1' })[n.data?.layer] ?? '#333'}
+        nodeColor={n => ({ presentation: '#35a0f1', business: '#35f1a0', data: '#f1a035', external: '#c035f1' })[LAYER_ALIAS[n.data?.layer] ?? n.data?.layer] ?? '#333'}
         maskColor="#00000088"
       />
     </ReactFlow>
