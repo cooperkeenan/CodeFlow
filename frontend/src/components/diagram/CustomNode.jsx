@@ -7,10 +7,16 @@ const LAYER_THEME = {
   external:     { bg: '#150a1f', border: '#3a0d4a', accent: '#c035f1', label: '#c035f1' },
 }
 
+const LAYER_ALIAS = {
+  gateway: 'presentation', frontend: 'presentation', public_api: 'presentation',
+  services: 'business', api: 'business', core: 'business',
+  utilities: 'data',
+}
+
 const fallback = { bg: '#0f0f0f', border: '#2a2a2a', accent: '#c8f135', label: '#c8f135' }
 
 export default function CustomNode({ data, selected }) {
-  const theme = LAYER_THEME[data.layer] ?? fallback
+  const theme = LAYER_THEME[LAYER_ALIAS[data.layer] ?? data.layer] ?? fallback
 
   return (
     <div style={{
