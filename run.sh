@@ -52,7 +52,7 @@ while true; do
             ;;
         4)
             echo "Stopping..."
-            for port in 8000 8002 8003 8004; do
+            for port in 8000 8002 8003 8004 8005; do
                 pids=$(lsof -ti :"$port")
                 if [ -n "$pids" ]; then
                     echo "$pids" | xargs kill -9 2>/dev/null
