@@ -21,7 +21,7 @@ export default function CustomNode({ data, selected }) {
       <Handle
         type="target"
         position={Position.Top}
-        style={{ background: theme.border, width: 6, height: 6, border: 'none' }}
+        style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }}
       />
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
@@ -68,7 +68,7 @@ export default function CustomNode({ data, selected }) {
       <Handle
         type="source"
         position={Position.Bottom}
-        style={{ background: theme.border, width: 6, height: 6, border: 'none' }}
+        style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }}
       />
     </div>
   )

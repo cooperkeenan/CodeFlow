@@ -20,5 +20,5 @@ class MermaidService:
         lines += self._modules.render(spec)
         lines += self._edges.render(spec)
         diagram = "\n".join(lines)
-        logger.info("Diagram complete: %d lines", len(lines))
+        logger.info("Render complete: %d lines, %d modules", len(lines), len(spec.modules))
         return diagram
