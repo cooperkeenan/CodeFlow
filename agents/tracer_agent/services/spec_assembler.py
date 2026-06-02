@@ -83,6 +83,8 @@ class SpecAssembler:
             if not isinstance(e, dict):
                 continue
             source, target, edge_type = e.get("source"), e.get("target"), e.get("edge_type")
+            if edge_type == "import":
+                continue
             if source and target and edge_type in _EDGE_TYPES:
                 edges.append(Edge(source=source, target=target, edge_type=edge_type))
         return edges
