@@ -31,15 +31,22 @@ class ProfilerService:
 
     async def profile(self, request: ProfileRequest) -> ProfileResponse:
         logger.info("Profiling repo: %s", request.repo_name)
+        
         paths = await self._fetch_paths(request)
         manifests = await self._fetch_manifests(request, paths)
         skeleton = self._repo_map.build(paths, request.repo_name)
         raw = await self._label(self._user_prompt(skeleton, manifests))
         blueprint = self._validator.validate(raw, skeleton)
+        zone_count = sum(len(m.zones) for m in blueprint.modules)
         logger.info(
-            "Blueprint complete: %s, %d modules",
-            blueprint.architecture_type, len(blueprint.modules),
+            "Blueprint: arch=%s lang=%s modules=%d zones=%d",
+            blueprint.architecture_type,
+            blueprint.language,
+            len(blueprint.modules),
+            zone_count,
         )
+        for m in blueprint.modules:
+            logger.info("  module %-20s zones=%s", m.name, [z.name for z in m.zones])
         return blueprint
 
     def _target(self, request: ProfileRequest) -> dict:
@@ -66,6 +73,7 @@ class ProfilerService:
             messages=[{"role": "user", "content": user_prompt}],
         )
         text = next((b.text for b in response.content if b.type == "text"), "")
+        logger.info("profiler raw output: %s", text)
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:
             raise ValueError("LLM did not return valid JSON")

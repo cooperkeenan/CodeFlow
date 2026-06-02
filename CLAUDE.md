@@ -31,8 +31,6 @@
 - Schemas live next to the tool they describe (same file)
 
 ## What Not To Do
-- Do not modify shared/models/ without explicit instruction
-- Do not modify render_agent/ or profiler_agent/ unless the PBI explicitly says so
 - Do not modify frontend/ unless the PBI explicitly says so
 - Do not create test files unless asked
 - Do not refactor files that are not in scope for the current PBI
