@@ -19,7 +19,7 @@ function Start-Service {
 }
 
 function Kill-Ports {
-    $ports = 8000, 8002, 8003, 8004, 5173, 5174, 5175, 5176, 5177
+    $ports = 8000, 8002, 8003, 8004, 8005, 5173, 5174, 5175, 5176, 5177
     foreach ($port in $ports) {
         $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
         foreach ($conn in $connections) {
@@ -63,6 +63,7 @@ Start-Service -Name "API Gateway"    -Dir "api"                   -Port 8000
 Start-Service -Name "Profiler Agent" -Dir "agents\profiler_agent" -Port 8002
 Start-Service -Name "Tracer Agent"   -Dir "agents\tracer_agent"   -Port 8003
 Start-Service -Name "Render Agent"   -Dir "agents\render_agent"   -Port 8004
+Start-Service -Name "Layout Agent"   -Dir "agents\layout_agent"   -Port 8005
 
 $localRepo = Get-EnvValue -Key "LOCAL_REPO"
 
