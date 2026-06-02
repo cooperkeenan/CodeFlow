@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     PROFILER_AGENT_URL: str = "http://localhost:8002"
     TRACER_AGENT_URL: str = "http://localhost:8003"
     RENDER_AGENT_URL: str = "http://localhost:8004"
+    LAYOUT_AGENT_URL: str = "http://localhost:8005"
     LOCAL_REPO: bool = False
     LOCAL_REPO_PATH: str = ""
 

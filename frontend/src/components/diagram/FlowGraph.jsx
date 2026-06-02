@@ -8,64 +8,25 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import CustomNode from './CustomNode'
+import ModuleGroupNode from './nodes/ModuleGroupNode'
+import ZoneGroupNode from './nodes/ZoneGroupNode'
+import ClusterGroupNode from './nodes/ClusterGroupNode'
+import ModuleSummaryNode from './nodes/ModuleSummaryNode'
+import ModuleGhostNode from './nodes/ModuleGhostNode'
+import ZoneMoreNode from './nodes/ZoneMoreNode'
 
 const NODE_W = 180
 const NODE_H = 58
 
-function ModuleGroupNode({ data }) {
-  const { color } = data
-  return (
-    <div style={{
-      width: '100%', height: '100%',
-      border: `1px solid ${color.border}`,
-      borderRadius: 6,
-      background: `${color.bg}55`,
-      pointerEvents: 'none',
-      boxSizing: 'border-box',
-    }}>
-      <span
-        className="nodrag"
-        title="Click to focus this module"
-        style={{
-          position: 'absolute', top: 6, left: 10,
-          fontFamily: 'IBM Plex Mono, monospace',
-          fontSize: 11, letterSpacing: '0.08em',
-          color: color.accent, fontWeight: 700,
-          pointerEvents: 'auto', cursor: 'pointer',
-          padding: '2px 4px', borderRadius: 3,
-        }}
-      >
-        {data.label} <span style={{ opacity: 0.5, fontSize: 9 }}>⤢</span>
-      </span>
-    </div>
-  )
+const NODE_TYPES = {
+  custom: CustomNode,
+  moduleGroup: ModuleGroupNode,
+  zoneGroup: ZoneGroupNode,
+  clusterGroup: ClusterGroupNode,
+  moduleSummary: ModuleSummaryNode,
+  moduleGhost: ModuleGhostNode,
+  zoneMore: ZoneMoreNode,
 }
-
-function ZoneGroupNode({ data }) {
-  const { color } = data
-  return (
-    <div style={{
-      width: '100%', height: '100%',
-      border: `1px dashed ${color.border}`,
-      borderRadius: 4,
-      background: 'transparent',
-      pointerEvents: 'none',
-      boxSizing: 'border-box',
-    }}>
-      <span style={{
-        position: 'absolute', top: 5, left: 9,
-        fontFamily: 'IBM Plex Mono, monospace',
-        fontSize: 8, letterSpacing: '0.14em',
-        textTransform: 'uppercase',
-        color: '#777', fontWeight: 600,
-      }}>
-        {data.label}
-      </span>
-    </div>
-  )
-}
-
-const NODE_TYPES = { custom: CustomNode, moduleGroup: ModuleGroupNode, zoneGroup: ZoneGroupNode }
 const FIT_VIEW_OPTIONS = { padding: 0.3, maxZoom: 1 }
 
 
@@ -83,8 +44,9 @@ export default function FlowGraph({ nodes: externalNodes, edges: externalEdges, 
   }, [externalNodes, externalEdges, setNodes, setEdges])
 
   const handleNodeClick = useCallback((event, node) => {
-    if (node.type === 'zoneGroup') return
-    if (rfInstance.current && node.type !== 'moduleGroup' && !node.data.drillable) {
+    if (node.type === 'zoneGroup' || node.type === 'clusterGroup' || node.type === 'moduleGhost') return
+    const noCenter = node.type === 'moduleGroup' || node.type === 'moduleSummary' || node.type === 'zoneMore'
+    if (rfInstance.current && !noCenter && !node.data.drillable) {
       const { zoom } = rfInstance.current.getViewport()
       const absX = (node.positionAbsolute?.x ?? node.position.x) + NODE_W / 2
       const absY = (node.positionAbsolute?.y ?? node.position.y) + NODE_H / 2
@@ -107,7 +69,7 @@ export default function FlowGraph({ nodes: externalNodes, edges: externalEdges, 
       minZoom={0.1}
       proOptions={{ hideAttribution: true }}
     >
-      <Background color="#181818" gap={28} size={1} />
+      <Background color="#2a2a2a" gap={28} size={1} style={{ background: '#1e1e1e' }} />
       <Controls style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: 3 }} />
       <MiniMap
         style={{ background: '#0a0a0a', border: '1px solid #1e1e1e' }}
