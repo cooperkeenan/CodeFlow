@@ -42,12 +42,22 @@
             "presentation": { "group": "codeflow", "order": 4, "close": true }
         },
         {
+            "name": "Layout Agent",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": ["main:app", "--host", "0.0.0.0", "--port", "8005", "--reload"],
+            "cwd": "${workspaceFolder}/agents/layout_agent",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "presentation": { "group": "codeflow", "order": 5, "close": true }
+        },
+        {
             "name": "Frontend",
             "type": "node-terminal",
             "request": "launch",
             "command": "npm run dev",
             "cwd": "${workspaceFolder}/frontend",
-            "presentation": { "group": "codeflow", "order": 5, "close": true }
+            "presentation": { "group": "codeflow", "order": 6, "close": true }
         }
     ],
     "compounds": [
@@ -58,6 +68,7 @@
                 "Profiler Agent",
                 "Tracer Agent",
                 "Render Agent",
+                "Layout Agent",
                 "Frontend"
             ],
             "stopAll": true,

@@ -46,7 +46,17 @@ class TracerService:
         raw = await self._call(messages)
         spec = self._assembler.assemble(request.blueprint, raw, request.architecture_type)
         spec = await self._correction_loop(spec, raw, messages, evidence, request)
-        logger.info("Tracing complete for %s", request.repo_name)
+        component_count = sum(len(comps) for m in spec.modules for comps in m.zones.values())
+        edge_types: dict[str, int] = {}
+        for e in spec.edges:
+            edge_types[e.edge_type] = edge_types.get(e.edge_type, 0) + 1
+        logger.info(
+            "Trace: modules=%d components=%d edges=%d %s",
+            len(spec.modules),
+            component_count,
+            len(spec.edges),
+            " ".join(f"{k}={v}" for k, v in sorted(edge_types.items())),
+        )
         return TracerResponse(architecture_type=request.architecture_type, diagram_spec=spec)
 
     async def _gather_evidence(self, request: TracerRequest) -> dict:
@@ -76,6 +86,7 @@ class TracerService:
             system=TRACER_SYSTEM_PROMPT, messages=messages,
         )
         text = next((b.text for b in response.content if b.type == "text"), "")
+        logger.info("tracer raw output: %s", text)
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:
             raise ValueError("LLM did not return valid JSON")
