@@ -66,6 +66,22 @@
             "isBackground": true
         },
         {
+            "label": "Layout Agent",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8005 --reload",
+            "options": {
+                "cwd": "${workspaceFolder}/agents/layout_agent",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}"
+                }
+            },
+            "icon": {
+                "id": "layout",
+                "color": "terminal.ansiBlue"
+            },
+            "isBackground": true
+        },
+        {
             "label": "Frontend",
             "type": "shell",
             "command": "npm run dev",
@@ -85,6 +101,7 @@
                 "Profiler Agent",
                 "Tracer Agent",
                 "Render Agent",
+                "Layout Agent",
                 "Frontend"
             ],
             "dependsOrder": "parallel",
@@ -97,7 +114,7 @@
         {
             "label": "CodeFlow: Stop All",
             "type": "shell",
-            "command": "for port in 8000 8002 8003 8004 5173; do pids=$(lsof -ti :$port); if [ -n \"$pids\" ]; then echo \"$pids\" | xargs kill -9; echo \"Cleared port $port\"; else echo \"Port $port already free\"; fi; done",
+            "command": "for port in 8000 8002 8003 8004 8005 5173; do pids=$(lsof -ti :$port); if [ -n \"$pids\" ]; then echo \"$pids\" | xargs kill -9; echo \"Cleared port $port\"; else echo \"Port $port already free\"; fi; done",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
