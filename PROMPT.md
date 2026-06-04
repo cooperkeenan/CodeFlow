@@ -115,23 +115,6 @@ the deterministic-repo-map + constrained-LLM-labeling design above. Verified:
 always remounted into `useState('home')`. Now seeds `view` to `'github'` when the URL has a
 `?code=` param so the `useGitHub` hook can exchange the code.
 
-## Next
-
-**Reimplement the drill-down UI feature.** A first pass was added
-(`frontend/src/hooks/useGraphTransform.js`, `FlowGraph.jsx`, `CustomNode.jsx`,
-`DiagramExplorer.jsx`, `Breadcrumb.jsx`) supporting:
-
-- Module focus by clicking a module's header.
-- Component focus when a component has ≥ 3 children (`DRILL_DOWN_THRESHOLD`).
-- Breadcrumb navigation: `system / <module> / <component>`.
-
-That implementation needs revisiting — design choices to reconsider include: where the click
-targets live (header vs whole module box), what "drill" means in the new module/zone world
-(focus/isolate vs collapse-with-rerouted-edges), and how children grouping should behave when a
-parent and its children live in different zones or modules. The goal: a drill-down UX that
-matches what the old flat-bands version had (click into things, group children, expand on
-demand), adapted cleanly to the hierarchical module → zone → component structure.
-
 ## Where Things Live (quick map)
 
 - Pipeline orchestration: `api/services/analysis_service.py`

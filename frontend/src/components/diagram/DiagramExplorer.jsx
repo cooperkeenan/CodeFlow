@@ -53,10 +53,10 @@ export default function DiagramExplorer({ spec }) {
       <div style={{ display: 'flex', gap: 10, flex: 1, minHeight: 0 }}>
         <div style={{
           flex: 1,
-          border: '1px solid #151515',
+          border: '1px solid #242424',
           borderRadius: 3,
           overflow: 'hidden',
-          background: '#1e1e1e',
+          background: '#1E1E1E',
         }}>
           <FlowGraph
             nodes={nodes}
