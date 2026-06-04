@@ -14,7 +14,7 @@ export default function ZoneGroupNode({ data }) {
         fontFamily: 'IBM Plex Mono, monospace',
         fontSize: 8, letterSpacing: '0.14em',
         textTransform: 'uppercase',
-        color: '#777', fontWeight: 600,
+        color: 'rgba(255,255,255,0.60)', fontWeight: 600,
       }}>
         {data.label}
       </span>

@@ -24,7 +24,7 @@ export default function ModuleSummaryNode({ data, selected }) {
       </div>
       <div style={{
         fontFamily: 'IBM Plex Mono, monospace',
-        fontSize: 10, color: '#aaa', letterSpacing: '0.08em',
+        fontSize: 10, color: 'rgba(255,255,255,0.60)', letterSpacing: '0.08em',
         textTransform: 'uppercase',
       }}>
         {zoneCount} {zoneCount === 1 ? 'zone' : 'zones'} · {componentCount} {componentCount === 1 ? 'component' : 'components'}
