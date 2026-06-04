@@ -69,11 +69,11 @@ export default function FlowGraph({ nodes: externalNodes, edges: externalEdges, 
       minZoom={0.1}
       proOptions={{ hideAttribution: true }}
     >
-      <Background color="#2a2a2a" gap={28} size={1} style={{ background: '#1e1e1e' }} />
-      <Controls style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: 3 }} />
+      <Background color="#242424" gap={28} size={1} style={{ background: '#1E1E1E' }} />
+      <Controls style={{ background: '#1A1A1A', border: '1px solid #242424', borderRadius: 3 }} />
       <MiniMap
-        style={{ background: '#0a0a0a', border: '1px solid #1e1e1e' }}
-        nodeColor={n => n.data?.color?.accent ?? '#333'}
+        style={{ background: '#121212', border: '1px solid #242424' }}
+        nodeColor={n => n.data?.color?.accent ?? '#333333'}
         maskColor="#00000088"
       />
     </ReactFlow>

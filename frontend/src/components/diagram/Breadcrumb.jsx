@@ -20,9 +20,9 @@ export default function Breadcrumb({ viewStack, onNavigate }) {
         const isActive = i === crumbs.length - 1
         return (
           <span key={crumb.index} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {i > 0 && <span style={{ color: '#252525', userSelect: 'none' }}>/</span>}
+            {i > 0 && <span style={{ color: '#333333', userSelect: 'none' }}>/</span>}
             <button
-              style={{ ...BASE, color: isActive ? '#c8f135' : '#3a3a3a' }}
+              style={{ ...BASE, color: isActive ? '#39FF14' : 'rgba(255,255,255,0.38)' }}
               onClick={() => !isActive && onNavigate(crumb.index)}
               disabled={isActive}
             >

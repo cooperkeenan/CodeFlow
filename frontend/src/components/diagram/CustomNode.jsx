@@ -1,6 +1,6 @@
 import { Handle, Position } from 'reactflow'
 
-const FALLBACK = { bg: '#0f0f0f', border: '#2a2a2a', accent: '#c8f135' }
+const FALLBACK = { bg: '#1A1A1A', border: '#333333', accent: '#39FF14' }
 
 export default function CustomNode({ data, selected }) {
   const theme = data.color ?? FALLBACK
@@ -29,7 +29,7 @@ export default function CustomNode({ data, selected }) {
           fontFamily: 'IBM Plex Mono, monospace',
           fontSize: 11,
           fontWeight: 600,
-          color: '#d8d8d8',
+          color: 'rgba(255,255,255,0.87)',
           lineHeight: 1.4,
           wordBreak: 'break-all',
         }}>

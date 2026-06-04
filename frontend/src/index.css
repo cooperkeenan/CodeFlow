@@ -3,19 +3,30 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:       #080808;
-  --surface:  #0f0f0f;
-  --border:   #1e1e1e;
-  --border-hi:#333;
-  --accent:   #c8f135;
-  --accent2:  #35f1c8;
-  --text:     #e2e2e2;
-  --muted:    #4a4a4a;
-  --error:    #f13535;
-  --mono:     'IBM Plex Mono', monospace;
-  --sans:     'Instrument Sans', sans-serif;
-  --radius:   4px;
-  --transition: 120ms ease;
+  --bg:                      #121212;
+  --surface:                 #1A1A1A;
+  --surface-2:               #1E1E1E;
+  --surface-3:               #242424;
+  --surface-4:               #2C2C2C;
+  --surface-5:               #333333;
+  --border:                  #242424;
+  --border-hi:               #333333;
+  --accent:                  #39FF14;
+  --accent2:                 #64B5F6;
+  --text:                    rgba(255,255,255,0.87);
+  --text-medium:             rgba(255,255,255,0.60);
+  --text-disabled:           rgba(255,255,255,0.38);
+  --muted:                   rgba(255,255,255,0.60);
+  --error:                   #FF6B6B;
+  --warning:                 #FFB84D;
+  --info:                    #64B5F6;
+  --success:                 #39FF14;
+  --primary-container:       #1A3A0A;
+  --primary-container-hover: #2D6614;
+  --mono:                    'IBM Plex Mono', monospace;
+  --sans:                    'Instrument Sans', sans-serif;
+  --radius:                  4px;
+  --transition:              120ms ease;
 }
 
 html, body, #root {
@@ -112,7 +123,7 @@ html, body, #root {
 
 .btn-ghost:hover {
   color: var(--text);
-  border-color: var(--accent2);
+  border-color: var(--accent);
 }
 
 /* ── Pages ────────────────────────────────── */
@@ -201,10 +212,10 @@ html, body, #root {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 0.18rem 0.55rem;
-  border: 1px solid var(--border-hi);
+  border: 1px solid var(--primary-container-hover);
   border-radius: 2px;
-  color: var(--accent2);
-  background: var(--surface);
+  color: var(--accent);
+  background: var(--primary-container);
 }
 
 /* ── Loading bar ──────────────────────────── */
