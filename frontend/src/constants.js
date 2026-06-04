@@ -3,17 +3,17 @@ export const GITHUB_CLIENT_ID = 'Ov23liff91VGCpUNWcXc'
 export const REDIRECT_URI = 'http://localhost:5173'
 
 export const MODULE_PALETTE = [
-  { bg: '#0a1929', border: '#0d3b6e', accent: '#35a0f1' },
-  { bg: '#0a1f14', border: '#0d4a28', accent: '#35f1a0' },
-  { bg: '#1f130a', border: '#4a2e0d', accent: '#f1a035' },
-  { bg: '#150a1f', border: '#3a0d4a', accent: '#c035f1' },
-  { bg: '#1f0a12', border: '#4a0d28', accent: '#f135a0' },
-  { bg: '#0a1f1d', border: '#0d4a45', accent: '#35f1e0' },
-  { bg: '#1a1f0a', border: '#3f4a0d', accent: '#d0f135' },
-  { bg: '#0f0a1f', border: '#240d4a', accent: '#7a35f1' },
+  { bg: '#0D1B2A', border: '#1B3A5C', accent: '#64B5F6' },
+  { bg: '#0A1F0D', border: '#1A3A1A', accent: '#39FF14' },
+  { bg: '#1F1508', border: '#4A2A0D', accent: '#FFB84D' },
+  { bg: '#180A1F', border: '#3A1050', accent: '#CE93D8' },
+  { bg: '#1F0A0E', border: '#4A0D1A', accent: '#FF6B6B' },
+  { bg: '#0A1F1B', border: '#0D4040', accent: '#4DD0E1' },
+  { bg: '#171F0A', border: '#3A4A0D', accent: '#C5E1A5' },
+  { bg: '#0A0E1F', border: '#1A1D4A', accent: '#9FA8DA' },
 ]
 
-export const EXTERNAL_COLOR = { bg: '#150a1f', border: '#3a0d4a', accent: '#c035f1' }
+export const EXTERNAL_COLOR = { bg: '#1A0A1F', border: '#400D50', accent: '#CE93D8' }
 
 export const STAGES = [
   {

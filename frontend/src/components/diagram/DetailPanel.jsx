@@ -4,24 +4,24 @@ const LABEL = {
   fontSize: 9,
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
-  color: '#3a3a3a',
+  color: 'rgba(255,255,255,0.38)',
   marginBottom: 5,
 }
 const VALUE = {
   fontFamily: 'IBM Plex Mono, monospace',
   fontSize: 10,
-  color: '#c8c8c8',
+  color: 'rgba(255,255,255,0.87)',
   lineHeight: 1.7,
 }
-const FILE = { ...VALUE, color: '#c8f135', wordBreak: 'break-all' }
+const FILE = { ...VALUE, color: '#39FF14', wordBreak: 'break-all' }
 
 export default function DetailPanel({ data, onClose }) {
   return (
     <aside style={{
       width: 260,
       flexShrink: 0,
-      background: '#0c0c0c',
-      border: '1px solid #1a1a1a',
+      background: '#121212',
+      border: '1px solid #242424',
       borderRadius: 3,
       padding: '1.1rem',
       overflow: 'auto',
@@ -33,7 +33,7 @@ export default function DetailPanel({ data, onClose }) {
           fontFamily: 'IBM Plex Mono, monospace',
           fontSize: 12,
           fontWeight: 600,
-          color: '#e2e2e2',
+          color: 'rgba(255,255,255,0.87)',
           lineHeight: 1.4,
         }}>
           {data.label}
@@ -43,7 +43,7 @@ export default function DetailPanel({ data, onClose }) {
           style={{
             background: 'none',
             border: 'none',
-            color: '#3a3a3a',
+            color: 'rgba(255,255,255,0.38)',
             cursor: 'pointer',
             fontSize: 16,
             lineHeight: 1,
@@ -62,7 +62,7 @@ export default function DetailPanel({ data, onClose }) {
           <p style={{
             fontFamily: 'Instrument Sans, sans-serif',
             fontSize: 12,
-            color: '#888',
+            color: 'rgba(255,255,255,0.60)',
             lineHeight: 1.65,
             margin: 0,
           }}>

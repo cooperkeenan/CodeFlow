@@ -76,7 +76,7 @@ export function externalActorNode(actor, x, y) {
 export function toRFEdge(e, options = {}) {
   const animated = e.edge_type === 'http' || e.edge_type === 'event'
   const dim = e.primary === false
-  const stroke = dim ? '#1c1c1c' : '#2a2a2a'
+  const stroke = dim ? '#242424' : '#333333'
   return {
     id: options.id ?? `${e.source}->${e.target}`,
     source: e.source,
@@ -88,8 +88,8 @@ export function toRFEdge(e, options = {}) {
       ? { stroke, strokeWidth: 1, strokeDasharray: '3 3' }
       : { stroke, strokeWidth: 1.5 },
     markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: stroke },
-    labelStyle: { fill: '#666', fontSize: 9, fontFamily: 'IBM Plex Mono, monospace' },
-    labelBgStyle: { fill: '#0a0a0a', fillOpacity: 0.85 },
+    labelStyle: { fill: 'rgba(255,255,255,0.38)', fontSize: 9, fontFamily: 'IBM Plex Mono, monospace' },
+    labelBgStyle: { fill: '#121212', fillOpacity: 0.85 },
   }
 }
 

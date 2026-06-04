@@ -24,7 +24,7 @@ export default function ModuleGhostNode({ data }) {
       </div>
       <div style={{
         fontFamily: 'IBM Plex Mono, monospace',
-        fontSize: 8, color: '#666', letterSpacing: '0.12em',
+        fontSize: 8, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.12em',
         textTransform: 'uppercase',
       }}>
         neighbour

@@ -1,7 +1,7 @@
 {
   "repo": "cooperkeenan/CodeFlow",
   "profile": {
-    "architecture_type": "microservices",
+    "architecture_type": "microservices with frontend",
     "language": "python|typescript",
     "framework": "fastapi|react",
     "patterns": [
@@ -9,224 +9,243 @@
       "service-oriented",
       "client-server",
       "dependency injection",
-      "tool-based agents"
+      "tool-based orchestration"
     ],
     "modules": [
       {
         "name": "api",
-        "description": "Main API gateway that orchestrates analysis requests and integrates with external services.",
+        "description": "Main REST API gateway that orchestrates analysis requests and integrates with external agents and services.",
         "root_path": "api/",
         "style": "three-tier",
         "zones": [
           {
             "name": "config",
-            "description": "Application configuration and dependency setup.",
+            "description": "Application configuration, dependency injection, and bootstrap.",
             "directories": [
+              "api/",
               "api/core/"
             ]
           },
           {
             "name": "presentation",
-            "description": "HTTP routers and endpoint definitions.",
+            "description": "HTTP routers and endpoint definitions for analysis and GitHub operations.",
             "directories": [
               "api/routers/"
             ]
           },
           {
             "name": "business",
-            "description": "Service layer for orchestrating analysis and GitHub operations.",
+            "description": "Service layer orchestrating analysis workflows and GitHub interactions.",
             "directories": [
               "api/services/"
             ]
           },
           {
             "name": "data",
-            "description": "Data models and schemas for API requests/responses.",
+            "description": "Data models and schemas for analysis and GitHub entities.",
             "directories": [
               "api/models/"
             ]
           },
           {
             "name": "tools",
-            "description": "Client wrappers for external services and integrations.",
+            "description": "Client wrappers for external services and agents.",
             "directories": [
               "api/clients/"
-            ]
-          },
-          {
-            "name": "other",
-            "description": "Unlabelled directories",
-            "directories": [
-              "api/"
             ]
           }
         ]
       },
       {
         "name": "frontend",
-        "description": "React-based web UI for visualizing code architecture and analysis results.",
+        "description": "React-based web UI for visualizing architecture diagrams and managing analysis workflows.",
         "root_path": "frontend/",
         "style": "layered",
         "zones": [
           {
-            "name": "presentation",
-            "description": "React components and pages for UI rendering.",
+            "name": "config",
+            "description": "Build configuration and application entry point.",
             "directories": [
+              "frontend/",
+              "frontend/src/"
+            ]
+          },
+          {
+            "name": "presentation",
+            "description": "React pages, components, and UI elements for diagram visualization and interaction.",
+            "directories": [
+              "frontend/src/pages/",
               "frontend/src/components/",
               "frontend/src/components/diagram/",
-              "frontend/src/pages/"
+              "frontend/src/components/diagram/nodes/"
             ]
           },
           {
             "name": "business",
-            "description": "Custom React hooks for state management and data transformation.",
+            "description": "Custom hooks for state management and graph transformation logic.",
             "directories": [
-              "frontend/src/hooks/"
+              "frontend/src/hooks/",
+              "frontend/src/hooks/graph/",
+              "frontend/src/hooks/graph/templates/"
             ]
           },
           {
             "name": "tools",
-            "description": "API client layer for backend communication.",
+            "description": "API client layer for communicating with backend services.",
             "directories": [
               "frontend/src/api/"
-            ]
-          },
-          {
-            "name": "other",
-            "description": "Unlabelled directories",
-            "directories": [
-              "frontend/",
-              "frontend/src/"
             ]
           }
         ]
       },
       {
         "name": "shared",
-        "description": "Shared data models and utilities used across multiple modules.",
+        "description": "Shared data models and schemas used across multiple agents and services.",
         "root_path": "shared/",
         "style": "library",
         "zones": [
           {
             "name": "data",
-            "description": "Shared domain models and data structures.",
+            "description": "Common domain models and data structures for inter-service communication.",
             "directories": [
-              "shared/models/",
-              "shared/github/"
+              "shared/",
+              "shared/github/",
+              "shared/models/"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "layout_agent",
+        "description": "Agent responsible for determining optimal layout and clustering of architecture components.",
+        "root_path": "agents/layout_agent/",
+        "style": "three-tier",
+        "zones": [
+          {
+            "name": "config",
+            "description": "Configuration and dependency injection setup.",
+            "directories": [
+              "agents/layout_agent/",
+              "agents/layout_agent/core/"
             ]
           },
           {
-            "name": "other",
-            "description": "Unlabelled directories",
+            "name": "presentation",
+            "description": "HTTP router for layout requests.",
             "directories": [
-              "shared/"
+              "agents/layout_agent/routers/"
+            ]
+          },
+          {
+            "name": "business",
+            "description": "Core layout planning and semantic layout services.",
+            "directories": [
+              "agents/layout_agent/services/"
+            ]
+          },
+          {
+            "name": "data",
+            "description": "Layout data models and schemas.",
+            "directories": [
+              "agents/layout_agent/models/"
+            ]
+          },
+          {
+            "name": "tools",
+            "description": "Helper utilities for clustering, validation, and classification.",
+            "directories": [
+              "agents/layout_agent/helpers/",
+              "agents/layout_agent/prompts/",
+              "agents/layout_agent/tools/"
             ]
           }
         ]
       },
       {
         "name": "profiler_agent",
-        "description": "Agent that analyzes repository structure and generates module blueprints.",
+        "description": "Agent that analyzes repository structure and generates module blueprints and dependency maps.",
         "root_path": "agents/profiler_agent/",
         "style": "three-tier",
         "zones": [
           {
             "name": "config",
-            "description": "Configuration, initialization, and dependency setup.",
+            "description": "Configuration, module markers, and dependency injection.",
             "directories": [
+              "agents/profiler_agent/",
               "agents/profiler_agent/core/"
             ]
           },
           {
             "name": "presentation",
-            "description": "HTTP router for profiler endpoints.",
+            "description": "HTTP router for profiler requests.",
             "directories": [
               "agents/profiler_agent/routers/"
             ]
           },
           {
             "name": "business",
-            "description": "Core profiling logic and service orchestration.",
+            "description": "Core profiling services for module detection and repository analysis.",
             "directories": [
               "agents/profiler_agent/services/"
             ]
           },
           {
             "name": "data",
-            "description": "Data models for profiler outputs and repository structures.",
+            "description": "Data models for profiler results and repository structure.",
             "directories": [
               "agents/profiler_agent/models/"
             ]
           },
           {
             "name": "tools",
-            "description": "Tool implementations for file tree and manifest extraction.",
+            "description": "Tools for file tree extraction and manifest parsing.",
             "directories": [
+              "agents/profiler_agent/prompts/",
               "agents/profiler_agent/tools/"
-            ]
-          },
-          {
-            "name": "prompts",
-            "description": "LLM prompt templates for profiling tasks.",
-            "directories": [
-              "agents/profiler_agent/prompts/"
-            ]
-          },
-          {
-            "name": "other",
-            "description": "Unlabelled directories",
-            "directories": [
-              "agents/profiler_agent/"
             ]
           }
         ]
       },
       {
         "name": "render_agent",
-        "description": "Agent that renders architecture diagrams in Mermaid format.",
+        "description": "Agent that converts architecture specifications into Mermaid diagram visualizations.",
         "root_path": "agents/render_agent/",
         "style": "three-tier",
         "zones": [
           {
             "name": "config",
-            "description": "Configuration and dependency setup.",
+            "description": "Configuration and dependency injection setup.",
             "directories": [
+              "agents/render_agent/",
               "agents/render_agent/core/"
             ]
           },
           {
             "name": "presentation",
-            "description": "HTTP router for render endpoints.",
+            "description": "HTTP router for render requests.",
             "directories": [
               "agents/render_agent/routers/"
             ]
           },
           {
             "name": "business",
-            "description": "Diagram rendering and visualization logic.",
+            "description": "Mermaid rendering services for clusters, modules, and edges.",
             "directories": [
               "agents/render_agent/services/"
             ]
           },
           {
             "name": "data",
-            "description": "Data models for render operations.",
+            "description": "Render model and output schemas.",
             "directories": [
               "agents/render_agent/models/"
             ]
           },
           {
             "name": "tools",
-            "description": "Tool utilities for rendering operations.",
+            "description": "Tool utilities for rendering.",
             "directories": [
               "agents/render_agent/tools/"
-            ]
-          },
-          {
-            "name": "other",
-            "description": "Unlabelled directories",
-            "directories": [
-              "agents/render_agent/"
             ]
           }
         ]
@@ -239,51 +258,39 @@
         "zones": [
           {
             "name": "config",
-            "description": "Configuration and dependency setup.",
+            "description": "Configuration and dependency injection setup.",
             "directories": [
+              "agents/tracer_agent/",
               "agents/tracer_agent/core/"
             ]
           },
           {
             "name": "presentation",
-            "description": "HTTP router for tracer endpoints.",
+            "description": "HTTP router for tracer requests.",
             "directories": [
               "agents/tracer_agent/routers/"
             ]
           },
           {
             "name": "business",
-            "description": "Call graph analysis and dependency tracing logic.",
+            "description": "Core tracing services for AST parsing and call graph construction.",
             "directories": [
               "agents/tracer_agent/services/"
             ]
           },
           {
             "name": "data",
-            "description": "Data models for tracer outputs.",
+            "description": "Tracer data models and schemas.",
             "directories": [
               "agents/tracer_agent/models/"
             ]
           },
           {
             "name": "tools",
-            "description": "Tool implementations for AST parsing and call graph building.",
+            "description": "Tools for AST parsing, call graph building, and evidence collection.",
             "directories": [
+              "agents/tracer_agent/prompts/",
               "agents/tracer_agent/tools/"
-            ]
-          },
-          {
-            "name": "prompts",
-            "description": "LLM prompt templates for tracing tasks.",
-            "directories": [
-              "agents/tracer_agent/prompts/"
-            ]
-          },
-          {
-            "name": "other",
-            "description": "Unlabelled directories",
-            "directories": [
-              "agents/tracer_agent/"
             ]
           }
         ]
@@ -291,15 +298,15 @@
     ]
   },
   "trace": {
-    "architecture_type": "microservices",
+    "architecture_type": "microservices with frontend",
     "diagram_spec": {
-      "architecture_type": "microservices",
+      "architecture_type": "microservices with frontend",
       "modules": [
         {
           "name": "api",
-          "description": "Main API gateway that orchestrates analysis requests and integrates with external services.",
+          "description": "Main REST API gateway that orchestrates analysis requests and integrates with external agents and services.",
           "root_path": "api/",
-          "purpose": "Provides REST endpoints for analysis requests and GitHub webhook callbacks, orchestrating profiler, tracer, and render agents.",
+          "purpose": "Provides REST API endpoints for repository analysis, GitHub integration, and orchestrates analysis workflow across agent services.",
           "zones": {
             "config": [
               {
@@ -331,8 +338,21 @@
                 "nested": true
               },
               {
+                "name": "LayoutClient",
+                "description": "HTTP client for layout agent service.",
+                "file_path": "api/clients/layout_client.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "client",
+                "tier": "secondary",
+                "nested": true
+              },
+              {
                 "name": "ProfilerClient",
-                "description": "HTTP client for calling the profiler agent service.",
+                "description": "HTTP client for profiler agent service.",
                 "file_path": "api/clients/profiler_client.py",
                 "io": {
                   "inputs": [],
@@ -340,12 +360,12 @@
                 },
                 "children": [],
                 "role": "client",
-                "tier": "primary",
+                "tier": "secondary",
                 "nested": true
               },
               {
                 "name": "RenderClient",
-                "description": "HTTP client for calling the render agent service.",
+                "description": "HTTP client for render agent service.",
                 "file_path": "api/clients/render_client.py",
                 "io": {
                   "inputs": [],
@@ -353,12 +373,12 @@
                 },
                 "children": [],
                 "role": "client",
-                "tier": "primary",
+                "tier": "secondary",
                 "nested": true
               },
               {
                 "name": "TracerClient",
-                "description": "HTTP client for calling the tracer agent service.",
+                "description": "HTTP client for tracer agent service.",
                 "file_path": "api/clients/tracer_client.py",
                 "io": {
                   "inputs": [],
@@ -366,7 +386,7 @@
                 },
                 "children": [],
                 "role": "client",
-                "tier": "primary",
+                "tier": "secondary",
                 "nested": true
               }
             ],
@@ -412,7 +432,7 @@
               },
               {
                 "name": "GitHubCallbackResponse",
-                "description": "Response model for GitHub webhook callback handling.",
+                "description": "Response model for GitHub webhook callbacks.",
                 "file_path": "api/models/github_model.py",
                 "io": {
                   "inputs": [],
@@ -425,7 +445,7 @@
               },
               {
                 "name": "RepositoryResponse",
-                "description": "Response model for a single GitHub repository.",
+                "description": "Response model for single repository information.",
                 "file_path": "api/models/github_model.py",
                 "io": {
                   "inputs": [],
@@ -438,7 +458,7 @@
               },
               {
                 "name": "RepositoriesResponse",
-                "description": "Response model for multiple GitHub repositories.",
+                "description": "Response model for multiple repositories information.",
                 "file_path": "api/models/github_model.py",
                 "io": {
                   "inputs": [],
@@ -453,16 +473,18 @@
             "business": [
               {
                 "name": "AnalysisService",
-                "description": "Orchestrates end-to-end analysis by coordinating profiler, tracer, and render agents.",
+                "description": "Orchestrates end-to-end analysis workflow across profiler, tracer, layout, and render agents.",
                 "file_path": "api/services/analysis_service.py",
                 "io": {
                   "inputs": [],
                   "outputs": []
                 },
                 "children": [
+                  "LayoutClient",
                   "ProfilerClient",
                   "RenderClient",
-                  "TracerClient"
+                  "TracerClient",
+                  "OutputPersister"
                 ],
                 "role": "orchestrator",
                 "tier": "primary",
@@ -470,7 +492,7 @@
               },
               {
                 "name": "GitHubService",
-                "description": "Service for GitHub API interactions and repository management.",
+                "description": "Service for GitHub API interactions.",
                 "file_path": "api/services/github_service.py",
                 "io": {
                   "inputs": [],
@@ -482,6 +504,26 @@
                 "role": "service",
                 "tier": "primary",
                 "nested": false
+              },
+              {
+                "name": "OutputPersister",
+                "description": "Persists analysis output to JSON and text files.",
+                "file_path": "api/services/output_persister.py",
+                "io": {
+                  "inputs": [
+                    "name: str",
+                    "payload",
+                    "name: str",
+                    "content: str"
+                  ],
+                  "outputs": [
+                    "None"
+                  ]
+                },
+                "children": [],
+                "role": "service",
+                "tier": "secondary",
+                "nested": true
               }
             ]
           },
@@ -536,9 +578,16 @@
               "clusters": [
                 {
                   "label": "Orchestration",
-                  "style": "hub",
+                  "style": "grid",
                   "members": [
-                    "AnalysisService",
+                    "AnalysisService"
+                  ],
+                  "children": []
+                },
+                {
+                  "label": "External Integrations",
+                  "style": "grid",
+                  "members": [
                     "GitHubService"
                   ],
                   "children": []
@@ -549,22 +598,22 @@
         },
         {
           "name": "frontend",
-          "description": "React-based web UI for visualizing code architecture and analysis results.",
+          "description": "React-based web UI for visualizing architecture diagrams and managing analysis workflows.",
           "root_path": "frontend/",
-          "purpose": "User-facing interface for the system.",
+          "purpose": "User-facing interface for the architecture analysis system.",
           "zones": {},
           "cluster_plan": []
         },
         {
           "name": "shared",
-          "description": "Shared data models and utilities used across multiple modules.",
+          "description": "Shared data models and schemas used across multiple agents and services.",
           "root_path": "shared/",
-          "purpose": "Shared data models and specifications used across all modules.",
+          "purpose": "Defines common data models and specifications shared across all modules.",
           "zones": {
             "data": [
               {
                 "name": "ComponentIO",
-                "description": "Model representing input/output specification for a component.",
+                "description": "Data model for component input/output specifications.",
                 "file_path": "shared/models/diagram_spec.py",
                 "io": {
                   "inputs": [],
@@ -577,7 +626,7 @@
               },
               {
                 "name": "Component",
-                "description": "Model representing a software component in the architecture.",
+                "description": "Data model representing a software component in the architecture.",
                 "file_path": "shared/models/diagram_spec.py",
                 "io": {
                   "inputs": [],
@@ -590,7 +639,7 @@
               },
               {
                 "name": "Edge",
-                "description": "Model representing a runtime edge between components.",
+                "description": "Data model representing a runtime edge between components.",
                 "file_path": "shared/models/diagram_spec.py",
                 "io": {
                   "inputs": [],
@@ -603,7 +652,33 @@
               },
               {
                 "name": "ExternalActor",
-                "description": "Model representing an external system or service.",
+                "description": "Data model representing an external system or service.",
+                "file_path": "shared/models/diagram_spec.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "Cluster",
+                "description": "Data model representing a cluster of components within a zone.",
+                "file_path": "shared/models/diagram_spec.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "ZoneClusterPlan",
+                "description": "Data model representing a clustering plan for a zone.",
                 "file_path": "shared/models/diagram_spec.py",
                 "io": {
                   "inputs": [],
@@ -616,7 +691,33 @@
               },
               {
                 "name": "Module",
-                "description": "Model representing a module in the repository blueprint.",
+                "description": "Data model representing a module in the architecture.",
+                "file_path": "shared/models/diagram_spec.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "RankAssignment",
+                "description": "Data model for rank assignments in layout.",
+                "file_path": "shared/models/diagram_spec.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "LayoutHint",
+                "description": "Data model containing layout hints for diagram rendering.",
                 "file_path": "shared/models/diagram_spec.py",
                 "io": {
                   "inputs": [],
@@ -629,7 +730,7 @@
               },
               {
                 "name": "DiagramSpec",
-                "description": "Complete specification for a system architecture diagram.",
+                "description": "Complete specification of a software architecture diagram.",
                 "file_path": "shared/models/diagram_spec.py",
                 "io": {
                   "inputs": [],
@@ -642,7 +743,7 @@
               },
               {
                 "name": "ZonePlan",
-                "description": "Model representing a zone plan within a module.",
+                "description": "Data model representing a zone plan in the repository blueprint.",
                 "file_path": "shared/models/repo_blueprint.py",
                 "io": {
                   "inputs": [],
@@ -655,7 +756,7 @@
               },
               {
                 "name": "ModulePlan",
-                "description": "Model representing a module plan in the repository blueprint.",
+                "description": "Data model representing a module plan in the repository blueprint.",
                 "file_path": "shared/models/repo_blueprint.py",
                 "io": {
                   "inputs": [],
@@ -668,7 +769,7 @@
               },
               {
                 "name": "RepoBlueprint",
-                "description": "Complete blueprint of repository structure with modules and zones.",
+                "description": "Complete blueprint of repository structure and module organization.",
                 "file_path": "shared/models/repo_blueprint.py",
                 "io": {
                   "inputs": [],
@@ -681,7 +782,7 @@
               },
               {
                 "name": "TracerRequest",
-                "description": "Request model for tracing operations containing repository blueprint.",
+                "description": "Request model for tracer operations containing blueprint and raw data.",
                 "file_path": "shared/models/tracer_request.py",
                 "io": {
                   "inputs": [],
@@ -710,22 +811,360 @@
                   "children": []
                 },
                 {
-                  "label": "Blueprint & Planning",
-                  "style": "hierarchy",
+                  "label": "Clustering & Layout",
+                  "style": "grid",
                   "members": [
-                    "RepoBlueprint",
-                    "ModulePlan",
-                    "ZonePlan",
-                    "Module"
+                    "Cluster",
+                    "ZoneClusterPlan",
+                    "RankAssignment",
+                    "LayoutHint"
                   ],
                   "children": []
                 },
                 {
-                  "label": "Diagram & Request",
+                  "label": "Diagram Specification",
+                  "style": "grid",
+                  "members": [
+                    "DiagramSpec"
+                  ],
+                  "children": []
+                },
+                {
+                  "label": "Repository Blueprint",
+                  "style": "hierarchy",
+                  "members": [
+                    "RepoBlueprint",
+                    "ModulePlan",
+                    "ZonePlan"
+                  ],
+                  "children": []
+                },
+                {
+                  "label": "Request Models",
                   "style": "stack",
                   "members": [
-                    "DiagramSpec",
-                    "TracerRequest"
+                    "TracerRequest",
+                    "Module"
+                  ],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "layout_agent",
+          "description": "Agent responsible for determining optimal layout and clustering of architecture components.",
+          "root_path": "agents/layout_agent/",
+          "purpose": "Computes semantic layout and clustering of components for diagram readability.",
+          "zones": {
+            "tools": [
+              {
+                "name": "ArchetypeClassifier",
+                "description": "Classifies module graphs into architectural archetypes.",
+                "file_path": "agents/layout_agent/helpers/archetype_classifier.py",
+                "io": {
+                  "inputs": [
+                    "graph: ModuleGraph"
+                  ],
+                  "outputs": [
+                    "tuple[Archetype, str]"
+                  ]
+                },
+                "children": [],
+                "role": "helper",
+                "tier": "secondary",
+                "nested": true
+              },
+              {
+                "name": "ClusterFallback",
+                "description": "Provides fallback clustering strategy by grouping modules by role.",
+                "file_path": "agents/layout_agent/helpers/cluster_fallback.py",
+                "io": {
+                  "inputs": [
+                    "module: Module"
+                  ],
+                  "outputs": [
+                    "list[ZoneClusterPlan]"
+                  ]
+                },
+                "children": [],
+                "role": "helper",
+                "tier": "secondary",
+                "nested": true
+              },
+              {
+                "name": "ClusterValidator",
+                "description": "Validates and transforms raw cluster configurations into zone cluster plans.",
+                "file_path": "agents/layout_agent/helpers/cluster_validator.py",
+                "io": {
+                  "inputs": [
+                    "raw: dict",
+                    "module: Module"
+                  ],
+                  "outputs": [
+                    "list[ZoneClusterPlan]"
+                  ]
+                },
+                "children": [],
+                "role": "helper",
+                "tier": "secondary",
+                "nested": true
+              },
+              {
+                "name": "ComponentMetrics",
+                "description": "Data model holding metrics for a component.",
+                "file_path": "agents/layout_agent/helpers/component_metrics.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "ComponentMetricsBuilder",
+                "description": "Builds component metrics from a diagram specification.",
+                "file_path": "agents/layout_agent/helpers/component_metrics.py",
+                "io": {
+                  "inputs": [
+                    "spec: DiagramSpec"
+                  ],
+                  "outputs": [
+                    "dict[str, ComponentMetrics]"
+                  ]
+                },
+                "children": [],
+                "role": "helper",
+                "tier": "secondary",
+                "nested": true
+              },
+              {
+                "name": "ImportanceScorer",
+                "description": "Scores component importance and assigns component tiers.",
+                "file_path": "agents/layout_agent/helpers/importance_scorer.py",
+                "io": {
+                  "inputs": [
+                    "metric: ComponentMetrics",
+                    "metrics_by_name: dict[str, ComponentMetrics]"
+                  ],
+                  "outputs": [
+                    "float",
+                    "dict[str, ComponentTier]"
+                  ]
+                },
+                "children": [],
+                "role": "helper",
+                "tier": "secondary",
+                "nested": true
+              },
+              {
+                "name": "ModuleGraph",
+                "description": "Represents the graph structure of modules in a diagram.",
+                "file_path": "agents/layout_agent/helpers/module_graph.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "ModuleGraphBuilder",
+                "description": "Builds a module graph from a diagram specification.",
+                "file_path": "agents/layout_agent/helpers/module_graph.py",
+                "io": {
+                  "inputs": [
+                    "spec: DiagramSpec"
+                  ],
+                  "outputs": [
+                    "ModuleGraph"
+                  ]
+                },
+                "children": [],
+                "role": "helper",
+                "tier": "secondary",
+                "nested": true
+              },
+              {
+                "name": "SemanticAnnotations",
+                "description": "Data model holding semantic annotations for components.",
+                "file_path": "agents/layout_agent/helpers/semantic_validator.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "SemanticValidator",
+                "description": "Validates semantic properties and generates semantic annotations.",
+                "file_path": "agents/layout_agent/helpers/semantic_validator.py",
+                "io": {
+                  "inputs": [
+                    "raw: dict",
+                    "spec: DiagramSpec",
+                    "fallback_tiers: dict[str, ComponentTier]"
+                  ],
+                  "outputs": [
+                    "SemanticAnnotations"
+                  ]
+                },
+                "children": [],
+                "role": "helper",
+                "tier": "secondary",
+                "nested": true
+              }
+            ],
+            "data": [
+              {
+                "name": "LayoutRequest",
+                "description": "Request model for layout operations.",
+                "file_path": "agents/layout_agent/models/layout_model.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "LayoutResponse",
+                "description": "Response model for layout operations.",
+                "file_path": "agents/layout_agent/models/layout_model.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [],
+                "role": "model",
+                "tier": "secondary",
+                "nested": false
+              }
+            ],
+            "business": [
+              {
+                "name": "ClusterPlanner",
+                "description": "Plans zone clustering using LLM-based and fallback strategies.",
+                "file_path": "agents/layout_agent/services/cluster_planner.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [
+                  "ClusterFallback",
+                  "ClusterValidator",
+                  "ComponentMetricsBuilder"
+                ],
+                "role": "service",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "LayoutService",
+                "description": "Orchestrates layout computation for diagram specifications.",
+                "file_path": "agents/layout_agent/services/layout_service.py",
+                "io": {
+                  "inputs": [
+                    "spec: DiagramSpec"
+                  ],
+                  "outputs": [
+                    "LayoutHint"
+                  ]
+                },
+                "children": [
+                  "ArchetypeClassifier",
+                  "ModuleGraphBuilder"
+                ],
+                "role": "orchestrator",
+                "tier": "primary",
+                "nested": false
+              },
+              {
+                "name": "OwnershipResolver",
+                "description": "Resolves component ownership within a diagram specification.",
+                "file_path": "agents/layout_agent/services/ownership_resolver.py",
+                "io": {
+                  "inputs": [
+                    "spec: DiagramSpec"
+                  ],
+                  "outputs": [
+                    "None"
+                  ]
+                },
+                "children": [],
+                "role": "service",
+                "tier": "secondary",
+                "nested": false
+              },
+              {
+                "name": "SemanticLayoutService",
+                "description": "Provides semantic layout analysis using LLM and importance scoring.",
+                "file_path": "agents/layout_agent/services/semantic_layout_service.py",
+                "io": {
+                  "inputs": [],
+                  "outputs": []
+                },
+                "children": [
+                  "ImportanceScorer",
+                  "SemanticValidator"
+                ],
+                "role": "service",
+                "tier": "secondary",
+                "nested": false
+              }
+            ]
+          },
+          "cluster_plan": [
+            {
+              "zone": "tools",
+              "clusters": [
+                {
+                  "label": "Data Models",
+                  "style": "grid",
+                  "members": [
+                    "ComponentMetrics",
+                    "ModuleGraph",
+                    "SemanticAnnotations"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "zone": "data",
+              "clusters": [
+                {
+                  "label": "Request/Response",
+                  "style": "stack",
+                  "members": [
+                    "LayoutRequest",
+                    "LayoutResponse"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "zone": "business",
+              "clusters": [
+                {
+                  "label": "Orchestration",
+                  "style": "hub",
+                  "members": [
+                    "LayoutService",
+                    "ClusterPlanner",
+                    "SemanticLayoutService",
+                    "OwnershipResolver"
                   ],
                   "children": []
                 }
@@ -735,14 +1174,14 @@
         },
         {
           "name": "profiler_agent",
-          "description": "Agent that analyzes repository structure and generates module blueprints.",
+          "description": "Agent that analyzes repository structure and generates module blueprints and dependency maps.",
           "root_path": "agents/profiler_agent/",
-          "purpose": "Analyzes repository structure to detect modules, components, and build a blueprint.",
+          "purpose": "Profiles repository structure and generates module blueprints from file system analysis.",
           "zones": {
             "data": [
               {
                 "name": "ProfileRequest",
-                "description": "Request model for profiling operations.",
+                "description": "Request model for profiler operations.",
                 "file_path": "agents/profiler_agent/models/profiler_model.py",
                 "io": {
                   "inputs": [],
@@ -755,7 +1194,7 @@
               },
               {
                 "name": "DirGroup",
-                "description": "Model representing a directory group in repository structure.",
+                "description": "Data model representing a directory group in repository structure.",
                 "file_path": "agents/profiler_agent/models/repo_skeleton.py",
                 "io": {
                   "inputs": [],
@@ -768,7 +1207,7 @@
               },
               {
                 "name": "ModuleSkeleton",
-                "description": "Model representing the skeleton structure of a module.",
+                "description": "Data model representing the skeleton of a module.",
                 "file_path": "agents/profiler_agent/models/repo_skeleton.py",
                 "io": {
                   "inputs": [],
@@ -781,7 +1220,7 @@
               },
               {
                 "name": "RepoSkeleton",
-                "description": "Model representing the overall skeleton structure of a repository.",
+                "description": "Data model representing the overall repository structure.",
                 "file_path": "agents/profiler_agent/models/repo_skeleton.py",
                 "io": {
                   "inputs": [],
@@ -796,7 +1235,7 @@
             "business": [
               {
                 "name": "BlueprintValidator",
-                "description": "Validates raw blueprint data against repository skeleton and produces a RepoBlueprint.",
+                "description": "Validates repository blueprint against skeleton structure.",
                 "file_path": "agents/profiler_agent/services/blueprint_validator.py",
                 "io": {
                   "inputs": [
@@ -827,7 +1266,7 @@
               },
               {
                 "name": "ModuleDetector",
-                "description": "Detects module boundaries from file paths using entry and package markers.",
+                "description": "Detects module boundaries in a repository from file paths.",
                 "file_path": "agents/profiler_agent/services/module_detector.py",
                 "io": {
                   "inputs": [
@@ -844,15 +1283,15 @@
               },
               {
                 "name": "ProfilerService",
-                "description": "Orchestrates profiling of repository structure using tools and validators.",
+                "description": "Orchestrates repository profiling and blueprint generation.",
                 "file_path": "agents/profiler_agent/services/profiler_service.py",
                 "io": {
                   "inputs": [],
                   "outputs": []
                 },
                 "children": [
-                  "RepoMapService",
                   "BlueprintValidator",
+                  "RepoMapService",
                   "GetFileTreeTool",
                   "GetManifestFilesTool"
                 ],
@@ -862,7 +1301,7 @@
               },
               {
                 "name": "RepoMapService",
-                "description": "Builds repository skeleton by detecting modules and organizing directory structure.",
+                "description": "Builds repository skeleton by mapping file structure to modules.",
                 "file_path": "agents/profiler_agent/services/repo_map_service.py",
                 "io": {
                   "inputs": [
@@ -884,7 +1323,7 @@
             "tools": [
               {
                 "name": "GetFileTreeTool",
-                "description": "Tool for retrieving file tree information from the repository.",
+                "description": "Tool for retrieving file tree structure from repository.",
                 "file_path": "agents/profiler_agent/tools/get_file_tree_tool.py",
                 "io": {
                   "inputs": [],
@@ -899,7 +1338,7 @@
               },
               {
                 "name": "GetManifestFilesTool",
-                "description": "Tool for retrieving manifest files from the repository.",
+                "description": "Tool for retrieving manifest files from repository.",
                 "file_path": "agents/profiler_agent/tools/get_manifest_tool.py",
                 "io": {
                   "inputs": [],
@@ -946,14 +1385,14 @@
         },
         {
           "name": "render_agent",
-          "description": "Agent that renders architecture diagrams in Mermaid format.",
+          "description": "Agent that converts architecture specifications into Mermaid diagram visualizations.",
           "root_path": "agents/render_agent/",
-          "purpose": "Converts diagram specifications into Mermaid format for visualization.",
+          "purpose": "Renders architecture diagrams in Mermaid syntax from specifications.",
           "zones": {
             "data": [
               {
                 "name": "RenderRequest",
-                "description": "Request model for rendering diagram specifications.",
+                "description": "Request model for render operations.",
                 "file_path": "agents/render_agent/models/render_model.py",
                 "io": {
                   "inputs": [],
@@ -966,7 +1405,7 @@
               },
               {
                 "name": "RenderResponse",
-                "description": "Response model for rendering operations containing diagram specification.",
+                "description": "Response model for render operations.",
                 "file_path": "agents/render_agent/models/render_model.py",
                 "io": {
                   "inputs": [],
@@ -980,8 +1419,29 @@
             ],
             "business": [
               {
+                "name": "ClusterRenderer",
+                "description": "Renders zone clusters as Mermaid diagram syntax.",
+                "file_path": "agents/render_agent/services/cluster_renderer.py",
+                "io": {
+                  "inputs": [
+                    "module: str",
+                    "zone: str",
+                    "components: list[Component]",
+                    "entry_points: set[str]",
+                    "clusters: list[Cluster]"
+                  ],
+                  "outputs": [
+                    "list[str]"
+                  ]
+                },
+                "children": [],
+                "role": "service",
+                "tier": "secondary",
+                "nested": true
+              },
+              {
                 "name": "EdgeRenderer",
-                "description": "Renders edges in a diagram specification to Mermaid syntax.",
+                "description": "Renders edges between components as Mermaid diagram syntax.",
                 "file_path": "agents/render_agent/services/edge_renderer.py",
                 "io": {
                   "inputs": [
@@ -998,7 +1458,7 @@
               },
               {
                 "name": "MermaidService",
-                "description": "Orchestrates rendering of diagram specifications to Mermaid format.",
+                "description": "Orchestrates rendering of complete Mermaid diagram from specification.",
                 "file_path": "agents/render_agent/services/mermaid_service.py",
                 "io": {
                   "inputs": [
@@ -1018,7 +1478,7 @@
               },
               {
                 "name": "ModuleRenderer",
-                "description": "Renders modules and external actors in a diagram specification to Mermaid syntax.",
+                "description": "Renders modules and external actors as Mermaid diagram syntax.",
                 "file_path": "agents/render_agent/services/module_renderer.py",
                 "io": {
                   "inputs": [
@@ -1026,11 +1486,12 @@
                     "spec: DiagramSpec"
                   ],
                   "outputs": [
-                    "list[str]",
                     "list[str]"
                   ]
                 },
-                "children": [],
+                "children": [
+                  "ClusterRenderer"
+                ],
                 "role": "service",
                 "tier": "secondary",
                 "nested": true
@@ -1071,12 +1532,12 @@
           "name": "tracer_agent",
           "description": "Agent that traces code dependencies and builds call graphs for architecture analysis.",
           "root_path": "agents/tracer_agent/",
-          "purpose": "Traces runtime architecture by analyzing call graphs, building evidence, and validating component relationships.",
+          "purpose": "Traces runtime architecture from source code using static analysis and LLM validation.",
           "zones": {
             "data": [
               {
                 "name": "TracerResponse",
-                "description": "Response model for tracing operations containing diagram specification.",
+                "description": "Response model for tracer operations.",
                 "file_path": "agents/tracer_agent/models/tracer_model.py",
                 "io": {
                   "inputs": [],
@@ -1091,7 +1552,7 @@
             "business": [
               {
                 "name": "AstService",
-                "description": "Parses Python files and extracts signatures and import graphs using AST analysis.",
+                "description": "Parses Python AST and extracts signatures and import graphs.",
                 "file_path": "agents/tracer_agent/services/ast_service.py",
                 "io": {
                   "inputs": [
@@ -1100,7 +1561,6 @@
                     "files: dict[str, str]"
                   ],
                   "outputs": [
-                    "dict",
                     "dict",
                     "dict[str, list[str]]"
                   ]
@@ -1112,7 +1572,7 @@
               },
               {
                 "name": "CallGraphService",
-                "description": "Builds call graph from entry files and temporary directory.",
+                "description": "Builds call graph from source code in a temporary directory.",
                 "file_path": "agents/tracer_agent/services/call_graph_service.py",
                 "io": {
                   "inputs": [
@@ -1131,7 +1591,7 @@
               },
               {
                 "name": "CorrectionPromptBuilder",
-                "description": "Builds correction prompts based on validation results for iterative refinement.",
+                "description": "Builds correction prompts for LLM-based graph validation refinement.",
                 "file_path": "agents/tracer_agent/services/correction_prompt_builder.py",
                 "io": {
                   "inputs": [
@@ -1149,7 +1609,7 @@
               },
               {
                 "name": "EvidenceService",
-                "description": "Builds evidence bundle from file paths, call graph, and AST analysis.",
+                "description": "Builds evidence bundle from call graph and AST analysis.",
                 "file_path": "agents/tracer_agent/services/evidence_service.py",
                 "io": {
                   "inputs": [
@@ -1170,7 +1630,7 @@
               },
               {
                 "name": "FileFetchService",
-                "description": "Service for fetching file contents from the repository.",
+                "description": "Service for fetching and reading source files.",
                 "file_path": "agents/tracer_agent/services/file_fetch_service.py",
                 "io": {
                   "inputs": [],
@@ -1183,7 +1643,7 @@
               },
               {
                 "name": "ValidationResult",
-                "description": "Result model containing validation outcome with components and modules.",
+                "description": "Data model holding validation results for component and edge analysis.",
                 "file_path": "agents/tracer_agent/services/graph_validator.py",
                 "io": {
                   "inputs": [],
@@ -1196,7 +1656,7 @@
               },
               {
                 "name": "GraphValidator",
-                "description": "Validates diagram specification against evidence bundle and produces validation result.",
+                "description": "Validates diagram specification against evidence from static analysis.",
                 "file_path": "agents/tracer_agent/services/graph_validator.py",
                 "io": {
                   "inputs": [
@@ -1214,7 +1674,7 @@
               },
               {
                 "name": "SpecAssembler",
-                "description": "Assembles diagram specification from blueprint, raw data, and architecture type.",
+                "description": "Assembles a complete diagram specification from blueprint and raw data.",
                 "file_path": "agents/tracer_agent/services/spec_assembler.py",
                 "io": {
                   "inputs": [
@@ -1233,7 +1693,7 @@
               },
               {
                 "name": "TracerService",
-                "description": "Orchestrates tracing of architecture by building call graphs, evidence, and validating specifications.",
+                "description": "Orchestrates tracing of architecture from source code using LLM and tools.",
                 "file_path": "agents/tracer_agent/services/tracer_service.py",
                 "io": {
                   "inputs": [],
@@ -1270,7 +1730,7 @@
               },
               {
                 "name": "BuildEvidenceTool",
-                "description": "Tool for building evidence bundles from source code analysis.",
+                "description": "Tool for building evidence bundles from static analysis.",
                 "file_path": "agents/tracer_agent/tools/build_evidence_tool.py",
                 "io": {
                   "inputs": [],
@@ -1285,7 +1745,7 @@
               },
               {
                 "name": "FetchLayerFilesTool",
-                "description": "Tool for fetching files from specific layers of the repository.",
+                "description": "Tool for fetching source files from specific layers.",
                 "file_path": "agents/tracer_agent/tools/fetch_layer_files_tool.py",
                 "io": {
                   "inputs": [],
@@ -1359,38 +1819,68 @@
       ],
       "edges": [
         {
-          "source": "AnalysisService",
-          "target": "ProfilerClient",
+          "source": "LayoutService",
+          "target": "ArchetypeClassifier",
           "edge_type": "call",
           "primary": true
         },
         {
-          "source": "AnalysisService",
-          "target": "RenderClient",
+          "source": "LayoutService",
+          "target": "ModuleGraphBuilder",
           "edge_type": "call",
           "primary": true
         },
         {
-          "source": "AnalysisService",
-          "target": "TracerClient",
+          "source": "OwnershipResolver",
+          "target": "ComponentMetricsBuilder",
           "edge_type": "call",
           "primary": true
         },
         {
-          "source": "GitHubService",
-          "target": "GitHubClient",
+          "source": "SemanticLayoutService",
+          "target": "ComponentMetricsBuilder",
           "edge_type": "call",
           "primary": true
         },
         {
-          "source": "ProfilerService",
-          "target": "RepoMapService",
+          "source": "SemanticLayoutService",
+          "target": "ImportanceScorer",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "SemanticLayoutService",
+          "target": "SemanticValidator",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "ClusterPlanner",
+          "target": "ClusterFallback",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "ClusterPlanner",
+          "target": "ClusterValidator",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "ClusterPlanner",
+          "target": "ComponentMetricsBuilder",
           "edge_type": "call",
           "primary": true
         },
         {
           "source": "ProfilerService",
           "target": "BlueprintValidator",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "ProfilerService",
+          "target": "RepoMapService",
           "edge_type": "call",
           "primary": true
         },
@@ -1433,6 +1923,12 @@
         {
           "source": "MermaidService",
           "target": "ModuleRenderer",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "ModuleRenderer",
+          "target": "ClusterRenderer",
           "edge_type": "call",
           "primary": true
         },
@@ -1503,13 +1999,73 @@
           "primary": true
         },
         {
+          "source": "AnalysisService",
+          "target": "ProfilerClient",
+          "edge_type": "http",
+          "primary": true
+        },
+        {
+          "source": "AnalysisService",
+          "target": "TracerClient",
+          "edge_type": "http",
+          "primary": true
+        },
+        {
+          "source": "AnalysisService",
+          "target": "LayoutClient",
+          "edge_type": "http",
+          "primary": true
+        },
+        {
+          "source": "AnalysisService",
+          "target": "RenderClient",
+          "edge_type": "http",
+          "primary": true
+        },
+        {
+          "source": "AnalysisService",
+          "target": "OutputPersister",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "GitHubService",
+          "target": "GitHubClient",
+          "edge_type": "http",
+          "primary": true
+        },
+        {
+          "source": "CorrectionPromptBuilder",
+          "target": "ValidationResult",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
           "source": "GraphValidator",
           "target": "ValidationResult",
           "edge_type": "call",
           "primary": true
         },
         {
-          "source": "AnalysisService",
+          "source": "ComponentMetricsBuilder",
+          "target": "ComponentMetrics",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "ModuleGraphBuilder",
+          "target": "ModuleGraph",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "SemanticValidator",
+          "target": "SemanticAnnotations",
+          "edge_type": "call",
+          "primary": true
+        },
+        {
+          "source": "OutputPersister",
           "target": "Settings",
           "edge_type": "call",
           "primary": true
@@ -1519,7 +2075,7 @@
         {
           "name": "GitHub API",
           "type": "api",
-          "description": "GitHub REST API for repository and webhook management."
+          "description": "GitHub REST API for repository information and webhook callbacks."
         }
       ],
       "entry_points": [
@@ -1527,6 +2083,7 @@
         "GitHubService",
         "ProfilerService",
         "TracerService",
+        "LayoutService",
         "MermaidService"
       ],
       "layout_hint": {
@@ -1534,6 +2091,7 @@
         "module_order": [
           "api",
           "frontend",
+          "layout_agent",
           "profiler_agent",
           "render_agent",
           "shared",
@@ -1553,6 +2111,10 @@
             "rank": 0
           },
           {
+            "module_name": "layout_agent",
+            "rank": 0
+          },
+          {
             "module_name": "profiler_agent",
             "rank": 0
           },
@@ -1565,9 +2127,9 @@
             "rank": 0
           }
         ],
-        "rationale": "L=1, N=6, max_fan_out=0, max_fan_in=0"
+        "rationale": "L=1, N=7, max_fan_out=0, max_fan_in=0"
       }
     }
   },
-  "mermaid": "flowchart TD\n    subgraph External[External Systems]\n        GitHub_API([\"GitHub API\"])\n    end\n    subgraph mod_api[\"api\"]\n        subgraph api__config[\"config\"]\n            subgraph api__config__c0[\"Configuration\"]\n            Settings[\"Settings\"]\n            end\n        end\n        subgraph api__tools[\"tools\"]\n        end\n        subgraph api__data[\"data\"]\n            subgraph api__data__c0[\"Analysis Models\"]\n            AnalyseRequest[\"AnalyseRequest\"]\n            AnalyseResponse[\"AnalyseResponse\"]\n            end\n            subgraph api__data__c1[\"GitHub Webhook Models\"]\n            GitHubCallbackRequest[\"GitHubCallbackRequest\"]\n            GitHubCallbackResponse[\"GitHubCallbackResponse\"]\n            end\n            subgraph api__data__c2[\"Repository Models\"]\n            RepositoryResponse[\"RepositoryResponse\"]\n            RepositoriesResponse[\"RepositoriesResponse\"]\n            end\n        end\n        subgraph api__business[\"business\"]\n            subgraph api__business__c0[\"Orchestration\"]\n            AnalysisService((\"AnalysisService\"))\n            GitHubService((\"GitHubService\"))\n            end\n        end\n    end\n    subgraph mod_shared[\"shared\"]\n        subgraph shared__data[\"data\"]\n            subgraph shared__data__c0[\"Architecture Models\"]\n            Component[\"Component\"]\n            ComponentIO[\"ComponentIO\"]\n            Edge[\"Edge\"]\n            ExternalActor[\"ExternalActor\"]\n            end\n            subgraph shared__data__c1[\"Blueprint & Planning\"]\n            RepoBlueprint[\"RepoBlueprint\"]\n            ModulePlan[\"ModulePlan\"]\n            ZonePlan[\"ZonePlan\"]\n            Module[\"Module\"]\n            end\n            subgraph shared__data__c2[\"Diagram & Request\"]\n            DiagramSpec[\"DiagramSpec\"]\n            TracerRequest[\"TracerRequest\"]\n            end\n        end\n    end\n    subgraph mod_profiler_agent[\"profiler_agent\"]\n        subgraph profiler_agent__data[\"data\"]\n            subgraph profiler_agent__data__c0[\"Data Models\"]\n            ProfileRequest[\"ProfileRequest\"]\n            DirGroup[\"DirGroup\"]\n            ModuleSkeleton[\"ModuleSkeleton\"]\n            RepoSkeleton[\"RepoSkeleton\"]\n            end\n        end\n        subgraph profiler_agent__business[\"business\"]\n            subgraph profiler_agent__business__c0[\"Orchestration\"]\n            ProfilerService((\"ProfilerService\"))\n            end\n        end\n        subgraph profiler_agent__tools[\"tools\"]\n        end\n    end\n    subgraph mod_render_agent[\"render_agent\"]\n        subgraph render_agent__data[\"data\"]\n            subgraph render_agent__data__c0[\"Models\"]\n            RenderRequest[\"RenderRequest\"]\n            RenderResponse[\"RenderResponse\"]\n            end\n        end\n        subgraph render_agent__business[\"business\"]\n            subgraph render_agent__business__c0[\"Orchestration\"]\n            MermaidService((\"MermaidService\"))\n            end\n        end\n    end\n    subgraph mod_tracer_agent[\"tracer_agent\"]\n        subgraph tracer_agent__data[\"data\"]\n            subgraph tracer_agent__data__c0[\"Response Models\"]\n            TracerResponse[\"TracerResponse\"]\n            end\n        end\n        subgraph tracer_agent__business[\"business\"]\n            subgraph tracer_agent__business__c0[\"Orchestration\"]\n            TracerService((\"TracerService\"))\n            ValidationResult[\"ValidationResult\"]\n            end\n        end\n        subgraph tracer_agent__tools[\"tools\"]\n            subgraph tracer_agent__tools__c0[\"AST Parsing\"]\n            ParseAstTool[\"ParseAstTool\"]\n            end\n        end\n    end\n    AnalysisService --> ProfilerClient\n    AnalysisService --> RenderClient\n    AnalysisService --> TracerClient\n    GitHubService --> GitHubClient\n    ProfilerService --> RepoMapService\n    ProfilerService --> BlueprintValidator\n    ProfilerService --> GetFileTreeTool\n    ProfilerService --> GetManifestFilesTool\n    RepoMapService --> ModuleDetector\n    GetFileTreeTool --> FileTreeService\n    GetManifestFilesTool --> FileTreeService\n    MermaidService --> EdgeRenderer\n    MermaidService --> ModuleRenderer\n    EvidenceService --> AstService\n    TracerService --> CorrectionPromptBuilder\n    TracerService --> GraphValidator\n    TracerService --> SpecAssembler\n    TracerService --> BuildCallGraphTool\n    TracerService --> BuildEvidenceTool\n    TracerService --> FetchLayerFilesTool\n    BuildCallGraphTool --> CallGraphService\n    BuildEvidenceTool --> EvidenceService\n    FetchLayerFilesTool --> FileFetchService\n    ParseAstTool --> AstService\n    GraphValidator --> ValidationResult\n    AnalysisService --> Settings\n    AnalysisService --> GitHubService\n    RepoBlueprint --> ModulePlan\n    RepoBlueprint --> ZonePlan\n    RepoBlueprint --> Module\n    TracerService --> ValidationResult\n    AnalysisService -->|http| GitHub_API\n    GitHubService -->|http| GitHub_API\n    MermaidService -->|http| GitHub_API\n    ProfilerService -->|http| GitHub_API\n    TracerService -->|http| GitHub_API"
+  "mermaid": "flowchart TD\n    subgraph External[External Systems]\n        GitHub_API([\"GitHub API\"])\n    end\n    subgraph mod_api[\"api\"]\n        subgraph api__config[\"config\"]\n            subgraph api__config__c0[\"Configuration\"]\n            Settings[\"Settings\"]\n            end\n        end\n        subgraph api__tools[\"tools\"]\n        end\n        subgraph api__data[\"data\"]\n            subgraph api__data__c0[\"Analysis Models\"]\n            AnalyseRequest[\"AnalyseRequest\"]\n            AnalyseResponse[\"AnalyseResponse\"]\n            end\n            subgraph api__data__c1[\"GitHub Webhook Models\"]\n            GitHubCallbackRequest[\"GitHubCallbackRequest\"]\n            GitHubCallbackResponse[\"GitHubCallbackResponse\"]\n            end\n            subgraph api__data__c2[\"Repository Models\"]\n            RepositoryResponse[\"RepositoryResponse\"]\n            RepositoriesResponse[\"RepositoriesResponse\"]\n            end\n        end\n        subgraph api__business[\"business\"]\n            subgraph api__business__c0[\"Orchestration\"]\n            AnalysisService((\"AnalysisService\"))\n            end\n            subgraph api__business__c1[\"External Integrations\"]\n            GitHubService((\"GitHubService\"))\n            end\n        end\n    end\n    subgraph mod_shared[\"shared\"]\n        subgraph shared__data[\"data\"]\n            subgraph shared__data__c0[\"Architecture Models\"]\n            Component[\"Component\"]\n            ComponentIO[\"ComponentIO\"]\n            Edge[\"Edge\"]\n            ExternalActor[\"ExternalActor\"]\n            end\n            subgraph shared__data__c1[\"Clustering & Layout\"]\n            Cluster[\"Cluster\"]\n            ZoneClusterPlan[\"ZoneClusterPlan\"]\n            RankAssignment[\"RankAssignment\"]\n            LayoutHint[\"LayoutHint\"]\n            end\n            subgraph shared__data__c2[\"Diagram Specification\"]\n            DiagramSpec[\"DiagramSpec\"]\n            end\n            subgraph shared__data__c3[\"Repository Blueprint\"]\n            RepoBlueprint[\"RepoBlueprint\"]\n            ModulePlan[\"ModulePlan\"]\n            ZonePlan[\"ZonePlan\"]\n            end\n            subgraph shared__data__c4[\"Request Models\"]\n            TracerRequest[\"TracerRequest\"]\n            Module[\"Module\"]\n            end\n        end\n    end\n    subgraph mod_layout_agent[\"layout_agent\"]\n        subgraph layout_agent__tools[\"tools\"]\n            subgraph layout_agent__tools__c0[\"Data Models\"]\n            ComponentMetrics[\"ComponentMetrics\"]\n            ModuleGraph[\"ModuleGraph\"]\n            SemanticAnnotations[\"SemanticAnnotations\"]\n            end\n        end\n        subgraph layout_agent__data[\"data\"]\n            subgraph layout_agent__data__c0[\"Request/Response\"]\n            LayoutRequest[\"LayoutRequest\"]\n            LayoutResponse[\"LayoutResponse\"]\n            end\n        end\n        subgraph layout_agent__business[\"business\"]\n            subgraph layout_agent__business__c0[\"Orchestration\"]\n            LayoutService((\"LayoutService\"))\n            ClusterPlanner[\"ClusterPlanner\"]\n            SemanticLayoutService[\"SemanticLayoutService\"]\n            OwnershipResolver[\"OwnershipResolver\"]\n            end\n        end\n    end\n    subgraph mod_profiler_agent[\"profiler_agent\"]\n        subgraph profiler_agent__data[\"data\"]\n            subgraph profiler_agent__data__c0[\"Data Models\"]\n            ProfileRequest[\"ProfileRequest\"]\n            DirGroup[\"DirGroup\"]\n            ModuleSkeleton[\"ModuleSkeleton\"]\n            RepoSkeleton[\"RepoSkeleton\"]\n            end\n        end\n        subgraph profiler_agent__business[\"business\"]\n            subgraph profiler_agent__business__c0[\"Orchestration\"]\n            ProfilerService((\"ProfilerService\"))\n            end\n        end\n        subgraph profiler_agent__tools[\"tools\"]\n        end\n    end\n    subgraph mod_render_agent[\"render_agent\"]\n        subgraph render_agent__data[\"data\"]\n            subgraph render_agent__data__c0[\"Models\"]\n            RenderRequest[\"RenderRequest\"]\n            RenderResponse[\"RenderResponse\"]\n            end\n        end\n        subgraph render_agent__business[\"business\"]\n            subgraph render_agent__business__c0[\"Orchestration\"]\n            MermaidService((\"MermaidService\"))\n            end\n        end\n    end\n    subgraph mod_tracer_agent[\"tracer_agent\"]\n        subgraph tracer_agent__data[\"data\"]\n            subgraph tracer_agent__data__c0[\"Response Models\"]\n            TracerResponse[\"TracerResponse\"]\n            end\n        end\n        subgraph tracer_agent__business[\"business\"]\n            subgraph tracer_agent__business__c0[\"Orchestration\"]\n            TracerService((\"TracerService\"))\n            ValidationResult[\"ValidationResult\"]\n            end\n        end\n        subgraph tracer_agent__tools[\"tools\"]\n            subgraph tracer_agent__tools__c0[\"AST Parsing\"]\n            ParseAstTool[\"ParseAstTool\"]\n            end\n        end\n    end\n    LayoutService --> ArchetypeClassifier\n    LayoutService --> ModuleGraphBuilder\n    OwnershipResolver --> ComponentMetricsBuilder\n    SemanticLayoutService --> ComponentMetricsBuilder\n    SemanticLayoutService --> ImportanceScorer\n    SemanticLayoutService --> SemanticValidator\n    ClusterPlanner --> ClusterFallback\n    ClusterPlanner --> ClusterValidator\n    ClusterPlanner --> ComponentMetricsBuilder\n    ProfilerService --> BlueprintValidator\n    ProfilerService --> RepoMapService\n    ProfilerService --> GetFileTreeTool\n    ProfilerService --> GetManifestFilesTool\n    RepoMapService --> ModuleDetector\n    GetFileTreeTool --> FileTreeService\n    GetManifestFilesTool --> FileTreeService\n    MermaidService --> EdgeRenderer\n    MermaidService --> ModuleRenderer\n    ModuleRenderer --> ClusterRenderer\n    EvidenceService --> AstService\n    TracerService --> CorrectionPromptBuilder\n    TracerService --> GraphValidator\n    TracerService --> SpecAssembler\n    TracerService --> BuildCallGraphTool\n    TracerService --> BuildEvidenceTool\n    TracerService --> FetchLayerFilesTool\n    BuildCallGraphTool --> CallGraphService\n    BuildEvidenceTool --> EvidenceService\n    FetchLayerFilesTool --> FileFetchService\n    ParseAstTool --> AstService\n    AnalysisService -->|http| ProfilerClient\n    AnalysisService -->|http| TracerClient\n    AnalysisService -->|http| LayoutClient\n    AnalysisService -->|http| RenderClient\n    AnalysisService --> OutputPersister\n    GitHubService -->|http| GitHubClient\n    CorrectionPromptBuilder --> ValidationResult\n    GraphValidator --> ValidationResult\n    ComponentMetricsBuilder --> ComponentMetrics\n    ModuleGraphBuilder --> ModuleGraph\n    SemanticValidator --> SemanticAnnotations\n    OutputPersister --> Settings\n    RepoBlueprint --> ModulePlan\n    RepoBlueprint --> ZonePlan\n    LayoutService --> ClusterPlanner\n    LayoutService --> SemanticLayoutService\n    LayoutService --> OwnershipResolver\n    TracerService --> ValidationResult\n    AnalysisService -->|http| GitHub_API\n    GitHubService -->|http| GitHub_API\n    LayoutService -->|http| GitHub_API\n    MermaidService -->|http| GitHub_API\n    ProfilerService -->|http| GitHub_API\n    TracerService -->|http| GitHub_API"
 }
