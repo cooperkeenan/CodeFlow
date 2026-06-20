@@ -1,14 +1,25 @@
 import { useMemo } from 'react'
 
-import { buildSystemGraph } from './graph/systemGraph'
-import { buildModuleGraph } from './graph/moduleGraph'
-import { buildComponentGraph } from './graph/componentGraph'
+import { colorForModule, toRFEdge } from './graph/common'
 
-export function useGraphTransform(spec, focus, expandedZones) {
+export function useGraphTransform(spec, focus, expandedZones, views) {
   return useMemo(() => {
-    if (!spec) return { nodes: [], edges: [] }
-    if (!focus) return buildSystemGraph(spec)
-    if (focus.kind === 'module') return buildModuleGraph(spec, focus.id, expandedZones)
-    return buildComponentGraph(spec, focus.id)
-  }, [spec, focus, expandedZones])
+    if (!views) return { nodes: [], edges: [] }
+    const viewId = !focus ? 'system'
+      : focus.kind === 'module' ? `module:${focus.id}`
+      : `component:${focus.id}`
+    const view = views[viewId]
+    if (!view) return { nodes: [], edges: [] }
+
+    const nodes = view.nodes.map(n => {
+      const moduleName = n.data?.module ?? n.data?.moduleName
+      const color = moduleName ? colorForModule(spec, moduleName) : undefined
+      const data = { ...n.data, ...(color ? { color } : {}) }
+      if (n.type === 'zoneMore') data.expanded = expandedZones.has(n.data?.key ?? '')
+      return { ...n, data }
+    })
+
+    const edges = view.edges.map(e => toRFEdge(e, { id: e.id, label: e.label }))
+    return { nodes, edges }
+  }, [spec, focus, expandedZones, views])
 }
