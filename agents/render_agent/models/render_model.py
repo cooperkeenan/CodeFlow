@@ -1,12 +1,11 @@
 from pydantic import BaseModel
 
-from shared.models.diagram_spec import DiagramSpec
+from shared.models.diagram_template import DiagramTemplate, RenderedView
 
 
 class RenderRequest(BaseModel):
-    architecture_type: str
-    diagram_spec: DiagramSpec
+    diagram_templates: dict[str, DiagramTemplate]
 
 
 class RenderResponse(BaseModel):
-    mermaid: str
+    views: dict[str, RenderedView]
