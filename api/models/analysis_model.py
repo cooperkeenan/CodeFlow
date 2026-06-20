@@ -13,4 +13,4 @@ class AnalyseResponse(BaseModel):
     repo: str
     profile: ProfileResponse
     trace: dict
-    mermaid: str
+    diagram: dict = {}
