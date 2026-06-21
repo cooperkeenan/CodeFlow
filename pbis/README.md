@@ -81,6 +81,171 @@ Phase 2 templated all three levels, but live testing (diagnosed by three subagen
 
 Run 11 first (independent; fixes the blank page, keeps current look). Then 12 + 13 together — 12 sets `type`+`meta`, 13 places it; contract is `template.type` + `meta`. See the master plan for full context: `~/.claude/plans/goal-refactor-the-layout-cheerful-allen.md`.
 
+### Phase 4 — unbiased selection, recovered edges, reasoning telemetry
+
+Live diagnosis: the layout agent picked `hub_and_spoke` for nearly every view because (a) the system
+module-graph has **zero cross-module edges** — all traced edges are intra-module, so the selector
+chooses a type for an edgeless graph; (b) a deterministic `archetype_hint` primes the choice; and
+(c) nothing records *why* a type was chosen. Fix: recover the real cross-service edges, remove the
+hint, lean on richer descriptions, and log the agent's reasoning to both a file and a per-view UI box.
+
+**This is Batch 4** — one self-contained handoff of PBIs 14–19. Hand the whole batch to the
+implementing agent ("execute Batch 4 / the next batch of PBIs"); it implements all six. The
+`Depends on` column is *internal* run-order within the batch, not separate batches.
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [14](pbi-14-unbias-template-selection.md) | Unbias system template selection | — |
+| [15](pbi-15-recover-cross-service-edges.md) | Recover cross-service HTTP edges (tracer) | — |
+| [16](pbi-16-relationship-aware-descriptions.md) | Relationship-aware module descriptions | 15 |
+| [17](pbi-17-capture-selection-reasoning.md) | Capture selection reasoning into meta + logs | 14 |
+| [18](pbi-18-persist-reasoning-file.md) | Persist a readable reasoning file (api) | 17 |
+| [19](pbi-19-frontend-rationale-box.md) | Per-view rationale box (frontend) | 17 |
+
+Suggested internal order: **14, 15 → 16 → 17 → 18, 19**. (14 + 15 are independent foundations; 16
+builds on 15; 18 + 19 both consume the `meta["rationale"]` from 17.)
+
+**Phase 4 verification:** `/analyse` this repo and assert (1) `diagram_spec.edges` has ≥1
+cross-module edge; (2) `shared/outputs/layout_reasoning.json` exists with a per-view `type` +
+`rationale`; (3) two runs give identical types + rationale (temperature 0); (4) the UI shows a
+`RationaleBox` per view; (5) intra-module `call` edges and placement (`layout_hint`) are unchanged,
+no new `W3` warnings.
+
+### Phase 5 — type-driven module rendering (+ explicit grid) and a structural answer-sheet
+
+Live review of Batch 4's output found two things: (a) the `diagram_type` is **cosmetic at the module
+level** — `render_agent/services/placement_service.py` hardcodes the zone grid regardless of
+`template.type`, so every module looks the same; and (b) there's no automated way to measure a run.
+Batch 5 makes module placement honor the type, adds the zone grid as a **first-class, optional**
+`zoned` template the selector can deliberately choose for runnable units, and adds an automated
+**structural answer-sheet** (ground truth authored from source) with a scorecard CLI. The
+component-level hub classifier is intentionally left alone this round — measure first, then de-bias.
+
+**This is Batch 5** — one self-contained handoff of PBIs 20–23 (run `python -m evaluation.compare`
+after `/analyse` to score a run).
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [20](pbi-20-explicit-grid-module-type.md) | Explicit `zoned` (grid) module type + type-appropriate template (layout) | — |
+| [21](pbi-21-module-placement-by-type.md) | Module placement honors the diagram type (render) | 20 |
+| [22](pbi-22-answer-sheet-fixture.md) | CodeFlow structural answer-sheet fixture | — |
+| [23](pbi-23-comparison-harness.md) | Structural comparison harness + scorecard CLI | 22 |
+
+Suggested internal order: **20 → 21** and **22 → 23** (the two themes are independent). `zoned` is
+module-only and named distinctly from the cluster-level `style="grid"`.
+
+### Phase 6 — description-driven component type selection
+
+Live review found component views are typed from **call-graph topology only**
+(`helpers/component_archetype_classifier.py:19`): every orchestrator (≥3 callees) becomes
+`hub_and_spoke`, and `pipeline` only fires for a single callee. So `TracerService` — which runs its
+six helpers in sequence — renders as a hub even though it's a pipeline. The ordering/semantics that
+make it a pipeline aren't in the data. Batch 6 has the tracer emit a rich purpose description (with
+ordered steps) per high-level component, and the layout agent make **one batched LLM call** to pick
+the type (and, for sequential types, the node order) from those descriptions. Leaf components stay
+on the deterministic classifier.
+
+**This is Batch 6** — one self-contained handoff of PBIs 24–25.
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [24](pbi-24-tracer-highlevel-descriptions.md) | Rich purpose descriptions for high-level components (tracer) | — |
+| [25](pbi-25-llm-component-type-selection.md) | Description-driven component template selection (layout) | 24 |
+
+Run **24 → 25**. Reuses the `meta["rationale"]` + `RationaleBox` plumbing (Batch 4) and the
+`component_<type>` placements (Batch 5) — no render changes.
+
+### Phase 7 — type-aware edges ("real" templates)
+
+Batch 6 typed `TracerService` as `pipeline` and ordered its nodes, but the **edges stayed the raw
+star** (`TracerService → each helper`; `meta.order` was `None`) — so dragging the boxes still shows a
+hub. Root cause: edges are **type-agnostic** (`placement_service._build_edges` passes
+`template.edges` through 1:1; layout builds the same call edges regardless of type), so only node
+*positions* change per type. Batch 7 makes each template own **edges that match its type**: pipeline
+= `caller→orchestrator→step1→…→stepN`, hierarchy = parent→child tree, layered_tier = cross-tier; hub
+/ mesh / dependency_graph keep their current (correct) edges. Synthesized sequence edges are styled
+distinctly from literal calls.
+
+**This is Batch 7** — one self-contained handoff of PBIs 26–27.
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [26](pbi-26-type-aware-edges.md) | Type-aware edge construction in templates (layout) | — |
+| [27](pbi-27-render-honor-type-edges.md) | Render honors per-type meta + distinguishes flow edges | 26 |
+
+Run **26 → 27**. PBI 26 also fixes the Batch 6 `meta.order = None` gap so the sequence is captured. (Batch 7 done ✅)
+
+### Phase 8 — pipeline layout polish
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [28](pbi-28-pipeline-side-handles.md) | Pipeline edges route into node sides (frontend) | — |
+| [29](pbi-29-system-view-ordered-chain.md) | System view honors type-aware edges (ordered chain) | — |
+
+Run **28 + 29** (independent). (Batch 8 done ✅)
+
+### Phase 9 — regression fix: component-type selector hardening + module pipeline de-bias
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [30](pbi-30-harden-component-selector.md) | Harden component-type selector (no silent total fallback) | — |
+| [31](pbi-31-module-pipeline-selection.md) | Let module views be pipelines (de-bias cluster planner) | — |
+
+Run **30 + 31** (independent). (Batch 9 done ✅)
+
+### Phase 8 — pipeline layout polish
+
+After Batch 7, component pipelines chain correctly but (a) the arrows route through top/bottom
+handles so a horizontal pipeline looks messy, and (b) the **system view** is typed `pipeline` yet
+still shows alphabetical nodes + `api→each` hub edges — because the system template is built on the
+`TemplatePlanner` path, not the Batch 7 `_edge_builder`. Batch 8 routes pipeline arrows into the
+sides and gives the system view the same ordered chain (by `layout_hint.module_order`).
+
+**Batch 8** — PBIs 28–29.
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [28](pbi-28-pipeline-side-handles.md) | Pipeline edges route into the sides (frontend) | — |
+| [29](pbi-29-system-view-ordered-chain.md) | System view honors type-aware edges (ordered chain) | — |
+
+### Phase 9 — fix the silent component-selector regression + module pipelines
+
+Live test of Batch 8 showed **everything reverted to `hub_and_spoke`**: `component:TracerService`
+went pipeline → hub with `rationale: None`, and 0 of 47 component views had a rationale. Root cause:
+the Batch 6 `ComponentTypePlanner` makes **one batched LLM call, all-or-nothing**, with
+`max_tokens=4000`; the richer descriptions overflow it, the JSON fails to parse, and `plan()` silently
+`return {}` — so the whole component layer falls back to the deterministic topology classifier (≥3
+callees → hub). Batch 9 hardens it (chunk / raise tokens / keep partial results / surface failures)
+and applies the same semantics-over-topology fix at the **module** level so a sequential orchestrator
+module can be a pipeline instead of auto-hub on fan-out.
+
+**Batch 9** — PBIs 30–31.
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [30](pbi-30-harden-component-selector.md) | Harden the component-type selector (no silent total fallback) | — |
+| [31](pbi-31-module-pipeline-selection.md) | Let module views be pipelines (de-bias the cluster planner) | — |
+
+### Phase 10 — service-centric abstraction + container drill-down
+
+Higher-level pipelines surface thin adapter/tool nodes (`BuildCallGraphTool`) instead of the
+meaningful services (`CallGraphService`). Batch 10 surfaces **primary roles** (service / orchestrator /
+repository) and deterministically **folds single-callee adapters** (tool/client/helper) into the
+service they wrap, so the high-level view reads `TracerService → CallGraphService → EvidenceService →
+…`. Drilling into a service opens a **container** holding the folded tool + service + helpers, with
+the caller feeding in (per the figma mockup). Role-based (generic across `*Service`/`*Manager`/…),
+deterministic contraction; ordering reuses the Batch 6/7 sequence. Reuses the `zoned` group-node
+rendering for containers.
+
+**Batch 10** — PBIs 32–33.
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [32](pbi-32-service-surfacing-contraction.md) | Role-based service surfacing + adapter contraction (layout) | Batch 7 |
+| [33](pbi-33-service-container-drilldown.md) | Container drill-down for a folded service (layout + render) | 32 |
+
+Run **Batch 9 (30, 31)** first — it fixes the live regression — then **Batch 10 (32 → 33)**.
+
 ## End-to-end verification
 
 1. **Determinism:** run `/analyse` twice on the same repo; assert identical system-view node positions and identical chosen template type.

@@ -1,5 +1,12 @@
 # CodeFlow — Claude Code Guidelines
 
+## Workflow — Opus plans, Sonnet implements, Opus reviews
+- Feature work is split into small, self-contained scoped task docs ("PBIs"). A planning model (Opus)
+  designs the approach, spawns a Sonnet sub-agent to implement each scoped task, then reviews the
+  resulting diff before it is accepted.
+- Scoped task docs are **ephemeral** — they are gitignored and removed on merge to main. Do not rely
+  on their numbers or continued existence; this file and the code are the source of truth.
+
 ## Design Principles
 - SOLID principles on every file:
   - Single Responsibility: one class, one reason to change

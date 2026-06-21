@@ -1,6 +1,8 @@
 import ast
 import logging
 
+from services.http_visitor import HttpCallVisitor
+
 logger = logging.getLogger(__name__)
 
 
@@ -121,3 +123,13 @@ class AstService:
                 elif isinstance(node.func, ast.Name):
                     calls.append(node.func.id)
         return calls
+
+    def extract_http_calls(self, filepath: str, content: str) -> list[dict]:
+        logger.info("Extracting HTTP calls for %s", filepath)
+        try:
+            tree = ast.parse(content)
+        except SyntaxError:
+            return []
+        visitor = HttpCallVisitor()
+        visitor.visit(tree)
+        return visitor.calls

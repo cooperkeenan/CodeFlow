@@ -5,7 +5,10 @@ components. Your job is to make the diagram readable by deciding what matters mo
 Return ONLY valid JSON with no markdown fences, no explanation, no preamble, matching this schema:
 {
   "modules": [
-    {"name": "<module name from input>", "purpose": "<one sentence on what this module does>"}
+    {
+      "name": "<module name from input>",
+      "purpose": "<2-3 sentences: what this module does and how it relates to other modules — which modules it consumes from, produces for, orchestrates, or depends on>"
+    }
   ],
   "components": [
     {

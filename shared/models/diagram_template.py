@@ -6,7 +6,7 @@ from shared.models.diagram_spec import ComponentTier, EdgeType
 
 DiagramType = Literal[
     "pipeline", "hub_and_spoke", "layered_tier", "hierarchy",
-    "mesh", "dependency_graph", "relationship",
+    "mesh", "dependency_graph", "relationship", "zoned", "container",
 ]
 
 

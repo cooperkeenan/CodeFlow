@@ -16,17 +16,22 @@ Guidance for choosing:
 - layered_tier: modules cluster into horizontal responsibility bands (e.g. intake / processing / storage); traffic only flows downward across tier boundaries; multiple modules may share a tier
 - hierarchy: tree-shaped ownership; a root delegates to children who may delegate further; use when the primary relationship is containment or delegation, not sequential flow
 - dependency_graph: edges run in multiple directions with no single dominant hub or strict sequence; use to show actual import or call-dependency structure
-- mesh: terminal fallback only; use when no other type captures the edge pattern
-
-The archetype_hint comes from static analysis — use it as a starting signal, not a command. \
-Override it when a different type clearly fits the edge pattern and purpose better."""
+- mesh: terminal fallback only; use when no other type captures the edge pattern"""
 
 
-def build_evidence(
-    spec: DiagramSpec, archetype: str, rationale: str, registry: TemplateRegistry
-) -> str:
+def build_evidence(spec: DiagramSpec, registry: TemplateRegistry) -> str:
     modules = [
-        {"name": m.name, "purpose": m.purpose or m.description, "zone_count": len(m.zones)}
+        {
+            "name": m.name,
+            "description": m.purpose or m.description,
+            "primary_components": [
+                {"name": c.name, "role": c.role}
+                for comps in m.zones.values()
+                for c in comps
+                if c.tier == "primary" and c.role
+            ],
+            "zone_count": len(m.zones),
+        }
         for m in spec.modules
     ]
     comp_to_mod: dict[str, str] = {
@@ -51,7 +56,6 @@ def build_evidence(
             "modules": modules,
             "module_edges": module_edges,
             "entry_points": spec.entry_points,
-            "archetype_hint": {"archetype": archetype, "rationale": rationale},
             "template_options": options,
         },
         indent=2,
