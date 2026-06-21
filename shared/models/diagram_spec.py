@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-EdgeType = Literal["http", "import", "database", "event", "call"]
+EdgeType = Literal["http", "import", "database", "event", "call", "sequence"]
 
 
 class ComponentIO(BaseModel):
