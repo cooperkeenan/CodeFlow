@@ -8,7 +8,7 @@ from shared.models.diagram_template import DiagramTemplate, DiagramType, Templat
 class _TemplateBuilder:
     def build(self, diagram_type: DiagramType, spec: DiagramSpec, graph: ModuleGraph) -> DiagramTemplate:
         nodes = self._build_nodes(diagram_type, spec, graph)
-        edges = self._build_edges(spec, graph)
+        edges = self._build_edges(diagram_type, spec, graph)
         meta = self._build_meta(diagram_type, spec, graph)
         return DiagramTemplate(type=diagram_type, nodes=nodes, edges=edges, meta=meta)
 
@@ -89,22 +89,21 @@ class _TemplateBuilder:
                 queue.append(child)
         return order + sorted(n for n in graph.module_names if n not in visited)
 
-    def _build_edges(self, spec: DiagramSpec, graph: ModuleGraph) -> list[TemplateEdge]:
-        comp_to_mod: dict[str, str] = {}
-        for module in spec.modules:
-            for comps in module.zones.values():
-                for comp in comps:
-                    comp_to_mod[comp.name] = module.name
+    def _build_edges(self, diagram_type: DiagramType, spec: DiagramSpec, graph: ModuleGraph) -> list[TemplateEdge]:
+        if diagram_type == "pipeline":
+            order = self._node_order("pipeline", spec, graph)
+            return [TemplateEdge(source=order[i], target=order[i + 1], edge_type="sequence") for i in range(len(order) - 1)]
+        comp_to_mod: dict[str, str] = {
+            comp.name: module.name
+            for module in spec.modules for comps in module.zones.values() for comp in comps
+        }
         seen: dict[tuple[str, str], str] = {}
         for edge in spec.edges:
             src = comp_to_mod.get(edge.source)
             tgt = comp_to_mod.get(edge.target)
             if src and tgt and src != tgt and (src, tgt) not in seen:
                 seen[(src, tgt)] = edge.edge_type
-        return [
-            TemplateEdge(source=s, target=t, edge_type=et)
-            for (s, t), et in sorted(seen.items())
-        ]
+        return [TemplateEdge(source=s, target=t, edge_type=et) for (s, t), et in sorted(seen.items())]
 
     def _build_meta(
         self, diagram_type: DiagramType, spec: DiagramSpec, graph: ModuleGraph

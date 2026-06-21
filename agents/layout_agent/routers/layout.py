@@ -32,5 +32,5 @@ async def layout(
     plan_result = await cluster_planner.plan(spec)
     spec = plan_result.spec
     spec.layout_hint = hint
-    diagram_templates = await view_planner.plan(spec, plan_result.module_types)
+    diagram_templates = await view_planner.plan(spec, plan_result.module_types, plan_result.module_rationales)
     return LayoutResponse(layout_hint=hint, diagram_spec=spec, diagram_templates=diagram_templates)

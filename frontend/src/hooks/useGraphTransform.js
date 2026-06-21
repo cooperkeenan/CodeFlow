@@ -11,12 +11,14 @@ export function useGraphTransform(spec, focus, expandedZones, views) {
     const view = views[viewId]
     if (!view) return { nodes: [], edges: [] }
 
+    const isPipeline = view.type === 'pipeline'
+
     const nodes = view.nodes.map(n => {
       const moduleName = n.data?.module ?? n.data?.moduleName
       const color = moduleName ? colorForModule(spec, moduleName) : undefined
       const data = { ...n.data, ...(color ? { color } : {}) }
       if (n.type === 'zoneMore') data.expanded = expandedZones.has(n.data?.key ?? '')
-      return { ...n, data }
+      return { ...n, data, ...(isPipeline ? { sourcePosition: 'right', targetPosition: 'left' } : {}) }
     })
 
     const edges = view.edges.map(e => toRFEdge(e, { id: e.id, label: e.label }))
