@@ -2,17 +2,15 @@ import DiagramExplorer from '../components/diagram/DiagramExplorer'
 import Badge from '../components/Badge'
 
 export default function DiagramPage({ analysis, onBack }) {
-  const { repo, profile, trace } = analysis
+  const { repo, profile, trace, diagram } = analysis
   const spec = trace?.diagram_spec
+  const views = diagram?.views
+  const diagramTemplates = trace?.diagram_templates
 
   return (
     <main style={{
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '1.25rem 1.5rem',
-      gap: '1rem',
-      boxSizing: 'border-box',
+      height: '100vh', display: 'flex', flexDirection: 'column',
+      padding: '1.25rem 1.5rem', gap: '1rem', boxSizing: 'border-box',
     }}>
       <header className="diagram-header">
         <button className="back" onClick={onBack}>← back</button>
@@ -23,10 +21,9 @@ export default function DiagramPage({ analysis, onBack }) {
           {profile?.framework && <Badge>{profile.framework}</Badge>}
         </div>
       </header>
-
       <div style={{ flex: 1, minHeight: 0 }}>
         {spec
-          ? <DiagramExplorer spec={spec} />
+          ? <DiagramExplorer spec={spec} views={views} diagramTemplates={diagramTemplates} />
           : <p style={{ color: '#3a3a3a', fontFamily: 'IBM Plex Mono, monospace', fontSize: 12 }}>No diagram data.</p>
         }
       </div>
