@@ -15,6 +15,7 @@ export default function ModuleSummaryNode({ data, selected }) {
       boxSizing: 'border-box',
     }}>
       <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
+      <Handle type="target" position={Position.Left} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
       <div style={{
         fontFamily: 'IBM Plex Mono, monospace',
         fontSize: 16, fontWeight: 700,
@@ -37,6 +38,7 @@ export default function ModuleSummaryNode({ data, selected }) {
         click to drill in ↓
       </div>
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
+      <Handle type="source" position={Position.Right} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
     </div>
   )
 }
