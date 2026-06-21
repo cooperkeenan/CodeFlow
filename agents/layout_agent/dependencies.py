@@ -8,6 +8,7 @@ from services.cluster_planner import ClusterPlanner
 from services.layout_service import LayoutService
 from services.ownership_resolver import OwnershipResolver
 from services.semantic_layout_service import SemanticLayoutService
+from services.component_type_planner import ComponentTypePlanner
 from services.template_planner import TemplatePlanner
 from services.template_selector_service import TemplateSelectorService
 from services.view_planner import ViewPlanner
@@ -89,13 +90,18 @@ def get_template_planner(
     return TemplatePlanner(
         anthropic_client,
         tool,
-        ArchetypeClassifier(),
         get_template_registry(),
-        ModuleGraphBuilder(),
     )
+
+
+def get_component_type_planner(
+    anthropic_client: anthropic.AsyncAnthropic = Depends(get_anthropic_client),
+) -> ComponentTypePlanner:
+    return ComponentTypePlanner(anthropic_client)
 
 
 def get_view_planner(
     template_planner: TemplatePlanner = Depends(get_template_planner),
+    comp_type_planner: ComponentTypePlanner = Depends(get_component_type_planner),
 ) -> ViewPlanner:
-    return ViewPlanner(template_planner)
+    return ViewPlanner(template_planner, comp_type_planner)

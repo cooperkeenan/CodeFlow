@@ -76,17 +76,20 @@ export function externalActorNode(actor, x, y) {
 export function toRFEdge(e, options = {}) {
   const animated = e.edge_type === 'http' || e.edge_type === 'event'
   const dim = e.primary === false
-  const stroke = dim ? '#242424' : '#333333'
+  const isFlow = e.edge_type === 'sequence'
+  const stroke = dim ? '#242424' : isFlow ? '#7766cc' : '#333333'
   return {
     id: options.id ?? `${e.source}->${e.target}`,
     source: e.source,
     target: e.target,
-    label: options.label ?? (e.edge_type !== 'call' ? e.edge_type : undefined),
+    label: options.label ?? (e.edge_type !== 'call' && !isFlow ? e.edge_type : undefined),
     type: 'smoothstep',
     animated: animated && !dim,
     style: dim
       ? { stroke, strokeWidth: 1, strokeDasharray: '3 3' }
-      : { stroke, strokeWidth: 1.5 },
+      : isFlow
+        ? { stroke, strokeWidth: 1.5, strokeDasharray: '6 3' }
+        : { stroke, strokeWidth: 1.5 },
     markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: stroke },
     labelStyle: { fill: 'rgba(255,255,255,0.38)', fontSize: 9, fontFamily: 'IBM Plex Mono, monospace' },
     labelBgStyle: { fill: '#121212', fillOpacity: 0.85 },

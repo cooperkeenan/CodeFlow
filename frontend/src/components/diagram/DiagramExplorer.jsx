@@ -2,9 +2,10 @@ import { useState, useCallback, useEffect } from 'react'
 import FlowGraph from './FlowGraph'
 import DetailPanel from './DetailPanel'
 import Breadcrumb from './Breadcrumb'
+import RationaleBox from './RationaleBox'
 import { useGraphTransform } from '../../hooks/useGraphTransform'
 
-export default function DiagramExplorer({ spec, views }) {
+export default function DiagramExplorer({ spec, views, diagramTemplates }) {
   const [viewStack, setViewStack] = useState([])
   const [detailPanel, setDetailPanel] = useState(null)
   const [expandedZones, setExpandedZones] = useState(() => new Set())
@@ -49,6 +50,10 @@ export default function DiagramExplorer({ spec, views }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
       <Breadcrumb viewStack={viewStack} onNavigate={navigateTo} />
+      <RationaleBox
+        rationale={diagramTemplates?.[graphKey]?.meta?.rationale}
+        type={diagramTemplates?.[graphKey]?.type}
+      />
       <div style={{ display: 'flex', gap: 10, flex: 1, minHeight: 0 }}>
         <div style={{ flex: 1, border: '1px solid #242424', borderRadius: 3, overflow: 'hidden', background: '#1E1E1E' }}>
           <FlowGraph nodes={nodes} edges={edges} graphKey={graphKey} onNodeClick={handleNodeClick} />

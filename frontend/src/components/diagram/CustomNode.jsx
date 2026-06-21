@@ -18,11 +18,8 @@ export default function CustomNode({ data, selected }) {
       transition: 'border-color 120ms ease',
       cursor: 'pointer',
     }}>
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }}
-      />
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
+      <Handle type="target" position={Position.Left} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
         <span style={{
@@ -65,11 +62,8 @@ export default function CustomNode({ data, selected }) {
         {data.actorType ?? data.zone}
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }}
-      />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
+      <Handle type="source" position={Position.Right} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
     </div>
   )
 }

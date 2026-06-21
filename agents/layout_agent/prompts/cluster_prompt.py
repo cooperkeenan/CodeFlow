@@ -7,7 +7,8 @@ static-analysis metrics fan_in / fan_out), and the runtime edges between those c
 
 Return ONLY valid JSON with no markdown fences, no explanation, matching this schema:
 {
-  "diagram_type": "<one of: pipeline|hub_and_spoke|layered_tier|hierarchy|mesh|dependency_graph>",
+  "diagram_type": "<one of: zoned|pipeline|hub_and_spoke|layered_tier|hierarchy|mesh|dependency_graph>",
+  "reasoning": "<short explanation of why this type fits this module's internal structure>",
   "zones": [
     {
       "zone": "<zone name from input>",
@@ -24,8 +25,9 @@ Return ONLY valid JSON with no markdown fences, no explanation, matching this sc
 }
 
 "diagram_type" describes this module's overall internal structure:
-- "pipeline": a clear A->B->C chain dominates (e.g. router->service->repository)
-- "hub_and_spoke": one orchestrator fans out to many services
+- "zoned": a runnable unit with clean zones (routers / services / helpers) and no single dominant flow — keep components grouped by zone. Choose this for most FastAPI/service modules.
+- "pipeline": the orchestrator runs its callees IN A DEFINED SEQUENCE (step→step data flow). Check the orchestrator's description field — if it mentions ordered steps, phases, or a chain of operations, use pipeline. HIGH FAN-OUT ALONE IS NOT SUFFICIENT — only use pipeline when the description confirms sequential execution.
+- "hub_and_spoke": the orchestrator dispatches to INDEPENDENT, UNORDERED callees — parallel handlers, separate validators, or independent fetchers with no natural execution order. Use this ONLY when the callees have no defined sequence.
 - "hierarchy": a parent component delegates to child helpers
 - "dependency_graph": mixed or no dominant pattern (safe default)
 

@@ -5,6 +5,7 @@ export default function DiagramPage({ analysis, onBack }) {
   const { repo, profile, trace, diagram } = analysis
   const spec = trace?.diagram_spec
   const views = diagram?.views
+  const diagramTemplates = trace?.diagram_templates
 
   return (
     <main style={{
@@ -22,7 +23,7 @@ export default function DiagramPage({ analysis, onBack }) {
       </header>
       <div style={{ flex: 1, minHeight: 0 }}>
         {spec
-          ? <DiagramExplorer spec={spec} views={views} />
+          ? <DiagramExplorer spec={spec} views={views} diagramTemplates={diagramTemplates} />
           : <p style={{ color: '#3a3a3a', fontFamily: 'IBM Plex Mono, monospace', fontSize: 12 }}>No diagram data.</p>
         }
       </div>

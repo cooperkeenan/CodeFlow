@@ -16,13 +16,14 @@ logger = logging.getLogger(__name__)
 
 _MODEL = "claude-haiku-4-5-20251001"
 _STYLE_TO_TYPE = {"pipeline": "pipeline", "hub": "hub_and_spoke", "hierarchy": "hierarchy"}
-_VALID_TYPES = {"pipeline", "hub_and_spoke", "layered_tier", "hierarchy", "mesh", "dependency_graph"}
+_VALID_TYPES = {"zoned", "pipeline", "hub_and_spoke", "layered_tier", "hierarchy", "mesh", "dependency_graph"}
 
 
 @dataclass
 class PlanResult:
     spec: DiagramSpec
     module_types: dict[str, str]
+    module_rationales: dict[str, str]
 
 
 class ClusterPlanner:
@@ -41,26 +42,29 @@ class ClusterPlanner:
     async def plan(self, spec: DiagramSpec) -> PlanResult:
         metrics = self._metrics.build(spec)
         module_types: dict[str, str] = {}
+        module_rationales: dict[str, str] = {}
         for module in spec.modules:
-            plans, diagram_type = await self._plan_module(spec, module, metrics)
+            plans, diagram_type, rationale = await self._plan_module(spec, module, metrics)
             module.cluster_plan = plans
             module_types[module.name] = diagram_type
-        return PlanResult(spec=spec, module_types=module_types)
+            module_rationales[module.name] = rationale
+        return PlanResult(spec=spec, module_types=module_types, module_rationales=module_rationales)
 
     async def _plan_module(
         self, spec: DiagramSpec, module: Module, metrics: dict[str, ComponentMetrics]
-    ) -> tuple[list[ZoneClusterPlan], str]:
+    ) -> tuple[list[ZoneClusterPlan], str, str]:
         if not any(not c.nested for comps in module.zones.values() for c in comps):
-            return [], "dependency_graph"
+            return [], "dependency_graph", ""
         try:
             raw = await self._call(self._evidence(spec, module, metrics))
             plans = self._validator.validate(raw, module)
             diagram_type = self._parse_type(raw.get("diagram_type"), plans)
-            return plans, diagram_type
+            rationale = raw.get("reasoning", "")
+            return plans, diagram_type, rationale
         except Exception as exc:
             logger.warning("Cluster planning fell back for %s: %s", module.name, exc)
             plans = self._fallback.group_by_role(module)
-            return plans, self._derive_type(plans)
+            return plans, self._derive_type(plans), ""
 
     def _parse_type(self, raw_type: object, plans: list[ZoneClusterPlan]) -> str:
         if isinstance(raw_type, str) and raw_type in _VALID_TYPES:
