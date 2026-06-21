@@ -75,7 +75,20 @@ class AnalysisService:
         logger.info("[template] system_type=%s views=%d", system_tmpl.get("type"), len(diagram_templates))
         trace["diagram_spec"] = enriched_spec
         trace["diagram_templates"] = diagram_templates
+        self._persister.write_json("layout_reasoning.json", self._build_reasoning(diagram_templates))
         diagram = await self._render.render(diagram_templates)
         self._persister.write_json("render.json", diagram)
         logger.info("[render] views=%d", len(diagram.get("views", {})))
         return AnalyseResponse(repo=repo_name, profile=profile, trace=trace, diagram=diagram)
+
+    def _build_reasoning(self, diagram_templates: dict) -> dict:
+        return {
+            view_id: {
+                "type": tmpl.get("type"),
+                "rationale": tmpl.get("meta", {}).get("rationale", ""),
+                "node_count": len(tmpl.get("nodes", [])),
+                "edge_count": len(tmpl.get("edges", [])),
+            }
+            for view_id, tmpl in diagram_templates.items()
+            if isinstance(tmpl, dict)
+        }

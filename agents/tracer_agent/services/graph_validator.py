@@ -109,9 +109,11 @@ class GraphValidator:
             if (ce["from"], ce["to"]) not in edge_pairs:
                 correctable.append(f"W2: confirmed_edge {ce['from']} -> {ce['to']} missing from spec")
 
-        evidence_pairs = {(e["from"], e["to"]) for e in evidence.get("import_edges", [])} | {
-            (e["from"], e["to"]) for e in evidence.get("call_edges", [])
-        }
+        evidence_pairs = (
+            {(e["from"], e["to"]) for e in evidence.get("import_edges", [])}
+            | {(e["from"], e["to"]) for e in evidence.get("call_edges", [])}
+            | {(e["from"], e["to"]) for e in evidence.get("http_edges", [])}
+        )
         for e in spec.edges:
             if (e.source, e.target) not in evidence_pairs:
                 warnings.append(f"W3: Edge {e.source} -> {e.target} not in evidence")

@@ -1,5 +1,6 @@
 from typing import Callable
 
+from placement.container import place_component_container as _place_container
 from placement.dependency_graph import place as _place_dependency_graph
 from placement.dependency_graph import place_component as _place_dependency_graph_component
 from placement.hierarchy import place as _place_hierarchy
@@ -27,6 +28,7 @@ _FNS: dict[str, PlacementFn] = {
     "dependency_graph": _place_dependency_graph,
     "relationship": _place_relationship,
     "module": _place_module_view,
+    "zoned": _place_module_view,
     "component_pipeline": _place_pipeline_component,
     "component_hub_and_spoke": _place_hub_and_spoke_component,
     "component_layered_tier": _place_layered_tier_component,
@@ -34,6 +36,7 @@ _FNS: dict[str, PlacementFn] = {
     "component_mesh": _place_mesh_component,
     "component_dependency_graph": _place_dependency_graph_component,
     "component_relationship": _place_relationship,
+    "component_container": _place_container,
 }
 
 

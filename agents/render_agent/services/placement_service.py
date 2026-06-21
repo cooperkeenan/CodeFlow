@@ -16,7 +16,7 @@ class PlacementService:
         views: dict[str, RenderedView] = {}
         for view_id, template in templates.items():
             if view_id.startswith("module:"):
-                place_key = "module"
+                place_key = "zoned" if template.type == "zoned" else f"component_{template.type}"
             elif view_id.startswith("component:"):
                 place_key = f"component_{template.type}"
             else:
@@ -47,7 +47,7 @@ class PlacementService:
             src = f"{_SYSTEM_PREFIX}{e.source}" if is_system else e.source
             tgt = f"{_SYSTEM_PREFIX}{e.target}" if is_system else e.target
             edge: dict = {"id": f"{src}->{tgt}", "source": src, "target": tgt, "edge_type": e.edge_type}
-            if e.edge_type != "call":
+            if e.edge_type not in ("call", "sequence"):
                 edge["label"] = e.edge_type
             edges.append(edge)
         return edges

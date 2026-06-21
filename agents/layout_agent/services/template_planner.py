@@ -3,8 +3,6 @@ import logging
 
 import anthropic
 
-from helpers.archetype_classifier import ArchetypeClassifier
-from helpers.module_graph import ModuleGraphBuilder
 from prompts.template_prompt import TEMPLATE_SYSTEM_PROMPT, build_evidence
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramTemplate
@@ -22,22 +20,16 @@ class TemplatePlanner:
         self,
         llm: anthropic.AsyncAnthropic,
         tool: SelectDiagramTemplateTool,
-        classifier: ArchetypeClassifier,
         registry: TemplateRegistry,
-        graph_builder: ModuleGraphBuilder,
     ) -> None:
         self._llm = llm
         self._tool = tool
-        self._classifier = classifier
         self._registry = registry
-        self._graph_builder = graph_builder
 
     async def plan(self, spec: DiagramSpec) -> DiagramTemplate:
         self._tool.bind_spec(spec)
-        graph = self._graph_builder.build(spec)
-        archetype, rationale = self._classifier.classify(graph)
-        evidence = build_evidence(spec, archetype, rationale, self._registry)
-        logger.info("TemplatePlanner: archetype_hint=%s modules=%d", archetype, len(spec.modules))
+        evidence = build_evidence(spec, self._registry)
+        logger.info("TemplatePlanner: modules=%d", len(spec.modules))
         try:
             template = await self._loop(evidence)
         except Exception as exc:
@@ -64,6 +56,7 @@ class TemplatePlanner:
                 logger.warning("TemplatePlanner: LLM did not call tool; using mesh fallback")
                 return await self._mesh_fallback()
             attempted: str = tool_block.input.get("diagram_type", "unknown")
+            reasoning: str = tool_block.input.get("reasoning", "")
             result_str = await self._tool.handle(tool_block.input)
             result = json.loads(result_str)
             messages.append({
@@ -71,8 +64,12 @@ class TemplatePlanner:
                 "content": [{"type": "tool_result", "tool_use_id": tool_block.id, "content": result_str}],
             })
             if "limit_hit" not in result and "error" not in result:
-                logger.info("TemplatePlanner: selected %s on attempt %d", attempted, retries + 1)
-                return DiagramTemplate.model_validate(result)
+                logger.info(
+                    "TemplatePlanner: selected %s on attempt %d rationale=%s",
+                    attempted, retries + 1, reasoning,
+                )
+                template = DiagramTemplate.model_validate(result)
+                return template.model_copy(update={"meta": {**template.meta, "rationale": reasoning}})
             logger.info(
                 "TemplatePlanner: %s rejected limit=%s actual=%s suggested=%s retry=%d",
                 attempted, result.get("limit_hit"), result.get("actual_count"),

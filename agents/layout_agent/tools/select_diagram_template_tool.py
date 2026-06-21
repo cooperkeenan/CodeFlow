@@ -28,9 +28,13 @@ SELECT_DIAGRAM_TEMPLATE_SCHEMA = {
                     "dependency_graph",
                 ],
                 "description": "The diagram type to validate and build a template for.",
-            }
+            },
+            "reasoning": {
+                "type": "string",
+                "description": "A short explanation of why this diagram type fits the evidence.",
+            },
         },
-        "required": ["diagram_type"],
+        "required": ["diagram_type", "reasoning"],
     },
 }
 
