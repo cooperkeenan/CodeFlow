@@ -1,8 +1,8 @@
 from collections import Counter
 
 from helpers.component_archetype_classifier import ComponentArchetypeClassifier
-from services._container_builder import build_container
-from services._edge_builder import build as _build_type_edges, build_structural as _build_struct_edges
+from services._component_view_builder import _ComponentViewBuilder
+from services._edge_builder import build_structural as _build_struct_edges
 from services._graph_contraction import bfs_depth, contract
 from shared.models.diagram_spec import DiagramSpec, Module
 from shared.models.diagram_template import DiagramTemplate, TemplateEdge, TemplateNode
@@ -13,6 +13,7 @@ _STRUCTURAL = frozenset({"hub_and_spoke", "pipeline", "hierarchy", "layered_tier
 class _ViewBuilder:
     def __init__(self, classifier: ComponentArchetypeClassifier) -> None:
         self._classifier = classifier
+        self._component_builder = _ComponentViewBuilder(classifier)
 
     def build_module(
         self, spec: DiagramSpec, module: Module, diagram_type: str, view_set: set[str]
@@ -81,7 +82,7 @@ class _ViewBuilder:
         _roles = {c.name: c.role for cs in module.zones.values() for c in cs if c.name in names}
         cr = contract(names, intra, _roles); names, intra = cr.names, cr.edges
         nodes = [TemplateNode(id=c.name, label=c.name, tier=c.tier, module_name=module.name,
-                              kind="component", drillable=(c.name in view_set))
+                              kind="component", drillable=(c.name in view_set), description=c.description)
                  for cs in module.zones.values() for c in cs if not c.nested and c.tier == "primary" and c.name in names]
         fan_out: Counter = Counter(s for s, _ in intra)
         hub_id = max(names, key=lambda n: fan_out.get(n, 0)) if names else ""
@@ -94,55 +95,4 @@ class _ViewBuilder:
     def build_component(
         self, spec: DiagramSpec, component_name: str, view_set: set[str], comp_types: dict | None = None,
     ) -> DiagramTemplate:
-        comp_to_mod = {c.name: m.name for m in spec.modules for cs in m.zones.values() for c in cs}
-        all_comps = {c.name: c for m in spec.modules for cs in m.zones.values() for c in cs}
-        focused = all_comps.get(component_name)
-        if not focused:
-            return DiagramTemplate(type="relationship", nodes=[], edges=[], meta={"focus": component_name})
-        callers, callees = [], []
-        seen_c: set[str] = set()
-        seen_e: set[str] = set()
-        for e in spec.edges:
-            if e.source == e.target or e.edge_type == "import":
-                continue
-            if e.target == component_name and e.source not in seen_c:
-                seen_c.add(e.source); callers.append(e.source)
-            if e.source == component_name and e.target not in seen_e:
-                seen_e.add(e.target); callees.append(e.target)
-        callers, callees = sorted(callers), sorted(callees)
-        related = {component_name, *callers, *callees}
-        children = sorted(n for n in (focused.children or []) if n in all_comps and n not in related)
-        folded_map: dict = {}
-        if focused.role in {"service", "orchestrator", "repository", "entry"}:
-            _s = {*callees, *children}
-            _er = [(e.source, e.target) for e in spec.edges if e.source in _s and e.target in _s and e.source != e.target]
-            cr = contract(_s, _er, {n: (all_comps[n].role if n in all_comps else "") for n in _s})
-            callees = [c for c in callees if c in cr.names]; children = [c for c in children if c in cr.names]
-            folded_map = cr.folded
-        if folded_map:
-            return build_container(component_name, callers, callees, children, folded_map, comp_to_mod, view_set)
-        override = (comp_types or {}).get(component_name) or {}
-        diagram_type = override.get("type") or self._classifier.classify(component_name, callers, callees, children, all_comps)
-        edges, resolved_order = _build_type_edges(diagram_type, component_name, callers, callees, children, override.get("order"), spec)
-        step_names = resolved_order if resolved_order is not None else [*callees, *children]
-        node_names = [*callers, component_name, *step_names]
-        nodes: list[TemplateNode] = []
-        seen_n: set[str] = set()
-        for name in node_names:
-            if name in seen_n:
-                continue
-            seen_n.add(name)
-            mod = comp_to_mod.get(name, "")
-            role = "caller" if name in callers else ("callee" if name in callees else ("child" if name in children else "focus"))
-            drillable = name != component_name and name in view_set
-            nodes.append(TemplateNode(id=name, label=name, tier="primary", module_name=mod, kind="component", style=role, drillable=drillable))
-        depth_map = {component_name: 0, **{c: -1 for c in callers}, **{c: 1 for c in callees}, **{c: 1 for c in children}}
-        meta: dict = {
-            "focus": component_name, "callers": callers, "callees": callees, "children": children,
-            "hub_id": component_name, "depth_map": depth_map,
-        }
-        if resolved_order is not None:
-            meta["order"] = resolved_order
-        if override.get("reasoning"):
-            meta["rationale"] = override["reasoning"]
-        return DiagramTemplate(type=diagram_type, nodes=nodes, edges=edges, meta=meta)
+        return self._component_builder.build(spec, component_name, view_set, comp_types)

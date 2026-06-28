@@ -4,10 +4,19 @@ from core.config import Settings, get_settings
 from fastapi import Depends, Request
 from services.ast_service import AstService
 from services.call_graph_service import CallGraphService
+from services.chunk_context_builder import ChunkContextBuilder
+from services.chunk_tracer import ChunkTracer
+from services.breadcrumb_builder import BreadcrumbBuilder
+from services.component_placer import ComponentPlacer
+from services.correction_prompt_builder import CorrectionPromptBuilder
+from services.edge_recovery import EdgeRecovery
 from services.evidence_service import EvidenceService
 from services.file_fetch_service import FileFetchService
+from services.graph_validator import GraphValidator
+from services.raw_merger import RawMerger
 from services.spec_assembler import SpecAssembler
 from services.tracer_service import TracerService
+from services.tree_traversal_partitioner import TreeTraversalPartitioner
 from tools.build_call_graph_tool import BuildCallGraphTool
 from tools.build_evidence_tool import BuildEvidenceTool
 from tools.fetch_layer_files_tool import FetchLayerFilesTool
@@ -50,7 +59,7 @@ def get_build_call_graph_tool(
 
 
 def get_spec_assembler() -> SpecAssembler:
-    return SpecAssembler()
+    return SpecAssembler(ComponentPlacer())
 
 
 def get_build_evidence_tool(
@@ -69,17 +78,70 @@ def get_anthropic_client(
     )
 
 
+def get_tree_traversal_partitioner(
+    settings: Settings = Depends(get_settings),
+) -> TreeTraversalPartitioner:
+    return TreeTraversalPartitioner(
+        settings.TRACER_CHUNK_TOKEN_BUDGET, settings.TRACER_CHUNK_MAX_COMPONENTS
+    )
+
+
+def get_breadcrumb_builder() -> BreadcrumbBuilder:
+    return BreadcrumbBuilder()
+
+
+def get_chunk_context_builder() -> ChunkContextBuilder:
+    return ChunkContextBuilder()
+
+
+def get_raw_merger() -> RawMerger:
+    return RawMerger()
+
+
+def get_edge_recovery() -> EdgeRecovery:
+    return EdgeRecovery()
+
+
+def get_graph_validator() -> GraphValidator:
+    return GraphValidator()
+
+
+def get_correction_prompt_builder() -> CorrectionPromptBuilder:
+    return CorrectionPromptBuilder()
+
+
+def get_chunk_tracer(
+    anthropic_client: anthropic.AsyncAnthropic = Depends(get_anthropic_client),
+    spec_assembler: SpecAssembler = Depends(get_spec_assembler),
+    graph_validator: GraphValidator = Depends(get_graph_validator),
+    correction_builder: CorrectionPromptBuilder = Depends(get_correction_prompt_builder),
+) -> ChunkTracer:
+    return ChunkTracer(anthropic_client, spec_assembler, graph_validator, correction_builder)
+
+
 def get_tracer_service(
     fetch_layer_files_tool: FetchLayerFilesTool = Depends(get_fetch_layer_files_tool),
     build_call_graph_tool: BuildCallGraphTool = Depends(get_build_call_graph_tool),
     build_evidence_tool: BuildEvidenceTool = Depends(get_build_evidence_tool),
     spec_assembler: SpecAssembler = Depends(get_spec_assembler),
-    anthropic_client: anthropic.AsyncAnthropic = Depends(get_anthropic_client),
+    partitioner: TreeTraversalPartitioner = Depends(get_tree_traversal_partitioner),
+    context_builder: ChunkContextBuilder = Depends(get_chunk_context_builder),
+    chunk_tracer: ChunkTracer = Depends(get_chunk_tracer),
+    raw_merger: RawMerger = Depends(get_raw_merger),
+    edge_recovery: EdgeRecovery = Depends(get_edge_recovery),
+    graph_validator: GraphValidator = Depends(get_graph_validator),
+    breadcrumb_builder: BreadcrumbBuilder = Depends(get_breadcrumb_builder),
 ) -> TracerService:
     return TracerService(
         fetch_layer_files_tool,
         build_call_graph_tool,
         build_evidence_tool,
         spec_assembler,
-        anthropic_client,
+        partitioner,
+        context_builder,
+        chunk_tracer,
+        raw_merger,
+        edge_recovery,
+        graph_validator,
+        breadcrumb_builder,
     )
