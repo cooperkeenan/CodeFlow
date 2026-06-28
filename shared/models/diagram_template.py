@@ -21,6 +21,7 @@ class TemplateNode(BaseModel):
     zone_count: int = 0
     component_count: int = 0
     drillable: bool = False
+    description: str = ""
 
 
 class TemplateEdge(BaseModel):

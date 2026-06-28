@@ -25,6 +25,8 @@ class PlacementService:
             nodes = place(template)
             if view_id == "system":
                 self._apply_counts(nodes, template)
+            if view_id.startswith("component:"):
+                self._apply_descriptions(nodes, template)
             edges = self._build_edges(template, view_id)
             views[view_id] = RenderedView(type=template.type, nodes=nodes, edges=edges)
             logger.debug("Placed view=%s type=%s nodes=%d", view_id, template.type, len(nodes))
@@ -39,6 +41,19 @@ class PlacementService:
             entry = counts.get(node.get("id"))
             if entry:
                 node["data"]["zoneCount"], node["data"]["componentCount"] = entry
+
+    def _apply_descriptions(self, nodes: list[dict], template: DiagramTemplate) -> None:
+        focus = template.meta.get("focus")
+        if not focus:
+            return
+        desc_map = {n.id: n.description for n in template.nodes}
+        desc = desc_map.get(focus, "")
+        if not desc:
+            return
+        for node in nodes:
+            if node.get("id") == focus:
+                node["data"]["description"] = desc
+                break
 
     def _build_edges(self, template: DiagramTemplate, view_id: str) -> list[dict]:
         is_system = view_id == "system"

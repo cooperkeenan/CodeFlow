@@ -7,11 +7,14 @@ export default function CustomNode({ data, selected }) {
 
   return (
     <div style={{
-      background: theme.bg,
-      border: `1px solid ${selected ? theme.accent : theme.border}`,
+      background: 'linear-gradient(0deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06)), ' + theme.bg,
+      border: `1px solid ${selected ? theme.accent : theme.accent + '66'}`,
       borderRadius: 3,
       padding: '9px 13px',
       width: 180,
+      height: data.expanded ? 'auto' : 84,
+      minHeight: 84,
+      boxSizing: 'border-box',
       boxShadow: data.isEntry ? `0 0 0 2px ${theme.accent}40` : 'none',
       outline: data.isEntry ? `1px solid ${theme.accent}` : 'none',
       outlineOffset: 3,
@@ -19,7 +22,7 @@ export default function CustomNode({ data, selected }) {
       cursor: 'pointer',
     }}>
       <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
-      <Handle type="target" position={Position.Left} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
+      <Handle id="left" type="target" position={Position.Left} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
         <span style={{
@@ -62,8 +65,24 @@ export default function CustomNode({ data, selected }) {
         {data.actorType ?? data.zone}
       </div>
 
+      {data.description && (
+        <div style={{
+          marginTop: 5,
+          fontFamily: 'IBM Plex Mono, monospace',
+          fontSize: 8,
+          color: 'rgba(255,255,255,0.5)',
+          lineHeight: 1.4,
+          ...(data.expanded
+            ? { overflow: 'visible' }
+            : { overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }
+          ),
+        }}>
+          {data.description}
+        </div>
+      )}
+
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
-      <Handle type="source" position={Position.Right} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
+      <Handle id="right" type="source" position={Position.Right} style={{ opacity: 0, width: 1, height: 1, border: 'none', background: 'transparent', minWidth: 0, minHeight: 0 }} />
     </div>
   )
 }

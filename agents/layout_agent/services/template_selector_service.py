@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from core.template_config import TemplateLimitsConfig
 from helpers.module_graph import ModuleGraphBuilder
 from services._template_builder import _TemplateBuilder
+from services._template_meta_builder import _TemplateMetaBuilder
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramTemplate, DiagramType
 from templates.registry import TemplateRegistry
@@ -38,9 +39,14 @@ class TemplateSelectorService:
         self._registry = registry
         self._config = config
         self._graph_builder = graph_builder
-        self._builder = _TemplateBuilder()
+        self._builder = _TemplateBuilder(_TemplateMetaBuilder())
 
-    def select(self, diagram_type: DiagramType, spec: DiagramSpec) -> SelectionResult:
+    def select(
+        self,
+        diagram_type: DiagramType,
+        spec: DiagramSpec,
+        pipeline_order: list[str] | None = None,
+    ) -> SelectionResult:
         graph = self._graph_builder.build(spec)
         defn = self._registry.get(diagram_type)
         node_count = len(graph.module_names)
@@ -65,7 +71,7 @@ class TemplateSelectorService:
                 )
                 return SelectionResult(
                     ok=True,
-                    template=self._builder.build(diagram_type, spec, graph),
+                    template=self._builder.build(diagram_type, spec, graph, pipeline_order),
                     limit_hit=None,
                     actual_count=node_count,
                     suggested_type=None,
@@ -80,7 +86,7 @@ class TemplateSelectorService:
 
         return SelectionResult(
             ok=True,
-            template=self._builder.build(diagram_type, spec, graph),
+            template=self._builder.build(diagram_type, spec, graph, pipeline_order),
             limit_hit=None,
             actual_count=node_count,
             suggested_type=None,
