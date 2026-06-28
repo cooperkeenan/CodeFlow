@@ -8,7 +8,9 @@ from services.chunk_tracer import ChunkTracer
 from services.edge_recovery import EdgeRecovery
 from services.evidence_partitioner import EvidenceChunk
 from services.graph_validator import GraphValidator
+from services.line_range_enricher import LineRangeEnricher
 from services.raw_merger import RawMerger
+from services.source_persist_service import SourcePersistService
 from services.spec_assembler import SpecAssembler
 from services.tree_traversal_partitioner import TreeTraversalPartitioner
 from tools.build_call_graph_tool import BuildCallGraphTool
@@ -35,6 +37,8 @@ class TracerService:
         edge_recovery: EdgeRecovery,
         graph_validator: GraphValidator,
         breadcrumb_builder: BreadcrumbBuilder,
+        line_range_enricher: LineRangeEnricher,
+        source_persist: SourcePersistService,
     ) -> None:
         self._fetch = fetch_layer_files_tool
         self._call_graph = build_call_graph_tool
@@ -47,6 +51,8 @@ class TracerService:
         self._edge_recovery = edge_recovery
         self._graph_validator = graph_validator
         self._breadcrumb_builder = breadcrumb_builder
+        self._line_range_enricher = line_range_enricher
+        self._source_persist = source_persist
 
     async def trace(self, request: TracerRequest) -> TracerResponse:
         logger.info("Tracing repo: %s", request.repo_name)
@@ -57,6 +63,7 @@ class TracerService:
         raws = await self._trace_sequential(chunks, context, request.blueprint, request.architecture_type)
         merged = self._raw_merger.merge(raws)
         spec = self._assembler.assemble(request.blueprint, merged, request.architecture_type)
+        spec = self._line_range_enricher.enrich(spec, evidence.get("signatures", {}))
         spec = self._edge_recovery.recover(spec, evidence)
         spec = self._graph_validator.validate(spec, evidence).fixed_spec
         component_count = sum(len(comps) for m in spec.modules for comps in m.zones.values())
@@ -97,6 +104,9 @@ class TracerService:
         }))
         if "error" in fetch:
             raise ValueError(f"fetch_layer_files failed: {fetch['error']}")
+        await self._source_persist.persist(
+            request.repo_name, fetch["temp_dir"], fetch["file_paths"]
+        )
         args = {"temp_dir": fetch["temp_dir"], "file_paths": fetch["file_paths"]}
         call_graph = json.loads(await self._call_graph.handle(
             {**args, "entry_point_hint": request.entry_point_hint}
