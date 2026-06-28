@@ -1,5 +1,6 @@
 import logging
 
+from services.component_placer import ComponentPlacer
 from shared.models.diagram_spec import (
     Component,
     ComponentIO,
@@ -17,8 +18,11 @@ _ACTOR_TYPES = {"database", "api", "webhook", "browser"}
 
 
 class SpecAssembler:
+    def __init__(self, placer: ComponentPlacer) -> None:
+        self._placer = placer
+
     def assemble(self, blueprint: RepoBlueprint, raw: dict, architecture_type: str) -> DiagramSpec:
-        index = self._dir_index(blueprint)
+        index = self._placer.dir_index(blueprint)
         modules = {
             m.root_path: Module(
                 name=m.name, description=m.description, root_path=m.root_path, zones={}
@@ -26,7 +30,7 @@ class SpecAssembler:
             for m in blueprint.modules
         }
         for component in self._components(raw):
-            placement = self._place(component.file_path, index)
+            placement = self._placer.place(component.file_path, index)
             if placement is None:
                 logger.warning("Dropping unplaceable component %s (%s)", component.name, component.file_path)
                 continue
@@ -39,22 +43,6 @@ class SpecAssembler:
             external_actors=self._actors(raw),
             entry_points=[e for e in raw.get("entry_points", []) if isinstance(e, str)],
         )
-
-    def _dir_index(self, blueprint: RepoBlueprint) -> list[tuple[str, str, str]]:
-        index = [
-            (directory, module.root_path, zone.name)
-            for module in blueprint.modules
-            for zone in module.zones
-            for directory in zone.directories
-        ]
-        index.sort(key=lambda t: len(t[0]), reverse=True)
-        return index
-
-    def _place(self, file_path: str, index: list[tuple[str, str, str]]) -> tuple[str, str] | None:
-        for directory, root, zone in index:
-            if file_path.startswith(directory):
-                return root, zone
-        return None
 
     def _components(self, raw: dict) -> list[Component]:
         components = []
