@@ -9,12 +9,13 @@ export default function DiagramExplorer({ spec, views, diagramTemplates }) {
   const [viewStack, setViewStack] = useState([])
   const [detailPanel, setDetailPanel] = useState(null)
   const [expandedZones, setExpandedZones] = useState(() => new Set())
+  const [expandedNodes, setExpandedNodes] = useState(() => new Set())
 
   const focus = viewStack.at(-1) ?? null
-  const { nodes, edges } = useGraphTransform(spec, focus, expandedZones, views)
+  const { nodes, edges } = useGraphTransform(spec, focus, expandedZones, expandedNodes, views)
   const graphKey = focus ? `${focus.kind}:${focus.id}` : 'system'
 
-  useEffect(() => { setExpandedZones(new Set()) }, [graphKey])
+  useEffect(() => { setExpandedZones(new Set()); setExpandedNodes(new Set()) }, [graphKey])
 
   const handleNodeClick = useCallback((_, node) => {
     const { label, drillable } = node.data
@@ -37,6 +38,12 @@ export default function DiagramExplorer({ spec, views, diagramTemplates }) {
         return i >= 0 ? prev.slice(0, i + 1) : [...prev, { kind: 'component', id: label }]
       })
       setDetailPanel(null)
+    } else if (node.data.description && !drillable) {
+      setExpandedNodes(prev => {
+        const next = new Set(prev)
+        next.has(node.id) ? next.delete(node.id) : next.add(node.id)
+        return next
+      })
     } else {
       setDetailPanel(prev => prev?.label === label ? null : node.data)
     }

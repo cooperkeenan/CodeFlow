@@ -5,8 +5,8 @@ export default function ModuleSummaryNode({ data, selected }) {
   return (
     <div style={{
       width: 240, height: 110,
-      background: color.bg,
-      border: `1px solid ${selected ? color.accent : color.border}`,
+      background: 'linear-gradient(0deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06)), ' + color.bg,
+      border: `1px solid ${selected ? color.accent : color.accent + '66'}`,
       borderRadius: 6,
       padding: '14px 18px',
       cursor: 'pointer',

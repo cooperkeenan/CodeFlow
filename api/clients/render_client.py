@@ -18,7 +18,7 @@ class RenderClient:
                 response = await self._http.post(
                     f"{self._base_url}/render",
                     json={"diagram_templates": diagram_templates},
-                    timeout=60.0,
+                    timeout=300.0,
                 )
                 response.raise_for_status()
                 return {"views": response.json()["views"]}
