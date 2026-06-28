@@ -33,6 +33,15 @@ SELECT_DIAGRAM_TEMPLATE_SCHEMA = {
                 "type": "string",
                 "description": "A short explanation of why this diagram type fits the evidence.",
             },
+            "pipeline_order": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": (
+                    "Ordered list of module names forming the pipeline sequence. "
+                    "Required when diagram_type is pipeline. List only the stage modules "
+                    "in processing order; omit utility/shared modules that are not pipeline stages."
+                ),
+            },
         },
         "required": ["diagram_type", "reasoning"],
     },
@@ -52,8 +61,9 @@ class SelectDiagramTemplateTool:
             logger.error("select_diagram_template called before spec was bound")
             return json.dumps({"error": "spec not bound"})
         diagram_type: DiagramType = tool_input["diagram_type"]
+        pipeline_order: list[str] | None = tool_input.get("pipeline_order")
         try:
-            result: SelectionResult = self._service.select(diagram_type, self._spec)
+            result: SelectionResult = self._service.select(diagram_type, self._spec, pipeline_order)
             if result.ok and result.template is not None:
                 return result.template.model_dump_json()
             return json.dumps(

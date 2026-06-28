@@ -23,7 +23,7 @@ def build(
     if diagram_type == "layered_tier":
         depth = {focus: 0, **{c: -1 for c in callers}, **{n: 1 for n in steps}}
         return _layered(steps | {focus, *callers}, depth, spec), None
-    return _raw({focus, *callers, *steps}, focus, list(children), spec), None
+    return _raw({focus, *callers, *steps}, focus, set(callers), list(children), spec), None
 
 
 def build_structural(
@@ -81,11 +81,13 @@ def _layered(involved: set[str], depth: dict[str, int], spec: DiagramSpec) -> li
     return edges
 
 
-def _raw(involved: set[str], focus: str, children: list[str], spec: DiagramSpec) -> list[TemplateEdge]:
+def _raw(involved: set[str], focus: str, callers: set[str], children: list[str], spec: DiagramSpec) -> list[TemplateEdge]:
     seen: set[tuple[str, str]] = set()
     edges: list[TemplateEdge] = []
     for e in spec.edges:
-        if e.edge_type != "import" and e.source != e.target and e.source in involved and e.target in involved:
+        if (e.edge_type != "import" and e.source != e.target
+                and e.source in involved and e.target in involved
+                and not (e.source in callers and e.target != focus)):
             key = (e.source, e.target)
             if key not in seen:
                 seen.add(key)

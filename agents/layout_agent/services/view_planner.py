@@ -52,10 +52,15 @@ class ViewPlanner:
             if e.edge_type != "import":
                 call_names.add(e.source)
                 call_names.add(e.target)
+        all_comps = [c for m in spec.modules for cs in m.zones.values() for c in cs]
+        deps: dict[str, set[str]] = {}
+        for c in all_comps:
+            deps[c.name] = set(c.children or [])
+        for e in spec.edges:
+            if e.edge_type != "import" and e.source != e.target:
+                deps.setdefault(e.source, set()).add(e.target)
         return {
             c.name
-            for m in spec.modules
-            for cs in m.zones.values()
-            for c in cs
-            if c.children or c.name in call_names
+            for c in all_comps
+            if (c.children or c.name in call_names) and len(deps.get(c.name, set())) != 1
         }

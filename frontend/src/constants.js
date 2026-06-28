@@ -1,6 +1,6 @@
-export const API_URL = 'http://localhost:8000'
+export const API_URL = ''
 export const GITHUB_CLIENT_ID = 'Ov23liff91VGCpUNWcXc'
-export const REDIRECT_URI = 'http://localhost:5173'
+export const REDIRECT_URI = window.location.origin
 
 export const MODULE_PALETTE = [
   { bg: '#0D1B2A', border: '#1B3A5C', accent: '#64B5F6' },
