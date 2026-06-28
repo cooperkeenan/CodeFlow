@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     LAYOUT_AGENT_URL: str = "http://localhost:8005"
     LOCAL_REPO: bool = False
     LOCAL_REPO_PATH: str = ""
+    DATABASE_URL: str = ""
 
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),

@@ -11,8 +11,10 @@ from clients.render_client import RenderClient
 from core.config import Settings, get_settings
 from fastapi import Depends, Request
 from services.analysis_service import AnalysisService
+from services.code_read_service import CodeReadService
 from services.github_service import GitHubService
 from services.output_persister import OutputPersister
+from shared.code_store.code_store import CodeStore
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -78,3 +80,13 @@ def get_analysis_service(
 ) -> AnalysisService:
     persister = OutputPersister(_REPO_ROOT / "outputs")
     return AnalysisService(profiler_client, tracer_client, render_client, layout_client, persister)
+
+
+def get_code_store(request: Request) -> CodeStore:
+    return request.app.state.code_store
+
+
+def get_code_read_service(
+    code_store: CodeStore = Depends(get_code_store),
+) -> CodeReadService:
+    return CodeReadService(code_store)
