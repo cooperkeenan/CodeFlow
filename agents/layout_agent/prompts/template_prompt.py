@@ -11,7 +11,7 @@ the spec exceeds the type's node limit. If rejected, call the tool again with th
 Stop as soon as the tool succeeds — never call the tool more than needed.
 
 Guidance for choosing:
-- pipeline: strict A→B→C sequence; every module has at most one upstream and one downstream; use for any ordered processing chain regardless of domain
+- pipeline: strict A→B→C sequence; every module has at most one upstream and one downstream; use for any ordered processing chain regardless of domain; when selecting pipeline you MUST also supply pipeline_order — an ordered list of the stage module names in processing sequence, omitting utility or shared modules that are not pipeline stages
 - hub_and_spoke: one module has far more connections than all others; spokes have few or no edges between themselves; the hub is a coordinator or shared dependency
 - layered_tier: modules cluster into horizontal responsibility bands (e.g. intake / processing / storage); traffic only flows downward across tier boundaries; multiple modules may share a tier
 - hierarchy: tree-shaped ownership; a root delegates to children who may delegate further; use when the primary relationship is containment or delegation, not sequential flow
