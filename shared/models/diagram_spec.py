@@ -22,6 +22,8 @@ class Component(BaseModel):
     role: str = ""
     tier: ComponentTier = "primary"
     nested: bool = False
+    start_line: int | None = None
+    end_line: int | None = None
 
 
 class Edge(BaseModel):

@@ -57,6 +57,8 @@ class AstService:
                 "file_path": filepath,
                 "public_methods": methods,
                 "imports": upper_imports,
+                "start_line": node.lineno,
+                "end_line": node.end_lineno,
             }
         return result
 
