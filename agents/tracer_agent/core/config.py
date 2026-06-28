@@ -8,6 +8,9 @@ ROOT_DIR = Path(__file__).resolve().parents[3]
 
 class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str
+    TRACER_CHUNK_TOKEN_BUDGET: int = 45000
+    TRACER_CHUNK_MAX_COMPONENTS: int = 40
+    TRACER_MAX_CONCURRENCY: int = 4
 
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),

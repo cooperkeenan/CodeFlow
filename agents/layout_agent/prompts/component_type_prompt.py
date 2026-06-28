@@ -26,10 +26,12 @@ TYPE GUIDANCE:
 - pipeline: the component runs its callees/children in a clear step-by-step order (e.g. fetch →
   build → validate → assemble). "order" MUST list ALL callee and children node ids in execution
   sequence — every callee/child must appear exactly once.
-- hub_and_spoke: the component fans out to several independent callees with no clear ordering; it
-  is a dispatcher or coordinator.
-- hierarchy: the component delegates to children that each have their own sub-children; the
-  containment tree is the dominant structure. "order" lists ALL nodes top-down.
+- hub_and_spoke: only when the component dispatches to MANY (4 or more) INDEPENDENT services/APIs
+  in DIFFERENT modules (typically via HTTP cross-service calls) and those spokes do not call each
+  other; NOT for a service that calls a few internal helpers.
+- hierarchy: the component branches to several tools/children — a decision/branch ("call this tool
+  or that tool") — or a containment tree; use for parent-to-children branching. "order" lists ALL
+  nodes top-down.
 - dependency_graph: mixed or bidirectional dependencies, no dominant single pattern.
 - relationship: the component has ≤1 callee/child; show it in context of its callers.
 
