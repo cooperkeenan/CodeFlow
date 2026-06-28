@@ -8,3 +8,5 @@ a2a-sdk
 tree-sitter
 networkx
 jarviscg @ git+https://github.com/nuanced-dev/jarviscg
+psycopg[binary]
+psycopg-pool
