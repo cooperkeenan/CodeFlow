@@ -1,25 +1,38 @@
 from collections import deque
 
 from helpers.module_graph import ModuleGraph
+from services._template_meta_builder import _TemplateMetaBuilder
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramTemplate, DiagramType, TemplateEdge, TemplateNode
 
 
 class _TemplateBuilder:
-    def build(self, diagram_type: DiagramType, spec: DiagramSpec, graph: ModuleGraph) -> DiagramTemplate:
-        nodes = self._build_nodes(diagram_type, spec, graph)
-        edges = self._build_edges(diagram_type, spec, graph)
-        meta = self._build_meta(diagram_type, spec, graph)
+    def __init__(self, meta_builder: _TemplateMetaBuilder) -> None:
+        self._meta_builder = meta_builder
+
+    def build(
+        self,
+        diagram_type: DiagramType,
+        spec: DiagramSpec,
+        graph: ModuleGraph,
+        pipeline_order: list[str] | None = None,
+    ) -> DiagramTemplate:
+        nodes = self._build_nodes(diagram_type, spec, graph, pipeline_order)
+        edges = self._build_edges(diagram_type, spec, graph, pipeline_order)
+        meta = self._meta_builder.build(diagram_type, spec, graph, pipeline_order)
         return DiagramTemplate(type=diagram_type, nodes=nodes, edges=edges, meta=meta)
 
     def compute_depth(self, graph: ModuleGraph) -> int:
-        dm = self._depth_map(graph)
-        return max(dm.values()) if dm else 0
+        return self._meta_builder.compute_depth(graph)
 
     def _build_nodes(
-        self, diagram_type: DiagramType, spec: DiagramSpec, graph: ModuleGraph
+        self,
+        diagram_type: DiagramType,
+        spec: DiagramSpec,
+        graph: ModuleGraph,
+        pipeline_order: list[str] | None = None,
     ) -> list[TemplateNode]:
-        order = self._node_order(diagram_type, spec, graph)
+        order = self._node_order(diagram_type, spec, graph, pipeline_order)
         module_tier: dict[str, str] = {}
         zone_counts: dict[str, int] = {}
         component_counts: dict[str, int] = {}
@@ -48,9 +61,16 @@ class _TemplateBuilder:
         ]
 
     def _node_order(
-        self, diagram_type: DiagramType, spec: DiagramSpec, graph: ModuleGraph
+        self,
+        diagram_type: DiagramType,
+        spec: DiagramSpec,
+        graph: ModuleGraph,
+        pipeline_order: list[str] | None = None,
     ) -> list[str]:
         if diagram_type == "pipeline":
+            if pipeline_order:
+                base = [n for n in pipeline_order if n in graph.module_names]
+                return base + sorted(n for n in graph.module_names if n not in set(base))
             if spec.layout_hint and spec.layout_hint.module_order:
                 base = list(spec.layout_hint.module_order)
                 return base + [n for n in graph.module_names if n not in base]
@@ -89,58 +109,33 @@ class _TemplateBuilder:
                 queue.append(child)
         return order + sorted(n for n in graph.module_names if n not in visited)
 
-    def _build_edges(self, diagram_type: DiagramType, spec: DiagramSpec, graph: ModuleGraph) -> list[TemplateEdge]:
+    def _build_edges(
+        self,
+        diagram_type: DiagramType,
+        spec: DiagramSpec,
+        graph: ModuleGraph,
+        pipeline_order: list[str] | None = None,
+    ) -> list[TemplateEdge]:
         if diagram_type == "pipeline":
-            order = self._node_order("pipeline", spec, graph)
-            return [TemplateEdge(source=order[i], target=order[i + 1], edge_type="sequence") for i in range(len(order) - 1)]
+            base = pipeline_order or self._node_order("pipeline", spec, graph)
+            chain = [n for n in base if n in graph.module_names]
+            return [TemplateEdge(source=chain[i], target=chain[i + 1], edge_type="sequence") for i in range(len(chain) - 1)]
         comp_to_mod: dict[str, str] = {
             comp.name: module.name
             for module in spec.modules for comps in module.zones.values() for comp in comps
         }
-        seen: dict[tuple[str, str], str] = {}
+        pairs: dict[frozenset, dict] = {}
+        order: list[frozenset] = []
         for edge in spec.edges:
             src = comp_to_mod.get(edge.source)
             tgt = comp_to_mod.get(edge.target)
-            if src and tgt and src != tgt and (src, tgt) not in seen:
-                seen[(src, tgt)] = edge.edge_type
-        return [TemplateEdge(source=s, target=t, edge_type=et) for (s, t), et in sorted(seen.items())]
-
-    def _build_meta(
-        self, diagram_type: DiagramType, spec: DiagramSpec, graph: ModuleGraph
-    ) -> dict:
-        if diagram_type == "pipeline":
-            return {"module_order": self._node_order("pipeline", spec, graph)}
-        if diagram_type == "hub_and_spoke":
-            hub = max(graph.fan_out, key=graph.fan_out.get) if graph.fan_out else ""
-            return {"hub_id": hub}
-        if diagram_type == "layered_tier":
-            tier_indices: dict[str, int] = {}
-            if spec.layout_hint and spec.layout_hint.rank_assignments:
-                for ra in spec.layout_hint.rank_assignments:
-                    tier_indices[ra.module_name] = ra.rank
-            return {"tier_indices": tier_indices}
-        if diagram_type == "hierarchy":
-            parent_map = {
-                n: (sorted(graph.reverse_adjacency[n])[0] if graph.reverse_adjacency.get(n) else None)
-                for n in graph.module_names
-            }
-            return {"parent_map": parent_map, "depth_map": self._depth_map(graph)}
-        return {}
-
-    def _depth_map(self, graph: ModuleGraph) -> dict[str, int]:
-        roots = [n for n in graph.module_names if not graph.reverse_adjacency.get(n)]
-        if not roots:
-            return {n: 0 for n in graph.module_names}
-        depth: dict[str, int] = {}
-        queue: deque[tuple[str, int]] = deque((r, 0) for r in roots)
-        while queue:
-            node, d = queue.popleft()
-            if node in depth:
+            if not src or not tgt or src == tgt:
                 continue
-            depth[node] = d
-            for child in graph.adjacency.get(node, set()):
-                if child not in depth:
-                    queue.append((child, d + 1))
-        for n in graph.module_names:
-            depth.setdefault(n, 0)
-        return depth
+            key: frozenset = frozenset({src, tgt})
+            if key not in pairs:
+                pairs[key] = {"src": src, "tgt": tgt, "type": edge.edge_type}
+                order.append(key)
+            elif edge.edge_type == "http" and pairs[key]["type"] != "http":
+                pairs[key] = {"src": src, "tgt": tgt, "type": "http"}
+        result = [TemplateEdge(source=pairs[k]["src"], target=pairs[k]["tgt"], edge_type=pairs[k]["type"]) for k in order]
+        return sorted(result, key=lambda e: (e.source, e.target))
