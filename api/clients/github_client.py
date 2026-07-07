@@ -23,6 +23,17 @@ class GitHubClient:
         response.raise_for_status()
         return response.json()
 
+    async def get_user(self, access_token: str) -> dict:
+        response = await self._http.get(
+            f"{self._API_URL}/user",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/vnd.github.v3+json",
+            },
+        )
+        response.raise_for_status()
+        return response.json()
+
     async def list_repositories(self, access_token: str) -> list[dict]:
         response = await self._http.get(
             f"{self._API_URL}/user/repos",
