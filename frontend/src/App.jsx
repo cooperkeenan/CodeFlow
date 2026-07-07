@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import { useAnalysis } from './hooks/useAnalysis'
+import { getSessionToken } from './api/session'
 import HomePage from './pages/HomePage'
-import GitHubPage from './pages/GithubPage'
+import GitHubPage from './pages/GitHubPage'
 import LocalPage from './pages/LocalPage'
+import AccountPage from './pages/AccountPage'
 import DiagramPage from './pages/DiagramPage'
 
 export default function App() {
   const [view, setView] = useState(
     () => new URLSearchParams(window.location.search).has('code') ? 'github' : 'home'
   )
-  const { analysis, loading, error, run, reset } = useAnalysis()
+  const { analysis, loading, error, run, reset, show } = useAnalysis()
 
   const goHome = () => { reset(); setView('home') }
+
+  const openAccount = () => setView(getSessionToken() ? 'account' : 'github')
+
+  const handleOpenMap = (map) => { show(map); setView('diagram') }
 
   const handleGitHubSelect = async (repo, accessToken) => {
     const result = await run('/analyse', { access_token: accessToken, repo_name: repo.full_name })
@@ -47,10 +53,15 @@ export default function App() {
     )
   }
 
+  if (view === 'account') {
+    return <AccountPage onBack={goHome} onOpenMap={handleOpenMap} />
+  }
+
   return (
     <HomePage
       onGitHub={() => setView('github')}
       onLocal={() => setView('local')}
+      onAccount={openAccount}
     />
   )
 }

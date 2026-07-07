@@ -23,5 +23,7 @@ export function useAnalysis() {
 
   const reset = () => { setAnalysis(null); setError(null) }
 
-  return { analysis, loading, error, run, reset }
+  const show = (data) => { setError(null); setAnalysis(data) }
+
+  return { analysis, loading, error, run, reset, show }
 }
