@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import DiagramExplorer from '../components/diagram/DiagramExplorer'
 import Badge from '../components/Badge'
 
@@ -6,6 +7,7 @@ export default function DiagramPage({ analysis, onBack }) {
   const spec = trace?.diagram_spec
   const views = diagram?.views
   const diagramTemplates = trace?.diagram_templates
+  const [codeViewMode, setCodeViewMode] = useState(false)
 
   return (
     <main style={{
@@ -20,10 +22,34 @@ export default function DiagramPage({ analysis, onBack }) {
           {profile?.language && <Badge>{profile.language}</Badge>}
           {profile?.framework && <Badge>{profile.framework}</Badge>}
         </div>
+        <button
+          onClick={() => setCodeViewMode(m => !m)}
+          style={{
+            marginLeft: 'auto',
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            padding: '3px 10px',
+            borderRadius: 3,
+            border: codeViewMode ? '1px solid #39FF14' : '1px solid #3a3a3a',
+            background: codeViewMode ? 'rgba(57,255,20,0.12)' : 'transparent',
+            color: codeViewMode ? '#39FF14' : 'rgba(255,255,255,0.38)',
+            cursor: 'pointer',
+          }}
+        >
+          {'</>'} code view
+        </button>
       </header>
       <div style={{ flex: 1, minHeight: 0 }}>
         {spec
-          ? <DiagramExplorer spec={spec} views={views} diagramTemplates={diagramTemplates} />
+          ? <DiagramExplorer
+              spec={spec}
+              views={views}
+              diagramTemplates={diagramTemplates}
+              codeViewMode={codeViewMode}
+              repo={repo}
+            />
           : <p style={{ color: '#3a3a3a', fontFamily: 'IBM Plex Mono, monospace', fontSize: 12 }}>No diagram data.</p>
         }
       </div>
