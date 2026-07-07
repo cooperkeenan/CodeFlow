@@ -53,20 +53,23 @@ class AnalysisService:
         self, repo_name: str, local_path: str | None,
         profile: ProfileResponse, access_token: str | None = None,
     ) -> AnalyseResponse:
-        logger.info("[profiler] arch=%s lang=%s modules=%d",
-                    profile.architecture_type, profile.language, len(profile.modules))
+        logger.info("[profiler] arch=%s lang=%s modules=%d", profile.architecture_type, profile.language, len(profile.modules))
         self._persister.write_json("profiler.json", profile)
+        
         trace = await self._tracer.trace(TracerRequest(
             repo_name=repo_name, local_path=local_path, access_token=access_token,
             architecture_type=profile.architecture_type, language=profile.language, blueprint=profile,
         ))
         self._persister.write_json("tracer.json", trace)
+
         spec = trace["diagram_spec"]
         component_count = sum(len(cs) for m in spec.get("modules", []) for cs in m.get("zones", {}).values())
         logger.info("[tracer] modules=%d components=%d edges=%d",
                     len(spec.get("modules", [])), component_count, len(spec.get("edges", [])))
+        
         layout_result = await self._layout.layout(spec)
         self._persister.write_json("layout.json", layout_result)
+        
         layout_hint = layout_result["layout_hint"]
         enriched_spec = layout_result["diagram_spec"]
         diagram_templates = layout_result["diagram_templates"]

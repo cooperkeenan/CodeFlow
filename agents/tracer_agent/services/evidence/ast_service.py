@@ -1,7 +1,7 @@
 import ast
 import logging
 
-from services.http_visitor import HttpCallVisitor
+from services.evidence.http_visitor import HttpCallVisitor
 
 logger = logging.getLogger(__name__)
 
