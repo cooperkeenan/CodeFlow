@@ -9,13 +9,23 @@ from clients.profiler_client import ProfilerClient
 from clients.tracer_client import TracerClient
 from clients.render_client import RenderClient
 from core.config import Settings, get_settings
-from fastapi import Depends, Request
+from fastapi import Depends, Header, HTTPException, Request
+from models.auth_model import AuthUser
 from services.analysis_service import AnalysisService
+from services.archive_extractor import ArchiveExtractor
+from services.auth_service import AuthService
+from services.ci_ingest_service import CiIngestService
 from services.code_read_service import CodeReadService
 from services.github_service import GitHubService
 from services.output_persister import OutputPersister
+from services.repo_map_service import RepoMapService
 from services.stage_status_service import StageStatusService
+from services.token_hasher import TokenHasher
+from services.token_service import TokenService
+from shared.access_token_store.access_token_store import AccessTokenStore
 from shared.code_store.code_store import CodeStore
+from shared.repo_map_store.repo_map_store import RepoMapStore
+from shared.user_store.user_store import UserStore
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -95,3 +105,81 @@ def get_code_read_service(
     code_store: CodeStore = Depends(get_code_store),
 ) -> CodeReadService:
     return CodeReadService(code_store)
+
+
+def get_user_store(request: Request) -> UserStore:
+    return request.app.state.user_store
+
+
+def get_token_store(request: Request) -> AccessTokenStore:
+    return request.app.state.token_store
+
+
+def get_token_hasher() -> TokenHasher:
+    return TokenHasher()
+
+
+def get_auth_service(
+    user_store: UserStore = Depends(get_user_store),
+    token_store: AccessTokenStore = Depends(get_token_store),
+    github_service: GitHubService = Depends(get_github_service),
+    hasher: TokenHasher = Depends(get_token_hasher),
+) -> AuthService:
+    return AuthService(user_store, token_store, github_service, hasher)
+
+
+def get_token_service(
+    token_store: AccessTokenStore = Depends(get_token_store),
+    hasher: TokenHasher = Depends(get_token_hasher),
+) -> TokenService:
+    return TokenService(token_store, hasher)
+
+
+def get_repo_map_store(request: Request) -> RepoMapStore:
+    return request.app.state.repo_map_store
+
+
+def get_repo_map_service(
+    repo_map_store: RepoMapStore = Depends(get_repo_map_store),
+) -> RepoMapService:
+    return RepoMapService(repo_map_store)
+
+
+def get_ci_ingest_service(
+    analysis_service: AnalysisService = Depends(get_analysis_service),
+    repo_map_service: RepoMapService = Depends(get_repo_map_service),
+    settings: Settings = Depends(get_settings),
+) -> CiIngestService:
+    return CiIngestService(
+        analysis_service,
+        repo_map_service,
+        ArchiveExtractor(),
+        settings.CI_MAX_UPLOAD_MB * 1024 * 1024,
+    )
+
+
+def _bearer_token(authorization: str | None) -> str | None:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    return authorization[7:].strip()
+
+
+async def get_current_user(
+    authorization: str | None = Header(default=None),
+    auth: AuthService = Depends(get_auth_service),
+) -> AuthUser:
+    raw = _bearer_token(authorization)
+    user = await auth.resolve(raw) if raw else None
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    return user
+
+
+async def get_optional_user(
+    authorization: str | None = Header(default=None),
+    auth: AuthService = Depends(get_auth_service),
+) -> AuthUser | None:
+    raw = _bearer_token(authorization)
+    if not raw:
+        return None
+    return await auth.resolve(raw)

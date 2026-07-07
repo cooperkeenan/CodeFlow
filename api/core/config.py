@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     LOCAL_REPO: bool = False
     LOCAL_REPO_PATH: str = ""
     DATABASE_URL: str = ""
+    CI_MAX_UPLOAD_MB: int = 50
 
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),

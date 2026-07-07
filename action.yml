@@ -1,0 +1,38 @@
+name: CodeFlow Analyse
+description: Archive the checked-out repository and send it to CodeFlow to build and store its RepoMap.
+inputs:
+  api_url:
+    description: Base URL of the CodeFlow API gateway.
+    required: true
+  token:
+    description: CodeFlow API token (create one in CodeFlow and store it as a secret).
+    required: true
+  repo:
+    description: Repository identifier the RepoMap is saved under.
+    required: false
+    default: ${{ github.repository }}
+  exclude:
+    description: Space-separated paths to exclude from the uploaded archive.
+    required: false
+    default: ./node_modules ./dist ./.venv ./venv
+runs:
+  using: composite
+  steps:
+    - name: Archive and upload to CodeFlow
+      shell: bash
+      env:
+        CODEFLOW_API_URL: ${{ inputs.api_url }}
+        CODEFLOW_TOKEN: ${{ inputs.token }}
+        CODEFLOW_REPO: ${{ inputs.repo }}
+        CODEFLOW_EXCLUDE: ${{ inputs.exclude }}
+      run: |
+        set -euo pipefail
+        exclude_args=(--exclude-vcs)
+        for path in $CODEFLOW_EXCLUDE; do
+          exclude_args+=(--exclude="$path")
+        done
+        tar czf /tmp/codeflow-repo.tar.gz "${exclude_args[@]}" .
+        curl -fsS --max-time 900 -X POST "$CODEFLOW_API_URL/ci/analyse" \
+          -H "Authorization: Bearer $CODEFLOW_TOKEN" \
+          -F "repo=$CODEFLOW_REPO" \
+          -F "file=@/tmp/codeflow-repo.tar.gz"

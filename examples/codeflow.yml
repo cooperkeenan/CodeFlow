@@ -1,0 +1,15 @@
+name: CodeFlow
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cooperkeenan/codeflow@main
+        with:
+          api_url: ${{ vars.CODEFLOW_API_URL }}
+          token: ${{ secrets.CODEFLOW_API_TOKEN }}

@@ -1,0 +1,9 @@
+from typing import Protocol
+
+
+class RepoMapStore(Protocol):
+    async def save(self, user_id: int, repo: str, source: str, payload: dict) -> None: ...
+
+    async def list_for_user(self, user_id: int) -> list[dict]: ...
+
+    async def get(self, user_id: int, repo: str) -> dict | None: ...
