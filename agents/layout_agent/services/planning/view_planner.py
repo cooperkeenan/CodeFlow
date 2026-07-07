@@ -1,9 +1,9 @@
 import logging
 
 from helpers.component_archetype_classifier import ComponentArchetypeClassifier
-from services._view_builder import _ViewBuilder
-from services.component_type_planner import ComponentTypePlanner
-from services.template_planner import TemplatePlanner
+from services.builders._view_builder import _ViewBuilder
+from services.planning.component_type_planner import ComponentTypePlanner
+from services.planning.template_planner import TemplatePlanner
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramTemplate
 

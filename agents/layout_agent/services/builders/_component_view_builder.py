@@ -1,8 +1,8 @@
 from helpers.component_archetype_classifier import ComponentArchetypeClassifier
-from services._container_builder import build_container
-from services._edge_builder import build as _build_type_edges
-from services._graph_contraction import _PRIMARY
-from services._neighborhood import contract_steps, wrapping_adapters
+from services.builders._container_builder import build_container
+from services.builders._edge_builder import build as _build_type_edges
+from services.builders._graph_contraction import _PRIMARY
+from services.builders._neighborhood import contract_steps, wrapping_adapters
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramTemplate, TemplateEdge, TemplateNode
 

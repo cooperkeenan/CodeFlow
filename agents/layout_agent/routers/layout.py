@@ -8,11 +8,11 @@ from dependencies import (
     get_view_planner,
 )
 from models.layout_model import LayoutRequest, LayoutResponse
-from services.cluster_planner import ClusterPlanner
-from services.layout_service import LayoutService
-from services.ownership_resolver import OwnershipResolver
-from services.semantic_layout_service import SemanticLayoutService
-from services.view_planner import ViewPlanner
+from services.planning.cluster_planner import ClusterPlanner
+from services.planning.layout_service import LayoutService
+from services.planning.ownership_resolver import OwnershipResolver
+from services.planning.semantic_layout_service import SemanticLayoutService
+from services.planning.view_planner import ViewPlanner
 
 router = APIRouter(tags=["layout"])
 

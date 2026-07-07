@@ -1,5 +1,6 @@
 import base64
 import logging
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -15,6 +16,54 @@ _EXCLUDED_DIRS = {"__pycache__", ".venv", "venv", "tests", "test"}
 class FileFetchService:
     def __init__(self, http_client: httpx.AsyncClient):
         self._http = http_client
+
+    async def fetch_files(
+        self,
+        *,
+        repo_name: str | None = None,
+        access_token: str | None = None,
+        local_path: str | None = None,
+        directories: list[str],
+    ) -> tuple[str, list[str]]:
+        if local_path:
+            return self._copy_local_files(local_path, directories)
+        if not access_token or not repo_name:
+            raise ValueError(
+                "fetch_files requires local_path for local repos or "
+                "both access_token and repo_name for GitHub repos"
+            )
+        return await self.fetch_files_to_temp(access_token, repo_name, directories)
+
+    def _copy_local_files(
+        self,
+        local_path: str,
+        directories: list[str],
+    ) -> tuple[str, list[str]]:
+        root = Path(local_path)
+        temp_dir = tempfile.mkdtemp()
+        written_files: list[str] = []
+        for directory in directories:
+            source_path = root / directory.rstrip("/")
+            if not source_path.exists():
+                logger.warning("Path not found: %s", source_path)
+                continue
+            candidates = [source_path] if source_path.is_file() else list(source_path.rglob("*.py"))
+            for file_path in candidates:
+                if not self._is_included(file_path):
+                    continue
+                dest = Path(temp_dir) / file_path.relative_to(root)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(file_path, dest)
+                written_files.append(str(dest))
+                logger.info("Copied %s", file_path.name)
+        return temp_dir, written_files
+
+    def _is_included(self, file_path: Path) -> bool:
+        if file_path.suffix != ".py":
+            return False
+        if file_path.name in _EXCLUDED_FILES:
+            return False
+        return not any(ex in file_path.parts for ex in _EXCLUDED_DIRS)
 
     async def fetch_files_to_temp(
         self,

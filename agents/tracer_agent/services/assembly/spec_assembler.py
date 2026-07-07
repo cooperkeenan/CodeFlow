@@ -1,6 +1,6 @@
 import logging
 
-from services.component_placer import ComponentPlacer
+from services.assembly.component_placer import ComponentPlacer
 from shared.models.diagram_spec import (
     Component,
     ComponentIO,
@@ -13,7 +13,7 @@ from shared.models.repo_blueprint import RepoBlueprint
 
 logger = logging.getLogger(__name__)
 
-_EDGE_TYPES = {"http", "import", "database", "event", "call"}
+_EDGE_TYPES = {"http", "database", "event", "call"}
 _ACTOR_TYPES = {"database", "api", "webhook", "browser"}
 
 
