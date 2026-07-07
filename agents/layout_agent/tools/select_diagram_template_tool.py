@@ -1,7 +1,7 @@
 import json
 import logging
 
-from services.template_selector_service import SelectionResult, TemplateSelectorService
+from services.planning.template_selector_service import SelectionResult, TemplateSelectorService
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramType
 

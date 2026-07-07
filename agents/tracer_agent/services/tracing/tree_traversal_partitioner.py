@@ -1,7 +1,7 @@
 import json
 from collections import deque
 
-from services.evidence_partitioner import EvidenceChunk
+from models.evidence_chunk import EvidenceChunk
 from shared.models.repo_blueprint import RepoBlueprint
 
 

@@ -1,9 +1,9 @@
 from collections import Counter
 
 from helpers.component_archetype_classifier import ComponentArchetypeClassifier
-from services._component_view_builder import _ComponentViewBuilder
-from services._edge_builder import build_structural as _build_struct_edges
-from services._graph_contraction import bfs_depth, contract
+from services.builders._component_view_builder import _ComponentViewBuilder
+from services.builders._edge_builder import build_structural as _build_struct_edges
+from services.builders._graph_contraction import bfs_depth, contract
 from shared.models.diagram_spec import DiagramSpec, Module
 from shared.models.diagram_template import DiagramTemplate, TemplateEdge, TemplateNode
 
