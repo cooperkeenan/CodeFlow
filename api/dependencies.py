@@ -14,6 +14,7 @@ from services.analysis_service import AnalysisService
 from services.code_read_service import CodeReadService
 from services.github_service import GitHubService
 from services.output_persister import OutputPersister
+from services.stage_status_service import StageStatusService
 from shared.code_store.code_store import CodeStore
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -80,6 +81,10 @@ def get_analysis_service(
 ) -> AnalysisService:
     persister = OutputPersister(_REPO_ROOT / "outputs")
     return AnalysisService(profiler_client, tracer_client, render_client, layout_client, persister)
+
+
+def get_stage_status_service() -> StageStatusService:
+    return StageStatusService()
 
 
 def get_code_store(request: Request) -> CodeStore:

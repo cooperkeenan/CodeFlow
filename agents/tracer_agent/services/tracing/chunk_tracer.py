@@ -3,10 +3,10 @@ import re
 
 import anthropic
 from prompts.tracer_prompt import TRACER_SYSTEM_PROMPT
-from services.correction_prompt_builder import CorrectionPromptBuilder
-from services.evidence_partitioner import EvidenceChunk
-from services.graph_validator import GraphValidator
-from services.spec_assembler import SpecAssembler
+from services.tracing.correction_prompt_builder import CorrectionPromptBuilder
+from models.evidence_chunk import EvidenceChunk
+from services.assembly.graph_validator import GraphValidator
+from services.assembly.spec_assembler import SpecAssembler
 from shared.models.repo_blueprint import RepoBlueprint
 
 _MODEL = "claude-haiku-4-5-20251001"

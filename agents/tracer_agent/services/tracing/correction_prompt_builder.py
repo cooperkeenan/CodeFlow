@@ -1,6 +1,6 @@
 import re
 
-from services.graph_validator import ValidationResult
+from services.assembly.graph_validator import ValidationResult
 
 
 class CorrectionPromptBuilder:
