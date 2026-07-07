@@ -1,7 +1,7 @@
 from collections import deque
 
 from helpers.module_graph import ModuleGraph
-from services._template_meta_builder import _TemplateMetaBuilder
+from services.builders._template_meta_builder import _TemplateMetaBuilder
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramTemplate, DiagramType, TemplateEdge, TemplateNode
 

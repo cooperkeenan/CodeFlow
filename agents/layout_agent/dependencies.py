@@ -4,14 +4,14 @@ from core.config import Settings, get_settings
 from core.template_config import TemplateLimitsConfig
 from fastapi import Depends
 
-from services.cluster_planner import ClusterPlanner
-from services.layout_service import LayoutService
-from services.ownership_resolver import OwnershipResolver
-from services.semantic_layout_service import SemanticLayoutService
-from services.component_type_planner import ComponentTypePlanner
-from services.template_planner import TemplatePlanner
-from services.template_selector_service import TemplateSelectorService
-from services.view_planner import ViewPlanner
+from services.planning.cluster_planner import ClusterPlanner
+from services.planning.layout_service import LayoutService
+from services.planning.ownership_resolver import OwnershipResolver
+from services.planning.semantic_layout_service import SemanticLayoutService
+from services.planning.component_type_planner import ComponentTypePlanner
+from services.planning.template_planner import TemplatePlanner
+from services.planning.template_selector_service import TemplateSelectorService
+from services.planning.view_planner import ViewPlanner
 
 from helpers.archetype_classifier import ArchetypeClassifier
 from helpers.cluster_fallback import ClusterFallback

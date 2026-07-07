@@ -7,9 +7,8 @@ from models.profiler_model import ProfileRequest, ProfileResponse
 from models.repo_skeleton import RepoSkeleton
 from prompts.profiler_prompt import PROFILER_SYSTEM_PROMPT
 from services.blueprint_validator import BlueprintValidator
+from services.file_tree_service import FileTreeService
 from services.repo_map_service import RepoMapService
-from tools.get_file_tree_tool import GetFileTreeTool
-from tools.get_manifest_tool import GetManifestFilesTool
 
 logger = logging.getLogger(__name__)
 
@@ -17,21 +16,18 @@ logger = logging.getLogger(__name__)
 class ProfilerService:
     def __init__(
         self,
-        get_file_tree_tool: GetFileTreeTool,
-        get_manifest_files_tool: GetManifestFilesTool,
+        file_tree_service: FileTreeService,
         repo_map_service: RepoMapService,
         blueprint_validator: BlueprintValidator,
         anthropic_client: anthropic.AsyncAnthropic,
     ):
-        self._file_tree = get_file_tree_tool
-        self._manifests = get_manifest_files_tool
+        self._files = file_tree_service
         self._repo_map = repo_map_service
         self._validator = blueprint_validator
         self._llm = anthropic_client
 
     async def profile(self, request: ProfileRequest) -> ProfileResponse:
         logger.info("Profiling repo: %s", request.repo_name)
-        
         paths = await self._fetch_paths(request)
         manifests = await self._fetch_manifests(request, paths)
         skeleton = self._repo_map.build(paths, request.repo_name)
@@ -55,14 +51,10 @@ class ProfilerService:
         return {"access_token": request.access_token, "repo_name": request.repo_name}
 
     async def _fetch_paths(self, request: ProfileRequest) -> list[str]:
-        result = json.loads(await self._file_tree.handle(self._target(request)))
-        if isinstance(result, dict) and "error" in result:
-            raise ValueError(f"get_file_tree failed: {result['error']}")
-        return result
+        return await self._files.get_tree(**self._target(request))
 
     async def _fetch_manifests(self, request: ProfileRequest, paths: list[str]) -> dict:
-        result = json.loads(await self._manifests.handle({**self._target(request), "paths": paths}))
-        return {} if isinstance(result, dict) and "error" in result else result
+        return await self._files.get_manifests(**self._target(request), paths=paths)
 
     async def _label(self, user_prompt: str) -> dict:
         response = await self._llm.messages.create(
@@ -77,7 +69,10 @@ class ProfilerService:
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:
             raise ValueError("LLM did not return valid JSON")
-        return json.loads(match.group())
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"LLM returned malformed JSON: {exc}") from exc
 
     def _user_prompt(self, skeleton: RepoSkeleton, manifests: dict) -> str:
         lines = ["MODULE/DIRECTORY SKELETON (fixed — label only, do not change):", ""]
