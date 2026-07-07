@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from services._graph_contraction import _ADAPTER, _PRIMARY, ContractionResult, contract
+from services.builders._graph_contraction import _ADAPTER, _PRIMARY, ContractionResult, contract
 from shared.models.diagram_spec import Component, Edge
 
 

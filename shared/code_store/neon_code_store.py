@@ -39,7 +39,12 @@ class NeonCodeStore:
 
     async def _get_pool(self) -> AsyncConnectionPool:
         if self._pool is None:
-            self._pool = AsyncConnectionPool(self._database_url, open=False)
+            self._pool = AsyncConnectionPool(
+                self._database_url,
+                open=False,
+                min_size=0,
+                reconnect_timeout=30,
+            )
             await self._pool.open()
             await self.ensure_schema()
         return self._pool

@@ -1,21 +1,20 @@
-import json
 import logging
 
+from models.evidence_chunk import EvidenceChunk
 from models.tracer_model import TracerResponse
-from services.breadcrumb_builder import BreadcrumbBuilder
-from services.chunk_context_builder import ChunkContextBuilder
-from services.chunk_tracer import ChunkTracer
-from services.edge_recovery import EdgeRecovery
-from services.evidence_partitioner import EvidenceChunk
-from services.graph_validator import GraphValidator
+from services.tracing.breadcrumb_builder import BreadcrumbBuilder
+from services.evidence.call_graph_service import CallGraphService
+from services.tracing.chunk_context_builder import ChunkContextBuilder
+from services.tracing.chunk_tracer import ChunkTracer
+from services.assembly.edge_recovery import EdgeRecovery
+from services.evidence.evidence_service import EvidenceService
+from services.evidence.file_fetch_service import FileFetchService
+from services.assembly.graph_validator import GraphValidator
 from services.line_range_enricher import LineRangeEnricher
-from services.raw_merger import RawMerger
+from services.assembly.raw_merger import RawMerger
 from services.source_persist_service import SourcePersistService
-from services.spec_assembler import SpecAssembler
-from services.tree_traversal_partitioner import TreeTraversalPartitioner
-from tools.build_call_graph_tool import BuildCallGraphTool
-from tools.build_evidence_tool import BuildEvidenceTool
-from tools.fetch_layer_files_tool import FetchLayerFilesTool
+from services.assembly.spec_assembler import SpecAssembler
+from services.tracing.tree_traversal_partitioner import TreeTraversalPartitioner
 
 from shared.models.repo_blueprint import RepoBlueprint
 from shared.models.tracer_request import TracerRequest
@@ -26,9 +25,9 @@ logger = logging.getLogger(__name__)
 class TracerService:
     def __init__(
         self,
-        fetch_layer_files_tool: FetchLayerFilesTool,
-        build_call_graph_tool: BuildCallGraphTool,
-        build_evidence_tool: BuildEvidenceTool,
+        file_fetch_service: FileFetchService,
+        call_graph_service: CallGraphService,
+        evidence_service: EvidenceService,
         spec_assembler: SpecAssembler,
         partitioner: TreeTraversalPartitioner,
         context_builder: ChunkContextBuilder,
@@ -40,9 +39,9 @@ class TracerService:
         line_range_enricher: LineRangeEnricher,
         source_persist: SourcePersistService,
     ) -> None:
-        self._fetch = fetch_layer_files_tool
-        self._call_graph = build_call_graph_tool
-        self._evidence_tool = build_evidence_tool
+        self._files = file_fetch_service
+        self._call_graph = call_graph_service
+        self._evidence = evidence_service
         self._assembler = spec_assembler
         self._partitioner = partitioner
         self._context_builder = context_builder
@@ -96,23 +95,17 @@ class TracerService:
 
     async def _gather_evidence(self, request: TracerRequest) -> dict:
         directories = self._minimal_dirs(request.blueprint)
-        fetch = json.loads(await self._fetch.handle({
-            "directories": directories,
-            "access_token": request.access_token,
-            "repo_name": request.repo_name,
-            "local_path": request.local_path,
-        }))
-        if "error" in fetch:
-            raise ValueError(f"fetch_layer_files failed: {fetch['error']}")
-        await self._source_persist.persist(
-            request.repo_name, fetch["temp_dir"], fetch["file_paths"]
+        temp_dir, file_paths = await self._files.fetch_files(
+            directories=directories,
+            access_token=request.access_token,
+            repo_name=request.repo_name,
+            local_path=request.local_path,
         )
-        args = {"temp_dir": fetch["temp_dir"], "file_paths": fetch["file_paths"]}
-        call_graph = json.loads(await self._call_graph.handle(
-            {**args, "entry_point_hint": request.entry_point_hint}
-        ))
-        evidence = json.loads(await self._evidence_tool.handle({**args, "call_graph": call_graph}))
-        return {} if "error" in evidence else evidence
+        if not file_paths:
+            raise ValueError("No source files fetched for tracing")
+        await self._source_persist.persist(request.repo_name, temp_dir, file_paths)
+        call_graph = self._call_graph.build(temp_dir, file_paths, request.entry_point_hint)
+        return self._evidence.build(file_paths, call_graph, temp_dir)
 
     def _minimal_dirs(self, blueprint: RepoBlueprint) -> list[str]:
         dirs = sorted({d for m in blueprint.modules for z in m.zones for d in z.directories})

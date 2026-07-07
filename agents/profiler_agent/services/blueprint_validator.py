@@ -17,9 +17,9 @@ class BlueprintValidator:
             for sk in skeleton.modules
         ]
         return RepoBlueprint(
-            architecture_type=str(raw.get("architecture_type") or "unknown"),
-            language=str(raw.get("language") or "unknown"),
-            framework=str(raw.get("framework") or "unknown"),
+            architecture_type=raw.get("architecture_type") or "unknown",
+            language=raw.get("language") or "unknown",
+            framework=raw.get("framework") or "unknown",
             patterns=[str(p) for p in raw.get("patterns", []) if isinstance(p, str)],
             modules=modules,
         )
@@ -35,9 +35,9 @@ class BlueprintValidator:
             zones = [ZonePlan(name="module", directories=sorted(valid_dirs))]
         return ModulePlan(
             name=sk.name,
-            description=str(raw_module.get("description") or ""),
+            description=raw_module.get("description") or "",
             root_path=sk.root_path,
-            style=str(raw_module.get("style") or ""),
+            style=raw_module.get("style") or "",
             zones=zones,
         )
 

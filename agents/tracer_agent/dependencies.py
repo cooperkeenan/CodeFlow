@@ -2,26 +2,23 @@ import anthropic
 import httpx
 from core.config import Settings, get_settings
 from fastapi import Depends, Request
-from services.ast_service import AstService
-from services.call_graph_service import CallGraphService
-from services.chunk_context_builder import ChunkContextBuilder
-from services.chunk_tracer import ChunkTracer
-from services.breadcrumb_builder import BreadcrumbBuilder
-from services.component_placer import ComponentPlacer
-from services.correction_prompt_builder import CorrectionPromptBuilder
-from services.edge_recovery import EdgeRecovery
-from services.evidence_service import EvidenceService
-from services.file_fetch_service import FileFetchService
-from services.graph_validator import GraphValidator
+from services.evidence.ast_service import AstService
+from services.evidence.call_graph_service import CallGraphService
+from services.tracing.chunk_context_builder import ChunkContextBuilder
+from services.tracing.chunk_tracer import ChunkTracer
+from services.tracing.breadcrumb_builder import BreadcrumbBuilder
+from services.assembly.component_placer import ComponentPlacer
+from services.tracing.correction_prompt_builder import CorrectionPromptBuilder
+from services.assembly.edge_recovery import EdgeRecovery
+from services.evidence.evidence_service import EvidenceService
+from services.evidence.file_fetch_service import FileFetchService
+from services.assembly.graph_validator import GraphValidator
 from services.line_range_enricher import LineRangeEnricher
-from services.raw_merger import RawMerger
+from services.assembly.raw_merger import RawMerger
 from services.source_persist_service import SourcePersistService
-from services.spec_assembler import SpecAssembler
+from services.assembly.spec_assembler import SpecAssembler
 from services.tracer_service import TracerService
-from services.tree_traversal_partitioner import TreeTraversalPartitioner
-from tools.build_call_graph_tool import BuildCallGraphTool
-from tools.build_evidence_tool import BuildEvidenceTool
-from tools.fetch_layer_files_tool import FetchLayerFilesTool
+from services.tracing.tree_traversal_partitioner import TreeTraversalPartitioner
 
 from shared.code_store.code_store import CodeStore
 from shared.code_store.neon_code_store import NeonCodeStore
@@ -51,26 +48,8 @@ def get_evidence_service(
     return EvidenceService(ast_service)
 
 
-def get_fetch_layer_files_tool(
-    service: FileFetchService = Depends(get_file_fetch_service),
-) -> FetchLayerFilesTool:
-    return FetchLayerFilesTool(service)
-
-
-def get_build_call_graph_tool(
-    service: CallGraphService = Depends(get_call_graph_service),
-) -> BuildCallGraphTool:
-    return BuildCallGraphTool(service)
-
-
 def get_spec_assembler() -> SpecAssembler:
     return SpecAssembler(ComponentPlacer())
-
-
-def get_build_evidence_tool(
-    service: EvidenceService = Depends(get_evidence_service),
-) -> BuildEvidenceTool:
-    return BuildEvidenceTool(service)
 
 
 def get_anthropic_client(
@@ -141,9 +120,9 @@ def get_chunk_tracer(
 
 
 def get_tracer_service(
-    fetch_layer_files_tool: FetchLayerFilesTool = Depends(get_fetch_layer_files_tool),
-    build_call_graph_tool: BuildCallGraphTool = Depends(get_build_call_graph_tool),
-    build_evidence_tool: BuildEvidenceTool = Depends(get_build_evidence_tool),
+    file_fetch_service: FileFetchService = Depends(get_file_fetch_service),
+    call_graph_service: CallGraphService = Depends(get_call_graph_service),
+    evidence_service: EvidenceService = Depends(get_evidence_service),
     spec_assembler: SpecAssembler = Depends(get_spec_assembler),
     partitioner: TreeTraversalPartitioner = Depends(get_tree_traversal_partitioner),
     context_builder: ChunkContextBuilder = Depends(get_chunk_context_builder),
@@ -156,9 +135,9 @@ def get_tracer_service(
     source_persist: SourcePersistService = Depends(get_source_persist_service),
 ) -> TracerService:
     return TracerService(
-        fetch_layer_files_tool,
-        build_call_graph_tool,
-        build_evidence_tool,
+        file_fetch_service,
+        call_graph_service,
+        evidence_service,
         spec_assembler,
         partitioner,
         context_builder,
