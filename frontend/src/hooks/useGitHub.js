@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { exchangeCode, listRepos } from '../api/github'
+import { saveSession } from '../api/session'
 import { REDIRECT_URI, GITHUB_CLIENT_ID } from '../constants'
 
 export function useGitHub() {
@@ -14,7 +15,8 @@ export function useGitHub() {
 
     exchangeCode(code)
       .then(d => {
-        setAccessToken(d.access_token)
+        saveSession(d.session_token, d.user)
+        setAccessToken(d.github_access_token)
         window.history.replaceState({}, '', '/')
       })
       .catch(console.error)

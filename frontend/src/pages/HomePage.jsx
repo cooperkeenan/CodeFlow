@@ -1,4 +1,4 @@
-export default function HomePage({ onGitHub, onLocal }) {
+export default function HomePage({ onGitHub, onLocal, onAccount }) {
   return (
     <main className="home">
       <div className="home-inner">
@@ -13,6 +13,9 @@ export default function HomePage({ onGitHub, onLocal }) {
           </button>
           <button className="btn-ghost" onClick={onLocal}>
             Generate from Output
+          </button>
+          <button className="btn-ghost" onClick={onAccount}>
+            My Account
           </button>
         </div>
       </div>
