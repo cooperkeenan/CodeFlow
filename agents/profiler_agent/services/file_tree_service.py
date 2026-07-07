@@ -1,5 +1,6 @@
 import base64
 import logging
+from pathlib import Path
 
 import httpx
 
@@ -18,7 +19,6 @@ _EMBED_DEPLOY = frozenset({"Dockerfile", "docker-compose.yml", "docker-compose.y
 
 
 def _embedded_repo_dirs(paths: list[str]) -> set[str]:
-    """Return top-level directory names that look like vendored/embedded repos."""
     by_dir: dict[str, set[str]] = {}
     for path in paths:
         parts = path.split("/")
@@ -37,13 +37,40 @@ class FileTreeService:
     def __init__(self, http_client: httpx.AsyncClient):
         self._http = http_client
 
-    async def get_tree(self, access_token: str, repo_name: str) -> list[str]:
-        logger.info("Fetching file tree for %s", repo_name)
+    async def get_tree(
+        self,
+        *,
+        repo_name: str | None = None,
+        access_token: str | None = None,
+        local_path: str | None = None,
+    ) -> list[str]:
+        logger.info("Fetching file tree")
+        raw_paths = (
+            self._local_tree(local_path)
+            if local_path
+            else await self._github_tree(access_token, repo_name)
+        )
+        paths = [p for p in raw_paths if not any(ex in p.split("/") for ex in EXCLUDED)]
+        embedded = _embedded_repo_dirs(paths)
+        result = [p for p in paths if not embedded or p.split("/")[0] not in embedded]
+        logger.info("Found %d files (%d embedded dirs excluded)", len(result), len(embedded))
+        return result
+
+    def _local_tree(self, local_path: str) -> list[str]:
+        root = Path(local_path)
+        return [
+            str(p.relative_to(root))
+            for p in root.rglob("*")
+            if p.is_file()
+        ]
+
+    async def _github_tree(self, access_token: str, repo_name: str) -> list[str]:
         owner, repo = repo_name.split("/")
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/vnd.github.v3+json",
         }
+        response = None
         for branch in ("main", "master"):
             response = await self._http.get(
                 f"{_API_URL}/repos/{owner}/{repo}/git/trees/{branch}?recursive=1",
@@ -51,20 +78,40 @@ class FileTreeService:
             )
             if response.status_code == 200:
                 break
-
         response.raise_for_status()
-        raw_paths = [
-            item["path"] for item in response.json().get("tree", [])
+        return [
+            item["path"]
+            for item in response.json().get("tree", [])
             if item["type"] == "blob"
-            and not any(ex in item["path"].split("/") for ex in EXCLUDED)
         ]
-        embedded = _embedded_repo_dirs(raw_paths)
-        paths = [p for p in raw_paths if not embedded or p.split("/")[0] not in embedded]
-        logger.info("Found %d files in %s (%d embedded dirs excluded)", len(paths), repo_name, len(embedded))
-        return paths
 
-    async def get_manifest_files(self, access_token: str, repo_name: str, paths: list[str]) -> dict[str, str]:
-        logger.info("Fetching manifest files for %s", repo_name)
+    async def get_manifests(
+        self,
+        *,
+        repo_name: str | None = None,
+        access_token: str | None = None,
+        local_path: str | None = None,
+        paths: list[str],
+    ) -> dict[str, str]:
+        logger.info("Fetching manifest files")
+        if local_path:
+            return self._local_manifests(local_path, paths)
+        return await self._github_manifests(access_token, repo_name, paths)
+
+    def _local_manifests(self, local_path: str, paths: list[str]) -> dict[str, str]:
+        root = Path(local_path)
+        manifests = {}
+        for path in paths:
+            if Path(path).name in MANIFEST_FILES:
+                full_path = root / path
+                if full_path.exists():
+                    manifests[path] = full_path.read_text(encoding="utf-8")
+                    logger.info("Read manifest: %s", path)
+        return manifests
+
+    async def _github_manifests(
+        self, access_token: str, repo_name: str, paths: list[str]
+    ) -> dict[str, str]:
         owner, repo = repo_name.split("/")
         headers = {
             "Authorization": f"Bearer {access_token}",

@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from services.ast_service import AstService
+from services.evidence.ast_service import AstService
 
 logger = logging.getLogger(__name__)
 

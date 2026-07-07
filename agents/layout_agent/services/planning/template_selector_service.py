@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from core.template_config import TemplateLimitsConfig
 from helpers.module_graph import ModuleGraphBuilder
-from services._template_builder import _TemplateBuilder
-from services._template_meta_builder import _TemplateMetaBuilder
+from services.builders._template_builder import _TemplateBuilder
+from services.builders._template_meta_builder import _TemplateMetaBuilder
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramTemplate, DiagramType
 from templates.registry import TemplateRegistry
