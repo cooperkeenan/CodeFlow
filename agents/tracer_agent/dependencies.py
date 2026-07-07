@@ -13,10 +13,15 @@ from services.assembly.edge_recovery import EdgeRecovery
 from services.evidence.evidence_service import EvidenceService
 from services.evidence.file_fetch_service import FileFetchService
 from services.assembly.graph_validator import GraphValidator
+from services.line_range_enricher import LineRangeEnricher
 from services.assembly.raw_merger import RawMerger
+from services.source_persist_service import SourcePersistService
 from services.assembly.spec_assembler import SpecAssembler
 from services.tracer_service import TracerService
 from services.tracing.tree_traversal_partitioner import TreeTraversalPartitioner
+
+from shared.code_store.code_store import CodeStore
+from shared.code_store.neon_code_store import NeonCodeStore
 
 
 def get_http_client(request: Request) -> httpx.AsyncClient:
@@ -85,6 +90,22 @@ def get_graph_validator() -> GraphValidator:
     return GraphValidator()
 
 
+def get_line_range_enricher() -> LineRangeEnricher:
+    return LineRangeEnricher()
+
+
+def get_code_store(
+    settings: Settings = Depends(get_settings),
+) -> CodeStore:
+    return NeonCodeStore(settings.DATABASE_URL)
+
+
+def get_source_persist_service(
+    code_store: CodeStore = Depends(get_code_store),
+) -> SourcePersistService:
+    return SourcePersistService(code_store)
+
+
 def get_correction_prompt_builder() -> CorrectionPromptBuilder:
     return CorrectionPromptBuilder()
 
@@ -110,6 +131,8 @@ def get_tracer_service(
     edge_recovery: EdgeRecovery = Depends(get_edge_recovery),
     graph_validator: GraphValidator = Depends(get_graph_validator),
     breadcrumb_builder: BreadcrumbBuilder = Depends(get_breadcrumb_builder),
+    line_range_enricher: LineRangeEnricher = Depends(get_line_range_enricher),
+    source_persist: SourcePersistService = Depends(get_source_persist_service),
 ) -> TracerService:
     return TracerService(
         file_fetch_service,
@@ -123,4 +146,6 @@ def get_tracer_service(
         edge_recovery,
         graph_validator,
         breadcrumb_builder,
+        line_range_enricher,
+        source_persist,
     )

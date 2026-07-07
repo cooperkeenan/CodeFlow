@@ -184,6 +184,13 @@ html, body, #root {
 
 .card:hover:not(:disabled) { border-color: var(--accent); }
 .card:disabled { opacity: 0.35; cursor: not-allowed; }
+.card--recommended { border-color: var(--warning); }
+.card--recommended:hover:not(:disabled) { border-color: var(--warning); }
+
+.card-badge-hint {
+  color: var(--warning);
+  font-size: 0.55rem;
+}
 
 .card-badge {
   font-family: var(--mono);

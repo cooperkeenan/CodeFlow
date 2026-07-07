@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/analyse': { target: 'http://localhost:8000', changeOrigin: true },
       '/github': { target: 'http://localhost:8000', changeOrigin: true },
+      '/code': { target: 'http://localhost:8000', changeOrigin: true },
     },
   },
 })
