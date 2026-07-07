@@ -1,4 +1,4 @@
-import { useGitHub } from '../hooks/useGithub'
+import { useGitHub } from '../hooks/useGitHub'
 
 export default function GitHubPage({ onBack, onResult, loading, onSelect }) {
   const { accessToken, repos, loading: reposLoading, login } = useGitHub()
