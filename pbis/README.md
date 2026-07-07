@@ -246,6 +246,30 @@ rendering for containers.
 
 Run **Batch 9 (30, 31)** first — it fixes the live regression — then **Batch 10 (32 → 33)**.
 
+### Phase 11 — click-to-view-code (Neon-backed source viewer)
+
+A diagram component never shows its **source code**. Batch 11 adds a masthead **"code view"
+toggle**: while on, clicking a code-backed component shows that file's source in a side
+panel, auto-scrolled to / highlighting the component's definition, and clicking another
+component swaps it automatically. The click→file linkage needs **no** layout/render change —
+every `Component` already carries `file_path` and the full `diagram_spec` already reaches the
+frontend. What's missing is captured **line ranges** (deterministic from the AST) and a place
+to read source from at view time: source is currently fetched to a temp dir and discarded, so
+we persist each analyzed file to **Neon (Postgres)**, deduped by content hash.
+
+**Batch 11** — PBIs 34–37.
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [34](pbi-34-component-line-ranges.md) | Capture component source line ranges (tracer) | — |
+| [35](pbi-35-neon-code-store.md) | Neon code store + source persistence (tracer) | — |
+| [36](pbi-36-code-serving-endpoint.md) | Code-serving endpoint `GET /code` (api) | 35 |
+| [37](pbi-37-frontend-code-view.md) | Frontend: code-view toggle + code panel | 34, 36 |
+
+Suggested internal order: **34 + 35** (independent tracer foundations) → **36** → **37**.
+Frontend changes are authorized for PBI 37. Requires a Neon DB with `DATABASE_URL` set in
+`.env`. Master plan: `~/.claude/plans/snuggly-growing-kay.md`.
+
 ## End-to-end verification
 
 1. **Determinism:** run `/analyse` twice on the same repo; assert identical system-view node positions and identical chosen template type.

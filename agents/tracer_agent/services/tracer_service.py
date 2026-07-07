@@ -10,7 +10,9 @@ from services.assembly.edge_recovery import EdgeRecovery
 from services.evidence.evidence_service import EvidenceService
 from services.evidence.file_fetch_service import FileFetchService
 from services.assembly.graph_validator import GraphValidator
+from services.line_range_enricher import LineRangeEnricher
 from services.assembly.raw_merger import RawMerger
+from services.source_persist_service import SourcePersistService
 from services.assembly.spec_assembler import SpecAssembler
 from services.tracing.tree_traversal_partitioner import TreeTraversalPartitioner
 
@@ -34,6 +36,8 @@ class TracerService:
         edge_recovery: EdgeRecovery,
         graph_validator: GraphValidator,
         breadcrumb_builder: BreadcrumbBuilder,
+        line_range_enricher: LineRangeEnricher,
+        source_persist: SourcePersistService,
     ) -> None:
         self._files = file_fetch_service
         self._call_graph = call_graph_service
@@ -46,6 +50,8 @@ class TracerService:
         self._edge_recovery = edge_recovery
         self._graph_validator = graph_validator
         self._breadcrumb_builder = breadcrumb_builder
+        self._line_range_enricher = line_range_enricher
+        self._source_persist = source_persist
 
     async def trace(self, request: TracerRequest) -> TracerResponse:
         logger.info("Tracing repo: %s", request.repo_name)
@@ -56,6 +62,7 @@ class TracerService:
         raws = await self._trace_sequential(chunks, context, request.blueprint, request.architecture_type)
         merged = self._raw_merger.merge(raws)
         spec = self._assembler.assemble(request.blueprint, merged, request.architecture_type)
+        spec = self._line_range_enricher.enrich(spec, evidence.get("signatures", {}))
         spec = self._edge_recovery.recover(spec, evidence)
         spec = self._graph_validator.validate(spec, evidence).fixed_spec
         component_count = sum(len(comps) for m in spec.modules for comps in m.zones.values())
@@ -96,6 +103,7 @@ class TracerService:
         )
         if not file_paths:
             raise ValueError("No source files fetched for tracing")
+        await self._source_persist.persist(request.repo_name, temp_dir, file_paths)
         call_graph = self._call_graph.build(temp_dir, file_paths, request.entry_point_hint)
         return self._evidence.build(file_paths, call_graph, temp_dir)
 
