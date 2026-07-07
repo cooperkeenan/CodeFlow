@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     TRACER_CHUNK_TOKEN_BUDGET: int = 45000
     TRACER_CHUNK_MAX_COMPONENTS: int = 40
     TRACER_MAX_CONCURRENCY: int = 4
+    DATABASE_URL: str = ""
 
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),
