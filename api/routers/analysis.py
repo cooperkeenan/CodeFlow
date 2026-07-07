@@ -3,9 +3,16 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from core.config import Settings, get_settings
-from dependencies import get_analysis_service, get_stage_status_service
+from dependencies import (
+    get_analysis_service,
+    get_optional_user,
+    get_repo_map_service,
+    get_stage_status_service,
+)
 from models.analysis_model import AnalyseRequest, AnalyseResponse
+from models.auth_model import AuthUser
 from services.analysis_service import AnalysisService
+from services.repo_map_service import RepoMapService
 from services.stage_status_service import StageStatusService
 
 from shared.models.profiler_response import ProfileResponse
@@ -19,9 +26,13 @@ _OUTPUTS_DIR = Path(__file__).resolve().parents[2] / "shared" / "outputs"
 async def analyse(
     request: AnalyseRequest,
     service: AnalysisService = Depends(get_analysis_service),
+    repo_map_service: RepoMapService = Depends(get_repo_map_service),
+    user: AuthUser | None = Depends(get_optional_user),
 ) -> AnalyseResponse:
     result = await service.analyse(request)
     (_OUTPUTS_DIR / "tracer_output.json").write_text(result.model_dump_json(indent=2))
+    if user is not None:
+        await repo_map_service.save(user.id, result, source="web")
     return result
 
 
