@@ -4,7 +4,7 @@
         {
             "label": "API Gateway",
             "type": "shell",
-            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
             "windows": {
                 "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe run.py"
             },
@@ -23,7 +23,7 @@
         {
             "label": "Profiler Agent",
             "type": "shell",
-            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8002 --reload",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8002 --reload",
             "windows": {
                 "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8002 --reload"
             },
@@ -42,7 +42,7 @@
         {
             "label": "Tracer Agent",
             "type": "shell",
-            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8003 --reload",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8003 --reload",
             "windows": {
                 "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8003 --reload"
             },
@@ -61,7 +61,7 @@
         {
             "label": "Render Agent",
             "type": "shell",
-            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8004 --reload",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8004 --reload",
             "windows": {
                 "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8004 --reload"
             },
@@ -80,7 +80,7 @@
         {
             "label": "Layout Agent",
             "type": "shell",
-            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8006 --reload",
+            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8006 --reload",
             "windows": {
                 "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8006 --reload"
             },
