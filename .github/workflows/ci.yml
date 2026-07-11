@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install ruff mypy pydantic-settings
+      - run: ruff check .
+      - run: mypy --config-file mypy.ini api/ agents/ shared/
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { name: api,      dir: api }
+          - { name: profiler, dir: agents/profiler_agent }
+          - { name: tracer,   dir: agents/tracer_agent }
+          - { name: render,   dir: agents/render_agent }
+          - { name: layout,   dir: agents/layout_agent }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.service.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          build-args: SERVICE_DIR=${{ matrix.service.dir }}
+          push: false
+          tags: codeflow/${{ matrix.service.name }}:ci
+          cache-from: type=gha,scope=${{ matrix.service.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
