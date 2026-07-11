@@ -48,6 +48,7 @@ class NeonRepoMapStore:
                 self._database_url,
                 open=False,
                 min_size=0,
+                max_size=4,
                 reconnect_timeout=30,
             )
             await self._pool.open()

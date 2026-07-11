@@ -59,7 +59,7 @@ class FileTreeService:
     def _local_tree(self, local_path: str) -> list[str]:
         root = Path(local_path)
         return [
-            str(p.relative_to(root))
+            p.relative_to(root).as_posix()
             for p in root.rglob("*")
             if p.is_file()
         ]

@@ -29,13 +29,21 @@ class SpecAssembler:
             )
             for m in blueprint.modules
         }
-        for component in self._components(raw):
+        components = self._components(raw)
+        dropped: list[str] = []
+        for component in components:
             placement = self._placer.place(component.file_path, index)
             if placement is None:
-                logger.warning("Dropping unplaceable component %s (%s)", component.name, component.file_path)
+                dropped.append(f"{component.name} ({component.file_path})")
                 continue
             root, zone = placement
             modules[root].zones.setdefault(zone, []).append(component)
+        logger.info("Placed %d/%d components across %d modules", len(components) - len(dropped), len(components), len(modules))
+        if dropped:
+            logger.warning(
+                "Dropped %d unplaceable components: %s | known zone prefixes: %s",
+                len(dropped), dropped, [d for d, _, _ in index],
+            )
         return DiagramSpec(
             architecture_type=architecture_type,
             modules=list(modules.values()),
@@ -59,7 +67,7 @@ class SpecAssembler:
             components.append(Component(
                 name=c["name"],
                 description=str(c.get("description", "")),
-                file_path=c["file_path"],
+                file_path=c["file_path"].replace("\\", "/"),
                 io=io_model,
                 children=[ch for ch in c.get("children", []) if isinstance(ch, str)],
             ))

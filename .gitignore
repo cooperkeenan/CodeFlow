@@ -34,3 +34,6 @@ frontend/dist/
 
 # Agent run outputs
 outputs/
+
+# Task
+.vscode/ 

@@ -1,67 +1,72 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import Box from '@mui/material/Box'
+import CircularProgress from '@mui/material/CircularProgress'
 import { useAnalysis } from './hooks/useAnalysis'
-import { getSessionToken } from './api/session'
-import HomePage from './pages/HomePage'
-import GitHubPage from './pages/GitHubPage'
-import LocalPage from './pages/LocalPage'
-import AccountPage from './pages/AccountPage'
+import { getSessionToken, saveSession } from './api/session'
+import { exchangeCode, linkGithub } from './api/github'
+import RequireAuth from './components/RequireAuth'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
+import DashboardPage from './pages/DashboardPage'
+import SettingsPage from './pages/SettingsPage'
 import DiagramPage from './pages/DiagramPage'
 
 export default function App() {
-  const [view, setView] = useState(
-    () => new URLSearchParams(window.location.search).has('code') ? 'github' : 'home'
+  const navigate = useNavigate()
+  const { analysis, reset, show } = useAnalysis()
+  const [oauthPending, setOauthPending] = useState(
+    () => new URLSearchParams(window.location.search).has('code')
   )
-  const { analysis, loading, error, run, reset, show } = useAnalysis()
 
-  const goHome = () => { reset(); setView('home') }
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    if (!code) return
+    const finish = (path) => { window.history.replaceState({}, '', '/'); setOauthPending(false); navigate(path) }
+    if (getSessionToken()) {
+      linkGithub(code).then(() => finish('/settings')).catch(() => finish('/settings'))
+    } else {
+      exchangeCode(code)
+        .then(d => { saveSession(d.session_token, d.user); finish('/') })
+        .catch(() => finish('/login'))
+    }
+  }, [])
 
-  const openAccount = () => setView(getSessionToken() ? 'account' : 'github')
+  const openMap = (map) => { show(map); navigate('/diagram') }
 
-  const handleOpenMap = (map) => { show(map); setView('diagram') }
-
-  const handleGitHubSelect = async (repo, accessToken) => {
-    const result = await run('/analyse', { access_token: accessToken, repo_name: repo.full_name })
-    if (result) setView('diagram')
-  }
-
-  const handleLocalRun = async (endpoint) => {
-    const result = await run(endpoint)
-    if (result) setView('diagram')
-  }
-
-  if (view === 'diagram' && analysis) {
-    return <DiagramPage analysis={analysis} onBack={goHome} />
-  }
-
-  if (view === 'github') {
+  if (oauthPending) {
     return (
-      <GitHubPage
-        onBack={goHome}
-        loading={loading}
-        onSelect={handleGitHubSelect}
-      />
+      <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress color="primary" />
+      </Box>
     )
-  }
-
-  if (view === 'local') {
-    return (
-      <LocalPage
-        onBack={goHome}
-        loading={loading}
-        onRun={handleLocalRun}
-      />
-    )
-  }
-
-  if (view === 'account') {
-    return <AccountPage onBack={goHome} onOpenMap={handleOpenMap} />
   }
 
   return (
-    <HomePage
-      onGitHub={() => setView('github')}
-      onLocal={() => setView('local')}
-      onAccount={openAccount}
-    />
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route
+        path="/"
+        element={
+          <RequireAuth>
+            <DashboardPage onOpenMap={openMap} />
+          </RequireAuth>
+        }
+      />
+      <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+      <Route
+        path="/diagram"
+        element={
+          <RequireAuth>
+            {analysis
+              ? <DiagramPage analysis={analysis} onBack={() => { reset(); navigate('/') }} />
+              : <Navigate to="/" replace />}
+          </RequireAuth>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }

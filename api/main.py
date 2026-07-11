@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import get_settings
 from routers.analysis import router as analysis_router
+from routers.auth import router as auth_router
 from routers.ci import router as ci_router
 from routers.code import router as code_router
 from routers.github import router as github_router
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(github_router)
+    app.include_router(auth_router)
     app.include_router(analysis_router)
     app.include_router(code_router)
     app.include_router(tokens_router)
