@@ -51,7 +51,8 @@ jobs:
       - name: Redeploy all services
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: 3a23e4b9-3aa3-4f84-9ada-6c2ae7302ca6
         run: |
-          for service in api profiler tracer render layout; do
-            railway redeploy --service $service --yes
+          for service in CodeFlow codeflow-profiler codeflow-tracer codeflow-render codeflow-layout; do
+            railway redeploy --service "$service" --yes
           done
