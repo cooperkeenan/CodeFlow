@@ -72,6 +72,7 @@ class NeonAccessTokenStore:
         async with pool.connection() as conn:
             cursor = await conn.execute(_INSERT, (user_id, kind, name, token_hash, prefix))
             row = await cursor.fetchone()
+        assert row is not None
         return row[0]
 
     async def get_by_hash(self, token_hash: str) -> dict | None:

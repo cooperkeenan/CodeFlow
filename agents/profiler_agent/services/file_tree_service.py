@@ -45,11 +45,12 @@ class FileTreeService:
         local_path: str | None = None,
     ) -> list[str]:
         logger.info("Fetching file tree")
-        raw_paths = (
-            self._local_tree(local_path)
-            if local_path
-            else await self._github_tree(access_token, repo_name)
-        )
+        if local_path:
+            raw_paths = self._local_tree(local_path)
+        else:
+            if access_token is None or repo_name is None:
+                raise ValueError("access_token and repo_name required for GitHub tree")
+            raw_paths = await self._github_tree(access_token, repo_name)
         paths = [p for p in raw_paths if not any(ex in p.split("/") for ex in EXCLUDED)]
         embedded = _embedded_repo_dirs(paths)
         result = [p for p in paths if not embedded or p.split("/")[0] not in embedded]
@@ -78,6 +79,7 @@ class FileTreeService:
             )
             if response.status_code == 200:
                 break
+        assert response is not None
         response.raise_for_status()
         return [
             item["path"]
@@ -96,6 +98,8 @@ class FileTreeService:
         logger.info("Fetching manifest files")
         if local_path:
             return self._local_manifests(local_path, paths)
+        if access_token is None or repo_name is None:
+            raise ValueError("access_token and repo_name required for GitHub manifests")
         return await self._github_manifests(access_token, repo_name, paths)
 
     def _local_manifests(self, local_path: str, paths: list[str]) -> dict[str, str]:

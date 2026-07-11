@@ -38,7 +38,7 @@ class PlacementService:
             for n in template.nodes
         }
         for node in nodes:
-            entry = counts.get(node.get("id"))
+            entry = counts.get(str(node.get("id") or ""))
             if entry:
                 node["data"]["zoneCount"], node["data"]["componentCount"] = entry
 
