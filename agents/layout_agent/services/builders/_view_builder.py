@@ -80,7 +80,8 @@ class _ViewBuilder:
         intra = [(e.source, e.target) for e in spec.edges
                  if e.source in names and e.target in names and e.source != e.target]
         _roles = {c.name: c.role for cs in module.zones.values() for c in cs if c.name in names}
-        cr = contract(names, intra, _roles); names, intra = cr.names, cr.edges
+        cr = contract(names, intra, _roles)
+        names, intra = cr.names, cr.edges
         nodes = [TemplateNode(id=c.name, label=c.name, tier=c.tier, module_name=module.name,
                               kind="component", drillable=(c.name in view_set), description=c.description)
                  for cs in module.zones.values() for c in cs if not c.nested and c.tier == "primary" and c.name in names]
