@@ -1,33 +1,6 @@
 from psycopg_pool import AsyncConnectionPool
 
-_CREATE_TABLE = """
-CREATE TABLE IF NOT EXISTS users (
-    id           bigserial primary key,
-    github_id    bigint unique not null,
-    github_login text not null,
-    name         text,
-    avatar_url   text,
-    created_at   timestamptz default now(),
-    updated_at   timestamptz default now()
-)
-"""
-
-_UPSERT = """
-INSERT INTO users (github_id, github_login, name, avatar_url, updated_at)
-VALUES (%s, %s, %s, %s, now())
-ON CONFLICT (github_id) DO UPDATE
-    SET github_login = EXCLUDED.github_login,
-        name         = EXCLUDED.name,
-        avatar_url   = EXCLUDED.avatar_url,
-        updated_at   = now()
-RETURNING id
-"""
-
-_SELECT = """
-SELECT id, github_id, github_login, name, avatar_url
-FROM users
-WHERE id = %s
-"""
+from shared.user_store import _user_queries as q
 
 
 class NeonUserStore:
@@ -41,6 +14,7 @@ class NeonUserStore:
                 self._database_url,
                 open=False,
                 min_size=0,
+                max_size=4,
                 reconnect_timeout=30,
             )
             await self._pool.open()
@@ -50,21 +24,42 @@ class NeonUserStore:
     async def ensure_schema(self) -> None:
         pool = await self._get_pool()
         async with pool.connection() as conn:
-            await conn.execute(_CREATE_TABLE)
+            await conn.execute(q.CREATE_TABLE)
+            for migration in q.MIGRATIONS:
+                await conn.execute(migration)
 
     async def upsert(
         self, github_id: int, login: str, name: str | None, avatar_url: str | None
     ) -> int:
         pool = await self._get_pool()
         async with pool.connection() as conn:
-            cursor = await conn.execute(_UPSERT, (github_id, login, name, avatar_url))
+            cursor = await conn.execute(q.UPSERT, (github_id, login, name, avatar_url))
             row = await cursor.fetchone()
         return row[0]
+
+    async def create_with_password(self, email: str, password_hash: str) -> int:
+        pool = await self._get_pool()
+        async with pool.connection() as conn:
+            cursor = await conn.execute(q.CREATE_WITH_PASSWORD, (email, password_hash))
+            row = await cursor.fetchone()
+        return row[0]
+
+    async def link_github(
+        self,
+        user_id: int,
+        github_id: int,
+        login: str,
+        name: str | None,
+        avatar_url: str | None,
+    ) -> None:
+        pool = await self._get_pool()
+        async with pool.connection() as conn:
+            await conn.execute(q.LINK_GITHUB, (github_id, login, name, avatar_url, user_id))
 
     async def get(self, user_id: int) -> dict | None:
         pool = await self._get_pool()
         async with pool.connection() as conn:
-            cursor = await conn.execute(_SELECT, (user_id,))
+            cursor = await conn.execute(q.SELECT, (user_id,))
             row = await cursor.fetchone()
         if row is None:
             return None
@@ -74,4 +69,22 @@ class NeonUserStore:
             "github_login": row[2],
             "name": row[3],
             "avatar_url": row[4],
+            "email": row[5],
+        }
+
+    async def get_by_email(self, email: str) -> dict | None:
+        pool = await self._get_pool()
+        async with pool.connection() as conn:
+            cursor = await conn.execute(q.SELECT_BY_EMAIL, (email,))
+            row = await cursor.fetchone()
+        if row is None:
+            return None
+        return {
+            "id": row[0],
+            "github_id": row[1],
+            "github_login": row[2],
+            "name": row[3],
+            "avatar_url": row[4],
+            "email": row[5],
+            "password_hash": row[6],
         }

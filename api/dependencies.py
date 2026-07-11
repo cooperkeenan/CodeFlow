@@ -17,7 +17,10 @@ from services.auth_service import AuthService
 from services.ci_ingest_service import CiIngestService
 from services.code_read_service import CodeReadService
 from services.github_service import GitHubService
+from services.local_ci_service import LocalCiService
 from services.output_persister import OutputPersister
+from services.password_auth_service import PasswordAuthService
+from services.password_hasher import PasswordHasher
 from services.repo_map_service import RepoMapService
 from services.stage_status_service import StageStatusService
 from services.token_hasher import TokenHasher
@@ -128,6 +131,19 @@ def get_auth_service(
     return AuthService(user_store, token_store, github_service, hasher)
 
 
+def get_password_hasher() -> PasswordHasher:
+    return PasswordHasher()
+
+
+def get_password_auth_service(
+    user_store: UserStore = Depends(get_user_store),
+    token_store: AccessTokenStore = Depends(get_token_store),
+    hasher: TokenHasher = Depends(get_token_hasher),
+    password_hasher: PasswordHasher = Depends(get_password_hasher),
+) -> PasswordAuthService:
+    return PasswordAuthService(user_store, token_store, hasher, password_hasher)
+
+
 def get_token_service(
     token_store: AccessTokenStore = Depends(get_token_store),
     hasher: TokenHasher = Depends(get_token_hasher),
@@ -156,6 +172,13 @@ def get_ci_ingest_service(
         ArchiveExtractor(),
         settings.CI_MAX_UPLOAD_MB * 1024 * 1024,
     )
+
+
+def get_local_ci_service(
+    analysis_service: AnalysisService = Depends(get_analysis_service),
+    repo_map_service: RepoMapService = Depends(get_repo_map_service),
+) -> LocalCiService:
+    return LocalCiService(analysis_service, repo_map_service)
 
 
 def _bearer_token(authorization: str | None) -> str | None:

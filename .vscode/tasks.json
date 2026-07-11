@@ -4,7 +4,10 @@
         {
             "label": "API Gateway",
             "type": "shell",
-            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+            "windows": {
+                "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe run.py"
+            },
             "options": {
                 "cwd": "${workspaceFolder}/api",
                 "env": {
@@ -20,7 +23,10 @@
         {
             "label": "Profiler Agent",
             "type": "shell",
-            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8002 --reload",
+            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8002 --reload",
+            "windows": {
+                "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8002 --reload"
+            },
             "options": {
                 "cwd": "${workspaceFolder}/agents/profiler_agent",
                 "env": {
@@ -36,7 +42,10 @@
         {
             "label": "Tracer Agent",
             "type": "shell",
-            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8003 --reload",
+            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8003 --reload",
+            "windows": {
+                "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8003 --reload"
+            },
             "options": {
                 "cwd": "${workspaceFolder}/agents/tracer_agent",
                 "env": {
@@ -52,7 +61,10 @@
         {
             "label": "Render Agent",
             "type": "shell",
-            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8004 --reload",
+            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8004 --reload",
+            "windows": {
+                "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8004 --reload"
+            },
             "options": {
                 "cwd": "${workspaceFolder}/agents/render_agent",
                 "env": {
@@ -68,7 +80,10 @@
         {
             "label": "Layout Agent",
             "type": "shell",
-            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8005 --reload",
+            "command": "${workspaceFolder}/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8006 --reload",
+            "windows": {
+                "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8006 --reload"
+            },
             "options": {
                 "cwd": "${workspaceFolder}/agents/layout_agent",
                 "env": {
@@ -114,7 +129,16 @@
         {
             "label": "CodeFlow: Stop All",
             "type": "shell",
-            "command": "for port in 8000 8002 8003 8004 8005 5173; do pids=$(lsof -ti :$port); if [ -n \"$pids\" ]; then echo \"$pids\" | xargs kill -9; echo \"Cleared port $port\"; else echo \"Port $port already free\"; fi; done",
+            "command": "for port in 8000 8002 8003 8004 8006 5173; do pids=$(lsof -ti :$port); if [ -n \"$pids\" ]; then echo \"$pids\" | xargs kill -9; echo \"Cleared port $port\"; else echo \"Port $port already free\"; fi; done",
+            "windows": {
+                "command": "foreach ($port in 8000,8002,8003,8004,8006,5173) { $procIds = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($procIds) { $procIds | ForEach-Object { Stop-Process -Id $_ -Force }; Write-Host \"Cleared port $port\" } else { Write-Host \"Port $port already free\" } }",
+                "options": {
+                    "shell": {
+                        "executable": "powershell.exe",
+                        "args": ["-NoProfile", "-Command"]
+                    }
+                }
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },

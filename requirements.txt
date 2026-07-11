@@ -10,3 +10,5 @@ networkx
 jarviscg @ git+https://github.com/nuanced-dev/jarviscg
 psycopg[binary]
 psycopg-pool
+bcrypt
+python-multipart
