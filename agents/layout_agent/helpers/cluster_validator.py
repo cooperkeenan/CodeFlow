@@ -1,3 +1,5 @@
+from typing import cast
+
 from shared.models.diagram_spec import Cluster, LayoutStyle, Module, ZoneClusterPlan
 
 VALID_STYLES: frozenset[str] = frozenset(
@@ -20,6 +22,8 @@ class ClusterValidator:
         if not isinstance(entry, dict):
             return None
         zone = entry.get("zone")
+        if not isinstance(zone, str):
+            return None
         valid = {c.name for c in module.zones.get(zone, [])}
         if not valid:
             return None
@@ -73,4 +77,4 @@ class ClusterValidator:
             return "grid"
         if style in ("pipeline", "stack", "hierarchy", "hub") and len(members) < 2:
             return "grid"
-        return style
+        return cast(LayoutStyle, style)

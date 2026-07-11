@@ -48,6 +48,8 @@ class AuthService:
             identity["avatar_url"],
         )
         record = await self._users.get(user.id)
+        if record is None:
+            raise ValueError(f"User {user.id} not found after upsert")
         return AuthUser(
             id=record["id"],
             github_id=record["github_id"],
