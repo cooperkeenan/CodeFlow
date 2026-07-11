@@ -1,0 +1,16 @@
+name: CodeFlow Analyse
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          api_url: ${{ vars.CODEFLOW_API_URL }}
+          token: ${{ secrets.CODEFLOW_API_TOKEN }}

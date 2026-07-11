@@ -3,7 +3,10 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ROOT_DIR = Path(__file__).resolve().parents[3]
+try:
+    ROOT_DIR = Path(__file__).resolve().parents[3]
+except IndexError:
+    ROOT_DIR = Path(__file__).resolve().parents[1]
 
 
 class Settings(BaseSettings):
