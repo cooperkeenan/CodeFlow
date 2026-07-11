@@ -38,7 +38,7 @@ class EvidenceService:
             try:
                 content = Path(fp).read_text(encoding="utf-8")
                 try:
-                    rel = str(Path(fp).relative_to(base))
+                    rel = Path(fp).relative_to(base).as_posix()
                 except ValueError:
                     rel = Path(fp).name
                 files[rel] = content

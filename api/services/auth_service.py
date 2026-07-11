@@ -37,6 +37,24 @@ class AuthService:
         user = AuthUser(id=user_id, github_id=identity["id"], github_login=identity["login"])
         return SignInResponse(session_token=raw, github_access_token=github_token, user=user)
 
+    async def link_github(self, user: AuthUser, code: str) -> AuthUser:
+        github_token = await self._github.exchange_code_for_token(code)
+        identity = await self._github.get_identity(github_token)
+        await self._users.link_github(
+            user.id,
+            identity["id"],
+            identity["login"],
+            identity["name"],
+            identity["avatar_url"],
+        )
+        record = await self._users.get(user.id)
+        return AuthUser(
+            id=record["id"],
+            github_id=record["github_id"],
+            github_login=record["github_login"],
+            email=record["email"],
+        )
+
     async def resolve(self, raw_token: str) -> AuthUser | None:
         record = await self._tokens.get_by_hash(self._hasher.hash(raw_token))
         if record is None or record["revoked_at"] is not None:
@@ -46,5 +64,8 @@ class AuthService:
             return None
         await self._tokens.touch_last_used(record["id"])
         return AuthUser(
-            id=user["id"], github_id=user["github_id"], github_login=user["github_login"]
+            id=user["id"],
+            github_id=user["github_id"],
+            github_login=user["github_login"],
+            email=user["email"],
         )
