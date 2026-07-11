@@ -32,9 +32,11 @@ class _ComponentViewBuilder:
             if e.source == e.target or e.edge_type == "import":
                 continue
             if e.target == component_name and e.source not in seen_c:
-                seen_c.add(e.source); callers.append(e.source)
+                seen_c.add(e.source)
+                callers.append(e.source)
             if e.source == component_name and e.target not in seen_e:
-                seen_e.add(e.target); callees.append(e.target)
+                seen_e.add(e.target)
+                callees.append(e.target)
         callers, callees = sorted(callers), sorted(callees)
         related = {component_name, *callers, *callees}
         children = sorted(n for n in (focused.children or []) if n in all_comps and n not in related)
