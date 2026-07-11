@@ -35,6 +35,7 @@ class NeonUserStore:
         async with pool.connection() as conn:
             cursor = await conn.execute(q.UPSERT, (github_id, login, name, avatar_url))
             row = await cursor.fetchone()
+        assert row is not None
         return row[0]
 
     async def create_with_password(self, email: str, password_hash: str) -> int:
@@ -42,6 +43,7 @@ class NeonUserStore:
         async with pool.connection() as conn:
             cursor = await conn.execute(q.CREATE_WITH_PASSWORD, (email, password_hash))
             row = await cursor.fetchone()
+        assert row is not None
         return row[0]
 
     async def link_github(

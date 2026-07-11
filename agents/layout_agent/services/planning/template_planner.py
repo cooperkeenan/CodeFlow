@@ -2,6 +2,7 @@ import json
 import logging
 
 import anthropic
+from anthropic.types import MessageParam
 
 from prompts.template_prompt import TEMPLATE_SYSTEM_PROMPT, build_evidence
 from shared.models.diagram_spec import DiagramSpec
@@ -39,7 +40,7 @@ class TemplatePlanner:
         return template
 
     async def _loop(self, evidence: str) -> DiagramTemplate:
-        messages: list[dict] = [{"role": "user", "content": evidence}]
+        messages: list[MessageParam] = [{"role": "user", "content": evidence}]
         retries = 0
         while retries <= _MAX_RETRIES:
             response = await self._llm.messages.create(
@@ -55,8 +56,8 @@ class TemplatePlanner:
             if tool_block is None:
                 logger.warning("TemplatePlanner: LLM did not call tool; using mesh fallback")
                 return await self._mesh_fallback()
-            attempted: str = tool_block.input.get("diagram_type", "unknown")
-            reasoning: str = tool_block.input.get("reasoning", "")
+            attempted: str = str(tool_block.input.get("diagram_type", "unknown"))
+            reasoning: str = str(tool_block.input.get("reasoning", ""))
             result_str = await self._tool.handle(tool_block.input)
             result = json.loads(result_str)
             messages.append({

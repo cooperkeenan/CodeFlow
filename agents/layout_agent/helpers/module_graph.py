@@ -121,7 +121,7 @@ class ModuleGraphBuilder:
                     prev[nxt] = node
         if not best_len:
             return []
-        end = max(best_len, key=best_len.get)
+        end = max(best_len, key=lambda k: best_len.get(k, -1))
         path: list[str] = []
         cursor: str | None = end
         while cursor is not None:

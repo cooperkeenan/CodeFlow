@@ -45,7 +45,8 @@ def place_component(template: DiagramTemplate) -> list[dict]:
     by_rank: dict[int, list] = {}
     for node in template.nodes:
         r = rank[node.id]
-        by_rank.setdefault(r, []).append(node)
+        if r is not None:
+            by_rank.setdefault(r, []).append(node)
 
     min_rank = min(by_rank)
     col_step = NODE_W + COL_GAP
