@@ -1,19 +1,20 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    allowedHosts: ['.trycloudflare.com'],
-    proxy: {
-      '/analyse': { target: 'http://localhost:8000', changeOrigin: true },
-      '/github': { target: 'http://localhost:8000', changeOrigin: true },
-      '/code': { target: 'http://localhost:8000', changeOrigin: true },
-      '/auth': { target: 'http://localhost:8000', changeOrigin: true },
-      '/tokens': { target: 'http://localhost:8000', changeOrigin: true },
-      '/repomaps': { target: 'http://localhost:8000', changeOrigin: true },
-      '/ci': { target: 'http://localhost:8000', changeOrigin: true },
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const apiTarget = env.VITE_API_URL || 'http://localhost:8000'
+  const proxy = Object.fromEntries(
+    ['/analyse', '/github', '/code', '/auth', '/tokens', '/repomaps', '/ci'].map(path => [
+      path,
+      { target: apiTarget, changeOrigin: true },
+    ])
+  )
+  return {
+    plugins: [react()],
+    server: {
+      allowedHosts: ['.trycloudflare.com'],
+      proxy,
     },
-  },
+  }
 })

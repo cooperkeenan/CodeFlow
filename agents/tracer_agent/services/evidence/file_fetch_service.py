@@ -1,6 +1,8 @@
 import base64
+import io
 import logging
 import shutil
+import tarfile
 import tempfile
 from pathlib import Path
 
@@ -23,16 +25,41 @@ class FileFetchService:
         repo_name: str | None = None,
         access_token: str | None = None,
         local_path: str | None = None,
+        archive_gz: str | None = None,
         directories: list[str],
     ) -> tuple[str, list[str]]:
-        if local_path:
+        if local_path and Path(local_path).exists():
             return self._copy_local_files(local_path, directories)
+        if archive_gz:
+            return self._extract_archive(archive_gz, directories)
         if not access_token or not repo_name:
             raise ValueError(
-                "fetch_files requires local_path for local repos or "
+                "fetch_files requires local_path, archive_gz, or "
                 "both access_token and repo_name for GitHub repos"
             )
         return await self.fetch_files_to_temp(access_token, repo_name, directories)
+
+    def _extract_archive(self, archive_gz: str, directories: list[str]) -> tuple[str, list[str]]:
+        raw = base64.b64decode(archive_gz)
+        temp_dir = tempfile.mkdtemp()
+        with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tf:
+            tf.extractall(temp_dir)
+        if directories:
+            return self._copy_local_files(temp_dir, directories)
+        return self._scan_all(temp_dir)
+
+    def _scan_all(self, root: str) -> tuple[str, list[str]]:
+        temp_dir = tempfile.mkdtemp()
+        written: list[str] = []
+        for file_path in Path(root).rglob("*.py"):
+            if not self._is_included(file_path):
+                continue
+            dest = Path(temp_dir) / file_path.relative_to(root)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file_path, dest)
+            written.append(str(dest))
+        logger.info("Scanned all: %d files", len(written))
+        return temp_dir, written
 
     def _copy_local_files(
         self,

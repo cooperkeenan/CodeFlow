@@ -37,3 +37,4 @@ outputs/
 
 # Task
 .vscode/ 
+frontend/.env.local

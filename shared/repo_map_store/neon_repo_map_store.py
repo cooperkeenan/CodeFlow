@@ -50,6 +50,7 @@ class NeonRepoMapStore:
                 min_size=0,
                 max_size=4,
                 reconnect_timeout=30,
+                check=AsyncConnectionPool.check_connection,
             )
             await self._pool.open()
             await self.ensure_schema()
