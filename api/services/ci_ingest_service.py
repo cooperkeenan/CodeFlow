@@ -1,3 +1,4 @@
+import base64
 import logging
 import tarfile
 import tempfile
@@ -38,7 +39,11 @@ class CiIngestService:
             except tarfile.TarError as exc:
                 raise HTTPException(status_code=400, detail="Invalid archive") from exc
             result = await self._analysis.analyse(
-                AnalyseRequest(repo_name=repo, local_path=temp_dir)
+                AnalyseRequest(
+                    repo_name=repo,
+                    local_path=temp_dir,
+                    archive_gz=base64.b64encode(data).decode(),
+                )
             )
         await self._repo_maps.save(user_id, result, source="ci")
         return result

@@ -1,6 +1,11 @@
+import base64
+import io
 import json
 import logging
 import re
+import tarfile
+import tempfile
+from pathlib import Path
 
 import anthropic
 from models.profiler_model import ProfileRequest, ProfileResponse
@@ -28,6 +33,8 @@ class ProfilerService:
 
     async def profile(self, request: ProfileRequest) -> ProfileResponse:
         logger.info("Profiling repo: %s", request.repo_name)
+        if request.archive_gz and (not request.local_path or not Path(request.local_path).exists()):
+            request = request.model_copy(update={"local_path": self._extract_archive(request.archive_gz)})
         paths = await self._fetch_paths(request)
         manifests = await self._fetch_manifests(request, paths)
         skeleton = self._repo_map.build(paths, request.repo_name)
@@ -44,6 +51,14 @@ class ProfilerService:
         for m in blueprint.modules:
             logger.info("  module %-20s zones=%s", m.name, [z.name for z in m.zones])
         return blueprint
+
+    def _extract_archive(self, archive_gz: str) -> str:
+        raw = base64.b64decode(archive_gz)
+        temp_dir = tempfile.mkdtemp()
+        with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tf:
+            tf.extractall(temp_dir)
+        logger.info("Extracted archive to %s", temp_dir)
+        return temp_dir
 
     def _target(self, request: ProfileRequest) -> dict:
         if request.local_path:
