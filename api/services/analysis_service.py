@@ -31,7 +31,7 @@ class AnalysisService:
     async def analyse(self, request: AnalyseRequest) -> AnalyseResponse:
         logger.info("Starting analysis for: %s", request.repo_name)
         profile = await self._profiler.profile(request)
-        return await self._run_from_profile(request.repo_name, request.local_path, profile, request.access_token)
+        return await self._run_from_profile(request.repo_name, request.local_path, profile, request.access_token, request.archive_gz)
 
     async def analyse_from_profile(
         self, repo_name: str, local_path: str | None,
@@ -59,12 +59,14 @@ class AnalysisService:
     async def _run_from_profile(
         self, repo_name: str, local_path: str | None,
         profile: ProfileResponse, access_token: str | None = None,
+        archive_gz: str | None = None,
     ) -> AnalyseResponse:
         logger.info("[profiler] arch=%s lang=%s modules=%d", profile.architecture_type, profile.language, len(profile.modules))
         self._persister.write_json("profiler.json", profile)
         
         trace = await self._tracer.trace(TracerRequest(
             repo_name=repo_name, local_path=local_path, access_token=access_token,
+            archive_gz=archive_gz,
             architecture_type=profile.architecture_type, language=profile.language, blueprint=profile,
         ))
         self._persister.write_json("tracer.json", trace)

@@ -100,6 +100,7 @@ class TracerService:
             access_token=request.access_token,
             repo_name=request.repo_name,
             local_path=request.local_path,
+            archive_gz=request.archive_gz,
         )
         if not file_paths:
             raise ValueError("No source files fetched for tracing")
