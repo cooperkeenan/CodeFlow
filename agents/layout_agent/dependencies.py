@@ -1,14 +1,18 @@
 import anthropic
 import httpx
 from core.config import Settings, get_settings
+from core.hierarchy_config import HierarchyConfig
 from core.template_config import TemplateLimitsConfig
 from fastapi import Depends
 
+from services.builders._service_view_builder import _ServiceViewBuilder
 from services.planning.cluster_planner import ClusterPlanner
+from services.planning.hierarchy_classifier import HierarchyClassifier
 from services.planning.layout_service import LayoutService
 from services.planning.ownership_resolver import OwnershipResolver
 from services.planning.semantic_layout_service import SemanticLayoutService
 from services.planning.component_type_planner import ComponentTypePlanner
+from services.planning.service_step_planner import ServiceStepPlanner
 from services.planning.template_planner import TemplatePlanner
 from services.planning.template_selector_service import TemplateSelectorService
 from services.planning.view_planner import ViewPlanner
@@ -17,9 +21,12 @@ from helpers.archetype_classifier import ArchetypeClassifier
 from helpers.cluster_fallback import ClusterFallback
 from helpers.cluster_validator import ClusterValidator
 from helpers.component_metrics import ComponentMetricsBuilder
+from helpers.connected_components import ConnectedComponents
+from helpers.hierarchy_tree import ModuleHierarchyBuilder
 from helpers.importance_scorer import ImportanceScorer
 from helpers.module_graph import ModuleGraphBuilder
 from helpers.semantic_validator import SemanticValidator
+from helpers.service_step_validator import ServiceStepValidator
 
 from templates.registry import TemplateRegistry
 from tools.select_diagram_template_tool import SelectDiagramTemplateTool
@@ -100,8 +107,32 @@ def get_component_type_planner(
     return ComponentTypePlanner(anthropic_client)
 
 
+def get_hierarchy_config() -> HierarchyConfig:
+    return HierarchyConfig()
+
+
+def get_hierarchy_classifier() -> HierarchyClassifier:
+    return HierarchyClassifier(
+        ModuleHierarchyBuilder(),
+        ConnectedComponents(ModuleGraphBuilder()),
+        HierarchyConfig(),
+    )
+
+
+def get_service_step_planner(
+    anthropic_client: anthropic.AsyncAnthropic = Depends(get_anthropic_client),
+) -> ServiceStepPlanner:
+    return ServiceStepPlanner(
+        anthropic_client,
+        ServiceStepValidator(HierarchyConfig()),
+        HierarchyConfig(),
+    )
+
+
 def get_view_planner(
     template_planner: TemplatePlanner = Depends(get_template_planner),
     comp_type_planner: ComponentTypePlanner = Depends(get_component_type_planner),
+    hierarchy: HierarchyClassifier = Depends(get_hierarchy_classifier),
+    service_planner: ServiceStepPlanner = Depends(get_service_step_planner),
 ) -> ViewPlanner:
-    return ViewPlanner(template_planner, comp_type_planner)
+    return ViewPlanner(template_planner, comp_type_planner, hierarchy, service_planner, _ServiceViewBuilder())

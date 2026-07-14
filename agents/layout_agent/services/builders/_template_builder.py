@@ -1,14 +1,16 @@
 from collections import deque
 
 from helpers.module_graph import ModuleGraph
+from services.builders._module_edge_builder import ModuleEdgeBuilder
 from services.builders._template_meta_builder import _TemplateMetaBuilder
 from shared.models.diagram_spec import DiagramSpec
 from shared.models.diagram_template import DiagramTemplate, DiagramType, TemplateEdge, TemplateNode
 
 
 class _TemplateBuilder:
-    def __init__(self, meta_builder: _TemplateMetaBuilder) -> None:
+    def __init__(self, meta_builder: _TemplateMetaBuilder, module_edge_builder: ModuleEdgeBuilder) -> None:
         self._meta_builder = meta_builder
+        self._module_edge_builder = module_edge_builder
 
     def build(
         self,
@@ -119,23 +121,5 @@ class _TemplateBuilder:
         if diagram_type == "pipeline":
             base = pipeline_order or self._node_order("pipeline", spec, graph)
             chain = [n for n in base if n in graph.module_names]
-            return [TemplateEdge(source=chain[i], target=chain[i + 1], edge_type="sequence") for i in range(len(chain) - 1)]
-        comp_to_mod: dict[str, str] = {
-            comp.name: module.name
-            for module in spec.modules for comps in module.zones.values() for comp in comps
-        }
-        pairs: dict[frozenset, dict] = {}
-        order: list[frozenset] = []
-        for edge in spec.edges:
-            src = comp_to_mod.get(edge.source)
-            tgt = comp_to_mod.get(edge.target)
-            if not src or not tgt or src == tgt:
-                continue
-            key: frozenset = frozenset({src, tgt})
-            if key not in pairs:
-                pairs[key] = {"src": src, "tgt": tgt, "type": edge.edge_type}
-                order.append(key)
-            elif edge.edge_type == "http" and pairs[key]["type"] != "http":
-                pairs[key] = {"src": src, "tgt": tgt, "type": "http"}
-        result = [TemplateEdge(source=pairs[k]["src"], target=pairs[k]["tgt"], edge_type=pairs[k]["type"]) for k in order]
-        return sorted(result, key=lambda e: (e.source, e.target))
+            return self._module_edge_builder.pipeline_edges(spec, graph, chain)
+        return self._module_edge_builder.real_edges(spec, graph)

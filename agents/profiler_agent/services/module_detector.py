@@ -56,5 +56,17 @@ class ModuleDetector:
                 extra.add(top)
         return extra
 
+    def service_roots(self, paths: list[str], roots: list[str]) -> set[str]:
+        dir_files = self._dir_files(paths)
+        entry_dirs = {d for d, files in dir_files.items() if files & ENTRY_MARKERS}
+        result: set[str] = set()
+        for root in roots:
+            if any(
+                d == root or d.startswith(root + "/") or root == ""
+                for d in entry_dirs
+            ):
+                result.add(root)
+        return result
+
     def _is_source(self, path: str) -> bool:
         return any(path.endswith(ext) for ext in SOURCE_EXTENSIONS)

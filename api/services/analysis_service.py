@@ -6,6 +6,7 @@ from clients.render_client import RenderClient
 from clients.tracer_client import TracerClient
 from models.analysis_model import AnalyseRequest, AnalyseResponse
 from services.output_persister import OutputPersister
+from services.progress_tracker import ProgressTracker
 
 from shared.models.profiler_response import ProfileResponse
 from shared.models.tracer_request import TracerRequest
@@ -21,22 +22,28 @@ class AnalysisService:
         render_client: RenderClient,
         layout_client: LayoutClient,
         output_persister: OutputPersister,
+        progress: ProgressTracker,
     ):
         self._profiler = profiler_client
         self._tracer = tracer_client
         self._render = render_client
         self._layout = layout_client
         self._persister = output_persister
+        self._progress = progress
 
     async def analyse(self, request: AnalyseRequest) -> AnalyseResponse:
+        self._progress.start()
         logger.info("Starting analysis for: %s", request.repo_name)
         profile = await self._profiler.profile(request)
+        self._progress.complete("profiler")
         return await self._run_from_profile(request.repo_name, request.local_path, profile, request.access_token, request.archive_gz)
 
     async def analyse_from_profile(
         self, repo_name: str, local_path: str | None,
         profile: ProfileResponse, access_token: str | None = None,
     ) -> AnalyseResponse:
+        self._progress.start()
+        self._progress.complete("profiler")
         logger.info("Resuming from stored profile for: %s", repo_name)
         return await self._run_from_profile(repo_name, local_path, profile, access_token)
 
@@ -69,6 +76,7 @@ class AnalysisService:
             archive_gz=archive_gz,
             architecture_type=profile.architecture_type, language=profile.language, blueprint=profile,
         ))
+        self._progress.complete("tracer")
         self._persister.write_json("tracer.json", trace)
 
         spec = trace["diagram_spec"]
@@ -77,6 +85,7 @@ class AnalysisService:
                     len(spec.get("modules", [])), component_count, len(spec.get("edges", [])))
         
         layout_result = await self._layout.layout(spec)
+        self._progress.complete("layout")
         self._persister.write_json("layout.json", layout_result)
         
         layout_hint = layout_result["layout_hint"]
@@ -89,6 +98,7 @@ class AnalysisService:
         trace["diagram_templates"] = diagram_templates
         self._persister.write_json("layout_reasoning.json", self._build_reasoning(diagram_templates))
         diagram = await self._render.render(diagram_templates)
+        self._progress.complete("render")
         self._persister.write_json("render.json", diagram)
         logger.info("[render] views=%d", len(diagram.get("views", {})))
         return AnalyseResponse(repo=repo_name, profile=profile, trace=trace, diagram=diagram)

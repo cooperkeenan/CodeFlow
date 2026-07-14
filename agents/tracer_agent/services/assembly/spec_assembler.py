@@ -25,7 +25,8 @@ class SpecAssembler:
         index = self._placer.dir_index(blueprint)
         modules = {
             m.root_path: Module(
-                name=m.name, description=m.description, root_path=m.root_path, zones={}
+                name=m.name, description=m.description, root_path=m.root_path, zones={},
+                is_service=m.is_service,
             )
             for m in blueprint.modules
         }
@@ -64,12 +65,15 @@ class SpecAssembler:
                     inputs=[v for v in io.get("inputs", []) if v],
                     outputs=[v for v in io.get("outputs", []) if v],
                 )
+            raw_tier = c.get("tier")
+            tier = raw_tier if raw_tier in ("primary", "secondary") else "primary"
             components.append(Component(
                 name=c["name"],
                 description=str(c.get("description", "")),
                 file_path=c["file_path"].replace("\\", "/"),
                 io=io_model,
                 children=[ch for ch in c.get("children", []) if isinstance(ch, str)],
+                tier=tier,
             ))
         return components
 

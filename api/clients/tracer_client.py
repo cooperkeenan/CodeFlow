@@ -19,7 +19,7 @@ class TracerClient:
                 response = await self._http.post(
                     f"{self._base_url}/trace",
                     json=request.model_dump(),
-                    timeout=300.0,
+                    timeout=900.0,
                 )
                 response.raise_for_status()
                 return response.json()
