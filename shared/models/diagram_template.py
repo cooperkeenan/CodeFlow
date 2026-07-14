@@ -22,6 +22,7 @@ class TemplateNode(BaseModel):
     component_count: int = 0
     drillable: bool = False
     description: str = ""
+    backing_components: list[str] = []
 
 
 class TemplateEdge(BaseModel):

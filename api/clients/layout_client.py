@@ -18,7 +18,7 @@ class LayoutClient:
                 response = await self._http.post(
                     f"{self._base_url}/layout",
                     json={"diagram_spec": diagram_spec},
-                    timeout=300.0,
+                    timeout=900.0,
                 )
                 response.raise_for_status()
                 return response.json()

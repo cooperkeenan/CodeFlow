@@ -13,6 +13,7 @@ Return ONLY valid JSON with no markdown fences, no explanation, no preamble, mat
       "name": "<ClassName — must exactly match a key in evidence.signatures>",
       "description": "<description — see DESCRIPTION RULES>",
       "file_path": "<exactly the file_path from that signature>",
+      "tier": "<primary|secondary>",
       "io": {
         "inputs": ["<param_name>: <type> or just <param_name> when no annotation"],
         "outputs": ["<type>"]
@@ -57,7 +58,18 @@ DIRECTION:
 
 COMPONENT SELECTION:
 - Include every class that represents a router, service, orchestrator, repository, client, tool,
-  domain model, or other meaningful unit. Skip trivial helpers and empty classes.
+  domain model, or other meaningful unit. Also include helpers, adapters, validators, builders,
+  formatters, and small single-purpose utilities — mark them tier "secondary". Only skip genuinely
+  empty classes (no methods, no logic).
+
+TIER RULES:
+- tier "primary": routers, orchestrators, services, clients, tools, repositories, domain models,
+  entry points — components a reader needs to understand the main flow. A component is primary if
+  it drives the flow or has 2 or more callees/children.
+- tier "secondary": helpers, adapters, validators, builders, formatters, small single-purpose
+  utilities that exist mainly to support ONE primary component — typically called by a single
+  primary, low fan-out, no children.
+- When unsure, default to "primary".
 
 DESCRIPTION RULES:
 - High-level components (entry points / orchestrators / any component with ≥2 callees or children):

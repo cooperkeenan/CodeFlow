@@ -13,6 +13,7 @@ class ModulePlan(BaseModel):
     root_path: str
     style: str = ""
     zones: list[ZonePlan] = []
+    is_service: bool = False
 
 
 class RepoBlueprint(BaseModel):

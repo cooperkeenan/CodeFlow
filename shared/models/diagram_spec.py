@@ -61,6 +61,7 @@ class Module(BaseModel):
     purpose: str = ""
     zones: dict[str, list[Component]] = {}
     cluster_plan: list[ZoneClusterPlan] = []
+    is_service: bool = False
 
 
 Archetype = Literal["pipeline", "hub", "layered", "hierarchy", "mesh"]

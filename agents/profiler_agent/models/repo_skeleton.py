@@ -13,6 +13,7 @@ class ModuleSkeleton:
     name: str
     root_path: str
     directories: list[DirGroup] = field(default_factory=list)
+    is_service: bool = False
 
 
 @dataclass

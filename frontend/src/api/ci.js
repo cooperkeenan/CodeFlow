@@ -5,3 +5,5 @@ export const runLocalCi = (path) =>
     method: 'POST',
     body: JSON.stringify({ path: path || null }),
   })
+
+export const getProgress = () => request('/ci/progress')
