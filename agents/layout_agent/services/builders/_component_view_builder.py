@@ -102,7 +102,9 @@ class _ComponentViewBuilder:
             drillable = name != component_name and name in view_set
             comp_desc = all_comps[name].description if name in all_comps else ""
             nodes.append(TemplateNode(
-                id=name, label=name, tier="primary", module_name=mod,
+                id=name, label=name,
+                tier=all_comps[name].tier if name in all_comps else "primary",
+                module_name=mod,
                 kind="component", style=role, drillable=drillable, description=comp_desc,
             ))
         depth_map = {

@@ -30,18 +30,25 @@ Five independent services, plus a frontend:
   directory, builds an evidence bundle (AST signatures + jarviscg call graph + confirmed edges),
   and produces a hierarchical `DiagramSpec` (components carry `role`/`tier`; cross-service HTTP edges
   recovered).
-- **Layout agent** (`agents/layout_agent/`, port 8005) — chooses a **diagram type per view**
-  (system / module / component), enriches the spec, and builds a `DiagramTemplate`
-  (nodes / edges / meta) for every navigable view. Type choice is LLM-driven (temperature 0) over
-  rich descriptions; ordering/edge/placement math is deterministic.
+- **Layout agent** (`agents/layout_agent/`, port 8006) — classifies the module hierarchy, chooses a
+  **diagram type per view**, and builds a `DiagramTemplate` (nodes / edges / meta) for every
+  navigable view. The **top-level view shows only runnable services** (modules with an entry point —
+  see `is_service` below); **service (module) views are LLM-authored semantic steps** (≤8 behavioural
+  steps, each backed by real components for drill-down); component views are typed per-component.
+  Type/step choice is LLM-driven (temperature 0); ordering/edge/placement math is deterministic.
 - **Render agent** (`agents/render_agent/`, port 8004) — converts each `DiagramTemplate` into a
   `RenderedView` with **deterministic React Flow positions** per type (no Mermaid, no dagre).
 - **Frontend** (`frontend/`, Vite + React Flow) — a thin renderer over the backend-supplied
   positions; it applies theme/styling only.
 
-Each service is a FastAPI app launched via uvicorn. The venv at `venv/` ships `jarviscg` for the
-tracer's call-graph step. `.env` at the repo root holds `ANTHROPIC_API_KEY`, GitHub OAuth creds,
-and `LOCAL_REPO_PATH`.
+Each service is a FastAPI app launched via uvicorn (VS Code task **CodeFlow: All Services**). The
+venv at `venv/` ships `jarviscg` for the tracer's call-graph step. `.env` at the repo root holds
+`ANTHROPIC_API_KEY`, GitHub OAuth creds, `LOCAL_REPO_PATH`, and `ENVIRONMENT`. When
+`ENVIRONMENT=local`, `api/core/config.py` forces the four agent URLs to their localhost ports
+(8002/8003/8004/8006 — the tasks.json services) instead of the deployed Railway hosts. The frontend
+proxies to the gateway via `frontend/.env.local`'s `VITE_API_URL` (set to `http://localhost:8000`
+for local; the deployed URL to test against production). `.env` is not hot-reloaded — restart the
+gateway after editing it. The gateway→tracer/layout HTTP timeouts are 900s (LLM-heavy calls).
 
 ## Pipeline (request flow)
 
@@ -105,12 +112,16 @@ Deliberately NOT markers: `docker-compose.yml` (monorepo orchestrator, not a sin
 Shared at `shared/models/`:
 
 - `RepoBlueprint{ architecture_type, language, framework, patterns, modules: [ModulePlan] }`
-- `ModulePlan{ name, description, root_path, style, zones: [ZonePlan] }`
+- `ModulePlan{ name, description, root_path, style, is_service, zones: [ZonePlan] }`
 - `ZonePlan{ name, description, directories: [str] }`
 - `DiagramSpec{ architecture_type, modules: [Module], edges, external_actors, entry_points,
   layout_hint }`
-- `Module{ name, description, root_path, purpose, zones: dict[str, list[Component]], cluster_plan }`
-- `Component{ name, description, file_path, io, children, role, tier, nested }`
+- `Module{ name, description, root_path, purpose, is_service, zones: dict[str, list[Component]],
+  cluster_plan }` — `is_service` (set by the profiler when the module has an entry marker) drives the
+  top-level architecture view: only service modules appear there.
+- `Component{ name, description, file_path, io, children, role, tier, nested }` — the tracer now
+  assigns `tier` (`primary`|`secondary`): primaries form the component-view spine, secondaries branch
+  off to the side.
 - `Edge{ source, target, edge_type ∈ [http|import|database|event|call|sequence] }`
 - `LayoutHint{ archetype, module_order, rank_assignments, rationale }`
 
@@ -120,7 +131,8 @@ Layout/render (`shared/models/diagram_template.py`):
   relationship|zoned], nodes: [TemplateNode], edges: [TemplateEdge], meta }` — type-specific data
   (hub id, depth/tier maps, ordered steps, folded members, per-view `rationale`) rides in `meta`.
 - `TemplateNode{ id, label, tier, module_name, kind ∈ [module|component|zone|cluster], parent,
-  style, drillable }`
+  style, drillable, backing_components }` — `backing_components` maps an LLM-authored semantic step
+  back to the real component(s) it represents, so a step still drills into the component view.
 - `RenderedView{ type, nodes, edges }` — positioned React Flow nodes + styled edges.
 
 There used to be a flat `DiagramSpec.layers: dict[zone_name, list[Component]]` and a separate
@@ -136,48 +148,64 @@ There used to be a flat `DiagramSpec.layers: dict[zone_name, list[Component]]` a
 
 ## Current Status
 
-The pipeline now runs **profiler → tracer → layout → render → frontend** (a **layout agent** was
-added between tracer and render). The layout agent chooses a **diagram type per view** (system /
-module / component) and builds a `DiagramTemplate` (nodes / edges / meta); the render agent computes
-deterministic React Flow positions per type; the frontend is a thin renderer. (The earlier Mermaid
-output is retired.)
+The pipeline runs **profiler → tracer → layout → render → frontend**. Diagram treatment is now
+**hierarchy-aware** — the higher up the codebase you are, the more the LLM interprets; the lower
+down, the more deterministic.
 
-**Working today:**
-- The **system view** renders as **hub-and-spoke** (the api gateway orchestrates the four agents).
-- **Component views** are typed by an LLM from rich tracer descriptions: an orchestrator that runs
-  its helpers **in sequence** renders as a **pipeline** with an ordered `caller → orchestrator →
-  step…` chain (synthesized "sequence" edges, drawn distinctly from literal calls) and a rationale
-  shown in the UI.
-- Cross-service **HTTP edges** are recovered (`api → each agent`).
-- The component-type selector is **hardened** — it chunks its LLM calls, keeps partial results, and
-  logs fallbacks loudly, so one failure no longer silently reverts every view to hub-and-spoke.
+**Top level (system view)** — shows only **runnable services** (modules with an entry marker;
+`Module.is_service`, threaded profiler → tracer → layout). For CodeFlow that's `api` + the four
+agents; support modules (`shared`, `frontend`, `evaluation`) are excluded. Edges use the real
+module-to-module graph, with synthetic `sequence` edges filling gaps so the flow stays connected
+(`services/builders/_module_edge_builder.py`). Selection lives in
+`services/planning/hierarchy_classifier.py`: if any module is `is_service` it drives the set,
+otherwise it falls back to the directory-prefix tree + largest-connected-component logic
+(`helpers/hierarchy_tree.py`, `helpers/connected_components.py`).
 
-**In progress — service-centric abstraction (has a known bug):**
-- *Goal:* high-level views should surface the meaningful **services** and fold thin single-callee
-  adapter/tool components into them; drilling into a service shows its tool + service + helpers in a
-  bordered container, with the caller feeding in.
-- *Bug:* the graph contraction runs only over a focus's **direct callees**, but the services sit
-  **one hop deeper** (they are the tools' callees), so they're never in the set and nothing folds —
-  high-level views still show the tool wrappers. *Fix:* pull each direct single-callee adapter's
-  callee (the service) into the view set, contract, then rebuild the callee list from the survivors.
-  Logic in `agents/layout_agent/services/_view_builder.py` (`build_component`) and
-  `services/_graph_contraction.py`.
+**Service level (module views)** — LLM-authored **semantic steps**, not file names. For a service
+module the LLM infers its purpose, picks a diagram type, and emits ≤8 behavioural steps
+(e.g. `Fetch & traverse codebase → Gather evidence → …`), each carrying `backing_components` so a
+step drills into the real component view. See `services/planning/service_step_planner.py`,
+`helpers/service_step_validator.py`, `services/builders/_service_view_builder.py`,
+`prompts/service_step_prompt.py`. Orchestrated in `services/planning/view_planner.py`. Step boxes
+show the title only (no per-box description); the purpose shows in the rationale bar.
 
-## Next Steps
+**Component level (drill-in)** — deterministic. The tracer classifies each component
+`primary`/`secondary`; the render neighborhood placement lays **primaries on a horizontal spine and
+stacks secondary helpers below their calling primary** (`agents/render_agent/placement/neighborhood.py`,
+degrades byte-identically to the old flat layout when all-primary).
 
-1. Fix the service contraction (pull services one hop deeper into orchestrator/service views) and
-   verify the container drill-down renders.
-2. Verify module-level contraction actually folds (`_build_structural_module`).
-3. Trace the **frontend / JS** — currently 0 components and a missing `frontend → api` edge, because
-   tracing is Python-only (jarviscg + Python AST).
+**Ops:** `ENVIRONMENT=local` routes the gateway to local agent ports; `frontend/.env.local`
+`VITE_API_URL` points the browser at the local gateway; gateway→tracer/layout timeouts are 900s; a
+live **progress bar** advances a checkpoint as each agent finishes
+(`api/services/progress_tracker.py`, `GET /ci/progress`, polled by `RepoMapsPanel.jsx`).
+
+## Known Caveats / Next Steps
+
+1. **Tracer speed & density.** The tracer now includes helper components (as `tier: secondary`),
+   which raised the component count (~147 for CodeFlow) and pushed run time toward the timeout — the
+   count of LLM calls is unchanged (chunking is over static evidence), but output-per-call grew. If
+   drill-in views feel too dense, tighten the helper-inclusion wording in
+   `agents/tracer_agent/prompts/tracer_prompt.py` (readability, not speed).
+2. **Orchestrator spines can still be long.** If a service genuinely calls many *primary* services,
+   the spine stays wide (tiering only pulls off *helpers*). Next lever if needed: a spine-length cap
+   with overflow to a side column.
+3. **Large-codebase grouping deferred.** `hierarchy_classifier` can sub-cluster via the prefix tree
+   when service modules exceed the node cap (8), but rendering nested `group:` views isn't wired
+   (fine for CodeFlow's flat set).
+4. **Cleanup.** `ClusterPlanner` / `cluster_prompt` / the zoned `_view_builder.build_module` branch
+   are now dead for service modules (kept to avoid out-of-scope refactor) — a follow-up can remove them.
+5. **Trace the frontend / JS** — still 0 components and no `frontend → api` edge (tracing is
+   Python-only: jarviscg + Python AST).
 
 ## Where Things Live (quick map)
 
-- Pipeline orchestration: `api/services/analysis_service.py`
-- Profiler skeleton: `agents/profiler_agent/services/{module_detector,repo_map_service,blueprint_validator,profiler_service}.py`
-- Tracer evidence + assembly: `agents/tracer_agent/services/{evidence_service,ast_service,call_graph_service,spec_assembler,graph_validator,tracer_service}.py`
-- Layout type selection + templates: `agents/layout_agent/services/{layout_service,semantic_layout_service,cluster_planner,component_type_planner,view_planner,_view_builder,_edge_builder,_graph_contraction}.py`
-- Render placement: `agents/render_agent/services/placement_service.py`, `agents/render_agent/placement/*`
+- Pipeline orchestration + progress: `api/services/analysis_service.py`, `api/services/progress_tracker.py` (`GET /ci/progress`)
+- Profiler skeleton + `is_service`: `agents/profiler_agent/services/{module_detector,repo_map_service,blueprint_validator,profiler_service}.py`
+- Tracer evidence + assembly + tiering: `agents/tracer_agent/services/{evidence_service,ast_service,call_graph_service,spec_assembler,graph_validator,tracer_service}.py`, `agents/tracer_agent/prompts/tracer_prompt.py`
+- Layout hierarchy + views (planners): `agents/layout_agent/services/planning/{hierarchy_classifier,view_planner,service_step_planner,template_planner,cluster_planner,component_type_planner,template_selector_service}.py`
+- Layout helpers: `agents/layout_agent/helpers/{hierarchy_tree,connected_components,service_step_validator,module_graph}.py`; models in `agents/layout_agent/models/{hierarchy,service_step}.py`; config in `core/hierarchy_config.py`
+- Layout builders: `agents/layout_agent/services/builders/{_service_view_builder,_component_view_builder,_view_builder,_template_builder,_module_edge_builder}.py`
+- Render placement: `agents/render_agent/services/placement_service.py`, `agents/render_agent/placement/*` (spine/branch in `neighborhood.py`)
 - Frontend graph transform + components: `frontend/src/hooks/useGraphTransform.js`, `frontend/src/hooks/graph/common.js`, `frontend/src/components/diagram/{FlowGraph,CustomNode,ModuleGroupNode,ZoneGroupNode,DiagramExplorer,Breadcrumb,DetailPanel,RationaleBox}.jsx`
 - Shared outputs (cached): `shared/outputs/profiler_output.json`, `shared/outputs/tracer_output.json`
 - Prompts: `agents/profiler_agent/prompts/profiler_prompt.py`, `agents/tracer_agent/prompts/tracer_prompt.py`, `agents/layout_agent/prompts/{semantic_prompt,cluster_prompt,component_type_prompt,template_prompt}.py`

@@ -12,6 +12,7 @@ from core.config import Settings, get_settings
 from fastapi import Depends, Header, HTTPException, Request
 from models.auth_model import AuthUser
 from services.analysis_service import AnalysisService
+from services.progress_tracker import ProgressTracker
 from services.archive_extractor import ArchiveExtractor
 from services.auth_service import AuthService
 from services.ci_ingest_service import CiIngestService
@@ -86,14 +87,19 @@ def get_layout_client(
     return LayoutClient(http_client, settings.LAYOUT_AGENT_URL)
 
 
+def get_progress_tracker(request: Request) -> ProgressTracker:
+    return request.app.state.progress_tracker
+
+
 def get_analysis_service(
     profiler_client: ProfilerClient = Depends(get_profiler_client),
     tracer_client: TracerClient = Depends(get_tracer_client),
     render_client: RenderClient = Depends(get_render_client),
     layout_client: LayoutClient = Depends(get_layout_client),
+    progress_tracker: ProgressTracker = Depends(get_progress_tracker),
 ) -> AnalysisService:
     persister = OutputPersister(_REPO_ROOT / "outputs")
-    return AnalysisService(profiler_client, tracer_client, render_client, layout_client, persister)
+    return AnalysisService(profiler_client, tracer_client, render_client, layout_client, persister, progress_tracker)
 
 
 def get_stage_status_service() -> StageStatusService:
@@ -177,8 +183,9 @@ def get_ci_ingest_service(
 def get_local_ci_service(
     analysis_service: AnalysisService = Depends(get_analysis_service),
     repo_map_service: RepoMapService = Depends(get_repo_map_service),
+    progress_tracker: ProgressTracker = Depends(get_progress_tracker),
 ) -> LocalCiService:
-    return LocalCiService(analysis_service, repo_map_service)
+    return LocalCiService(analysis_service, repo_map_service, progress_tracker)
 
 
 def _bearer_token(authorization: str | None) -> str | None:

@@ -17,6 +17,7 @@ class RepoMapService:
 
     def build(self, paths: list[str], repo_name: str) -> RepoSkeleton:
         roots = self._detector.detect(paths)
+        services = self._detector.service_roots(paths, roots)
         source_dirs = self._source_dirs(paths)
         owner = self._assign(source_dirs.keys(), roots)
         modules = []
@@ -35,6 +36,7 @@ class RepoMapService:
                     name=self._name(root, repo_name),
                     root_path=self._as_dir(root),
                     directories=groups,
+                    is_service=(root in services),
                 ))
         logger.info("Repo skeleton: %d modules", len(modules))
         return RepoSkeleton(modules=modules)
