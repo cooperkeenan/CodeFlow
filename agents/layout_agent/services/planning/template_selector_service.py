@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from core.template_config import TemplateLimitsConfig
 from helpers.module_graph import ModuleGraphBuilder
+from services.builders._module_edge_builder import ModuleEdgeBuilder
 from services.builders._template_builder import _TemplateBuilder
 from services.builders._template_meta_builder import _TemplateMetaBuilder
 from shared.models.diagram_spec import DiagramSpec
@@ -39,7 +40,7 @@ class TemplateSelectorService:
         self._registry = registry
         self._config = config
         self._graph_builder = graph_builder
-        self._builder = _TemplateBuilder(_TemplateMetaBuilder())
+        self._builder = _TemplateBuilder(_TemplateMetaBuilder(), ModuleEdgeBuilder())
 
     def select(
         self,

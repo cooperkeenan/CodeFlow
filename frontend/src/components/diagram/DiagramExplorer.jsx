@@ -58,10 +58,11 @@ export default function DiagramExplorer({ spec, views, diagramTemplates, codeVie
       })
       setDetailPanel(null)
       setCodePanel(null)
-    } else if (drillable && views && views[`component:${label}`]) {
+    } else if (drillable && views && views[`component:${node.data.drillTarget || label}`]) {
+      const drillId = node.data.drillTarget || label
       setViewStack(prev => {
-        const i = prev.findIndex(e => e.kind === 'component' && e.id === label)
-        return i >= 0 ? prev.slice(0, i + 1) : [...prev, { kind: 'component', id: label }]
+        const i = prev.findIndex(e => e.kind === 'component' && e.id === drillId)
+        return i >= 0 ? prev.slice(0, i + 1) : [...prev, { kind: 'component', id: drillId }]
       })
       setDetailPanel(null)
       setCodePanel(null)

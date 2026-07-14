@@ -39,6 +39,7 @@ class BlueprintValidator:
             root_path=sk.root_path,
             style=raw_module.get("style") or "",
             zones=zones,
+            is_service=sk.is_service,
         )
 
     def _zones(self, raw_zones: list, valid_dirs: set[str]) -> tuple[list[ZonePlan], set[str]]:
