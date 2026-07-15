@@ -5,6 +5,28 @@ control genuinely diverges, and lay the whole system out on **one page** the way
 holds it in their head — entry points on the left, decisions as labeled forks, effects
 (DB, HTTP, LLM, response) on the right. No drill-down.
 
+> **v2 note — authoritative spec lives in `features/`.** A second review pass found
+> gaps in this document; the corrected, implementable spec is `features/01`–`13`.
+> The material changes:
+> 1. **XOR vs AND**: `asyncio.gather`/parallel fan-out is a new `parallel` node kind —
+>    do-all fan-out must never render as a decision (F01, F07).
+> 2. **Guard reclassification**: an arm that terminates (raises/returns) with reach ≤ 2
+>    is a *guard* even when it calls a distinct component (alert/notify arms); sites
+>    with one live arm become a `guarded` badge on a step, not a decision (F06).
+> 3. **Distinctness defined + utility damping**: arms are distinct iff neither reach
+>    set is a subset of the other, computed after excluding high fan-in utility
+>    components (F06).
+> 4. **Single-impl polymorphism is indirection, not a decision** — ≥2 concrete
+>    implementations required (F03/F04).
+> 5. **Graded confidence** (`resolved`/`inferred`/`dynamic`) with composition-root
+>    binding and unique-name inference, so untyped codebases degrade gracefully
+>    instead of going dark (F03).
+> 6. **Cross-service stitching** (F08): outbound HTTP effects match route entries in
+>    other lanes — one continuous journey across services on the single page.
+> 7. **No CFG/post-dominators needed**: arms, terminality, and reconvergence read
+>    directly off the AST (F04).
+> 8. **jarviscg fully retired** (was "optional cross-check") (F03, F13).
+
 ---
 
 ## 1. Why the current tracer is structurally wrong
