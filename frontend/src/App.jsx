@@ -10,7 +10,7 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
-import DiagramPage from './pages/DiagramPage'
+import FlowPage from './pages/FlowPage'
 
 export default function App() {
   const navigate = useNavigate()
@@ -33,7 +33,7 @@ export default function App() {
     }
   }, [])
 
-  const openMap = (map) => { show(map); navigate('/diagram') }
+  const openMap = (map) => { show(map); navigate('/flow') }
 
   if (oauthPending) {
     return (
@@ -57,11 +57,11 @@ export default function App() {
       />
       <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
       <Route
-        path="/diagram"
+        path="/flow"
         element={
           <RequireAuth>
             {analysis
-              ? <DiagramPage analysis={analysis} onBack={() => { reset(); navigate('/') }} />
+              ? <FlowPage analysis={analysis} onBack={() => { reset(); navigate('/') }} />
               : <Navigate to="/" replace />}
           </RequireAuth>
         }

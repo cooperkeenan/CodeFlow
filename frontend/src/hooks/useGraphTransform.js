@@ -1,32 +1,43 @@
 import { useMemo } from 'react'
 
-import { colorForModule, toRFEdge } from './graph/common'
+const HEADER_TYPE = 'laneHeader'
 
-export function useGraphTransform(spec, focus, expandedZones, expandedNodes, views) {
+function toNode(node) {
+  const type = node.type === HEADER_TYPE ? HEADER_TYPE : node.kind
+  return {
+    id: node.id,
+    type,
+    position: node.position,
+    draggable: false,
+    selectable: type !== HEADER_TYPE,
+    data: { ...node.data, kind: node.kind, shape: node.shape, label: node.label },
+    ...(type === HEADER_TYPE ? {} : { sourcePosition: 'right', targetPosition: 'left' }),
+  }
+}
+
+function toEdge(edge) {
+  return {
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    type: 'flow',
+    label: edge.label || undefined,
+    data: {
+      kind: edge.kind,
+      isSpine: !!edge.isSpine,
+      dashed: !!edge.dashed,
+      routed: edge.routed,
+      confidence: edge.confidence,
+    },
+  }
+}
+
+export function useGraphTransform(view) {
   return useMemo(() => {
-    if (!views) return { nodes: [], edges: [] }
-    const viewId = !focus ? 'system'
-      : focus.kind === 'module' ? `module:${focus.id}`
-      : `component:${focus.id}`
-    const view = views[viewId]
-    if (!view) return { nodes: [], edges: [] }
-
-    const isPipeline = view.type === 'pipeline'
-    const HORIZONTAL = new Set(['pipeline', 'relationship', 'mesh', 'dependency_graph', 'layered_tier'])
-    const isFlow = view.type === 'pipeline' || (focus?.kind === 'component' && HORIZONTAL.has(view.type))
-
-    const nodes = view.nodes.map(n => {
-      const moduleName = n.data?.module ?? n.data?.moduleName
-      const color = moduleName ? colorForModule(spec, moduleName) : undefined
-      const data = { ...n.data, ...(color ? { color } : {}) }
-      data.expanded = n.type === 'zoneMore' ? expandedZones.has(n.data?.key ?? '') : expandedNodes.has(n.id)
-      return { ...n, data, ...(isFlow ? { sourcePosition: 'right', targetPosition: 'left' } : {}) }
-    })
-
-    const edges = view.edges.map(e => ({
-      ...toRFEdge(e, { id: e.id, label: e.label }),
-      ...(isFlow ? { sourceHandle: 'right', targetHandle: 'left' } : {}),
-    }))
-    return { nodes, edges }
-  }, [spec, focus, expandedZones, expandedNodes, views])
+    if (!view?.nodes) return { nodes: [], edges: [] }
+    return {
+      nodes: view.nodes.map(toNode),
+      edges: (view.edges ?? []).map(toEdge),
+    }
+  }, [view])
 }
