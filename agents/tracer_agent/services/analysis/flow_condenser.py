@@ -45,7 +45,7 @@ class FlowCondenser:
         entries = EntryFinder(
             index, RouteHandlerLocator(index), self._roots, self._labels
         ).find(dispatch_sites)
-        self._assemble(acc, summarizer, entries)
+        self._assemble(acc, summarizer, entries, index)
         StepMerger(acc, self._labels).merge()
         lanes = LaneBuilder(self._roots, self._labels).build(entries, dispatch_sites, significance)
         return FlowGraph(
@@ -57,10 +57,13 @@ class FlowCondenser:
         )
 
     def _assemble(
-        self, acc: GraphAccumulator, summarizer: FunctionSummarizer, entries: tuple
+        self, acc: GraphAccumulator, summarizer: FunctionSummarizer,
+        entries: tuple, index: ProjectIndex,
     ) -> None:
         for entry in entries:
-            acc.upsert(entry.id, "entry", entry.service_root, entry.label)
+            record = index.functions.get(entry.handler_fqn)
+            refs = [record.span] if record is not None else None
+            acc.upsert(entry.id, "entry", entry.service_root, entry.label, refs=refs)
             summary = summarizer.summarize(entry.handler_fqn)
             if summary.head is not None:
                 acc.connect(entry.id, summary.head, "sequence")

@@ -1,6 +1,6 @@
-from placement.registry import PlacementRegistry
-from services.placement_service import PlacementService
+from placement.flow_page_placer import FlowPagePlacer
+from placement.flow_page_placer_factory import build_flow_page_placer
 
 
-def get_placement_service() -> PlacementService:
-    return PlacementService(PlacementRegistry())
+def get_flow_page_placer() -> FlowPagePlacer:
+    return build_flow_page_placer()

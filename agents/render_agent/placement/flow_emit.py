@@ -42,6 +42,7 @@ def build_edge_dict(edge: FlowEdge, is_spine: bool) -> dict:
         "label": edge.llm_label or edge.arm_label,
         "isSpine": is_spine,
         "dashed": dashed,
+        "confidence": edge.confidence,
         "routed": "gutter" if edge.kind == "stitch" else "lane",
     }
     if edge.kind == "stitch":

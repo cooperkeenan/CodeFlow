@@ -30,6 +30,8 @@ def node_data(
         "badges": list(node.badges),
         "fullLabel": node.llm_label or node.label,
         "oneLiner": node.one_liner,
+        "backing": list(node.backing),
+        "refs": [{"file": ref.file, "line": ref.line} for ref in node.refs],
     }
     if node.folded_count:
         data["chip"] = f"+{node.folded_count}"

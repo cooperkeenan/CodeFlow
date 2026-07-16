@@ -105,11 +105,11 @@ async def analyse_local_from_layout(
     if not trace_path.exists():
         raise HTTPException(status_code=404, detail="No stored tracer output")
     stored_layout = json.loads(layout_path.read_text())
-    diagram_templates = stored_layout.get("diagram_templates")
-    if not diagram_templates:
-        raise HTTPException(status_code=422, detail="Stored layout has no diagram_templates")
+    flow_graph = stored_layout.get("flow_graph")
+    if not flow_graph:
+        raise HTTPException(status_code=422, detail="Stored layout has no flow_graph")
     stored = AnalyseResponse.model_validate(json.loads(trace_path.read_text()))
-    result = await service.analyse_from_layout(stored, diagram_templates)
+    result = await service.analyse_from_layout(stored, flow_graph)
     trace_path.write_text(result.model_dump_json(indent=2))
     stage_status.record_run("render")
     return result

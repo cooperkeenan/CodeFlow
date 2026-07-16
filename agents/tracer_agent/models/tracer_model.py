@@ -1,8 +1,7 @@
 from pydantic import BaseModel
 
-from shared.models.diagram_spec import DiagramSpec
+from shared.models.flow_graph import FlowGraph
 
 
 class TracerResponse(BaseModel):
-    architecture_type: str
-    diagram_spec: DiagramSpec
+    flow_graph: FlowGraph
