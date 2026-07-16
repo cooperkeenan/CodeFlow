@@ -22,6 +22,8 @@ def agent_root_of(importing_module_fqn: str) -> str | None:
     parts = importing_module_fqn.split(".")
     if len(parts) >= 2 and parts[0] == "agents":
         return f"{parts[0]}.{parts[1]}"
+    if parts and parts[0] == "api":
+        return "api"
     return None
 
 
