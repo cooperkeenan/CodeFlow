@@ -60,5 +60,10 @@ class FlowGraph(BaseModel):
     @model_validator(mode="after")
     def _sort_canonical(self) -> "FlowGraph":
         self.nodes.sort(key=lambda node: node.id)
-        self.edges.sort(key=lambda edge: (edge.source, edge.target, edge.arm_label))
+        self.edges.sort(
+            key=lambda edge: (
+                edge.source, edge.target, edge.kind,
+                edge.group_id, edge.arm_label, edge.confidence, edge.is_spine,
+            )
+        )
         return self

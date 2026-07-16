@@ -1,24 +1,14 @@
-import anthropic
 import httpx
 from core.config import Settings, get_settings
 from fastapi import Depends, Request
-from services.evidence.ast_service import AstService
-from services.evidence.call_graph_service import CallGraphService
-from services.tracing.chunk_context_builder import ChunkContextBuilder
-from services.tracing.chunk_tracer import ChunkTracer
-from services.tracing.breadcrumb_builder import BreadcrumbBuilder
-from services.assembly.component_placer import ComponentPlacer
-from services.tracing.correction_prompt_builder import CorrectionPromptBuilder
-from services.assembly.edge_recovery import EdgeRecovery
-from services.evidence.evidence_service import EvidenceService
+from services.analysis.effect_detector_factory import build_effect_detector
+from services.analysis.flow_pipeline import FlowPipeline
+from services.analysis.flow_stitcher_factory import build_flow_stitcher
+from services.analysis.page_budgeter_factory import build_page_budgeter
+from services.analysis.project_indexer_factory import build_project_indexer
 from services.evidence.file_fetch_service import FileFetchService
-from services.assembly.graph_validator import GraphValidator
-from services.line_range_enricher import LineRangeEnricher
-from services.assembly.raw_merger import RawMerger
 from services.source_persist_service import SourcePersistService
-from services.assembly.spec_assembler import SpecAssembler
 from services.tracer_service import TracerService
-from services.tracing.tree_traversal_partitioner import TreeTraversalPartitioner
 
 from shared.code_store.code_store import CodeStore
 from shared.code_store.neon_code_store import NeonCodeStore
@@ -34,66 +24,6 @@ def get_file_fetch_service(
     return FileFetchService(http_client)
 
 
-def get_call_graph_service() -> CallGraphService:
-    return CallGraphService()
-
-
-def get_ast_service() -> AstService:
-    return AstService()
-
-
-def get_evidence_service(
-    ast_service: AstService = Depends(get_ast_service),
-) -> EvidenceService:
-    return EvidenceService(ast_service)
-
-
-def get_spec_assembler() -> SpecAssembler:
-    return SpecAssembler(ComponentPlacer())
-
-
-def get_anthropic_client(
-    settings: Settings = Depends(get_settings),
-) -> anthropic.AsyncAnthropic:
-    http_client = httpx.AsyncClient(verify=False)
-    return anthropic.AsyncAnthropic(
-        api_key=settings.ANTHROPIC_API_KEY,
-        http_client=http_client,
-    )
-
-
-def get_tree_traversal_partitioner(
-    settings: Settings = Depends(get_settings),
-) -> TreeTraversalPartitioner:
-    return TreeTraversalPartitioner(
-        settings.TRACER_CHUNK_TOKEN_BUDGET, settings.TRACER_CHUNK_MAX_COMPONENTS
-    )
-
-
-def get_breadcrumb_builder() -> BreadcrumbBuilder:
-    return BreadcrumbBuilder()
-
-
-def get_chunk_context_builder() -> ChunkContextBuilder:
-    return ChunkContextBuilder()
-
-
-def get_raw_merger() -> RawMerger:
-    return RawMerger()
-
-
-def get_edge_recovery() -> EdgeRecovery:
-    return EdgeRecovery()
-
-
-def get_graph_validator() -> GraphValidator:
-    return GraphValidator()
-
-
-def get_line_range_enricher() -> LineRangeEnricher:
-    return LineRangeEnricher()
-
-
 def get_code_store(
     settings: Settings = Depends(get_settings),
 ) -> CodeStore:
@@ -106,46 +36,18 @@ def get_source_persist_service(
     return SourcePersistService(code_store)
 
 
-def get_correction_prompt_builder() -> CorrectionPromptBuilder:
-    return CorrectionPromptBuilder()
-
-
-def get_chunk_tracer(
-    anthropic_client: anthropic.AsyncAnthropic = Depends(get_anthropic_client),
-    spec_assembler: SpecAssembler = Depends(get_spec_assembler),
-    graph_validator: GraphValidator = Depends(get_graph_validator),
-    correction_builder: CorrectionPromptBuilder = Depends(get_correction_prompt_builder),
-) -> ChunkTracer:
-    return ChunkTracer(anthropic_client, spec_assembler, graph_validator, correction_builder)
+def get_flow_pipeline() -> FlowPipeline:
+    return FlowPipeline(
+        build_project_indexer(),
+        build_effect_detector(),
+        build_flow_stitcher(),
+        build_page_budgeter(),
+    )
 
 
 def get_tracer_service(
     file_fetch_service: FileFetchService = Depends(get_file_fetch_service),
-    call_graph_service: CallGraphService = Depends(get_call_graph_service),
-    evidence_service: EvidenceService = Depends(get_evidence_service),
-    spec_assembler: SpecAssembler = Depends(get_spec_assembler),
-    partitioner: TreeTraversalPartitioner = Depends(get_tree_traversal_partitioner),
-    context_builder: ChunkContextBuilder = Depends(get_chunk_context_builder),
-    chunk_tracer: ChunkTracer = Depends(get_chunk_tracer),
-    raw_merger: RawMerger = Depends(get_raw_merger),
-    edge_recovery: EdgeRecovery = Depends(get_edge_recovery),
-    graph_validator: GraphValidator = Depends(get_graph_validator),
-    breadcrumb_builder: BreadcrumbBuilder = Depends(get_breadcrumb_builder),
-    line_range_enricher: LineRangeEnricher = Depends(get_line_range_enricher),
     source_persist: SourcePersistService = Depends(get_source_persist_service),
+    flow_pipeline: FlowPipeline = Depends(get_flow_pipeline),
 ) -> TracerService:
-    return TracerService(
-        file_fetch_service,
-        call_graph_service,
-        evidence_service,
-        spec_assembler,
-        partitioner,
-        context_builder,
-        chunk_tracer,
-        raw_merger,
-        edge_recovery,
-        graph_validator,
-        breadcrumb_builder,
-        line_range_enricher,
-        source_persist,
-    )
+    return TracerService(file_fetch_service, source_persist, flow_pipeline)
