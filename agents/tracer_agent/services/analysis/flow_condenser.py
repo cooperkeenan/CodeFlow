@@ -61,9 +61,14 @@ class FlowCondenser:
         entries: tuple, index: ProjectIndex,
     ) -> None:
         for entry in entries:
-            record = index.functions.get(entry.handler_fqn)
-            refs = [record.span] if record is not None else None
-            acc.upsert(entry.id, "entry", entry.service_root, entry.label, refs=refs)
-            summary = summarizer.summarize(entry.handler_fqn)
-            if summary.head is not None:
-                acc.connect(entry.id, summary.head, "sequence")
+            handlers = entry.members or (entry.handler_fqn,)
+            refs = [index.functions[h].span for h in handlers if h in index.functions]
+            folded = entry.route_count if entry.route_count > 1 else 0
+            acc.upsert(
+                entry.id, "entry", entry.service_root, entry.label,
+                refs=refs or None, folded_count=folded,
+            )
+            for handler in handlers:
+                summary = summarizer.summarize(handler)
+                if summary.head is not None:
+                    acc.connect(entry.id, summary.head, "sequence")
