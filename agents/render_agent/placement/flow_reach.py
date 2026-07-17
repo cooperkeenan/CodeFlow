@@ -1,3 +1,5 @@
+from collections import deque
+
 from shared.models.flow_graph import FlowEdge, FlowNode
 
 
@@ -32,14 +34,23 @@ def longest_path_depths(
     lane_nodes: list[FlowNode], edges: list[FlowEdge]
 ) -> dict[str, int]:
     adjacency = _flow_adjacency(lane_nodes, edges)
+    indegree: dict[str, int] = {node.id: 0 for node in lane_nodes}
+    for source in adjacency:
+        for target in adjacency[source]:
+            indegree[target] += 1
     depth: dict[str, int] = {node.id: 0 for node in lane_nodes}
-    for _ in range(len(lane_nodes)):
-        changed = False
-        for source in sorted(adjacency):
-            for target in adjacency[source]:
-                if target in depth and depth[target] < depth[source] + 1:
-                    depth[target] = depth[source] + 1
-                    changed = True
-        if not changed:
-            break
+    queue: deque[str] = deque(sorted(n for n, d in indegree.items() if d == 0))
+    processed: set[str] = set()
+    while queue:
+        source = queue.popleft()
+        processed.add(source)
+        for target in adjacency[source]:
+            if depth[target] < depth[source] + 1:
+                depth[target] = depth[source] + 1
+            indegree[target] -= 1
+            if indegree[target] == 0:
+                queue.append(target)
+    for node_id in sorted(indegree):
+        if node_id not in processed:
+            depth[node_id] = max(depth.values(), default=0)
     return depth
