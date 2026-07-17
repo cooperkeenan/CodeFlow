@@ -14,6 +14,7 @@ class _NodeDraft:
     badges: set[Badge] = field(default_factory=set)
     effect_kind: EffectKind | None = None
     effect_target: str = ""
+    folded_count: int = 0
 
 
 @dataclass
@@ -42,11 +43,14 @@ class GraphAccumulator:
         badges: set[Badge] | None = None,
         effect_kind: EffectKind | None = None,
         effect_target: str = "",
+        folded_count: int = 0,
     ) -> str:
         draft = self._nodes.get(node_id)
         if draft is None:
             draft = _NodeDraft(id=node_id, kind=kind, lane=lane, label=label)
             self._nodes[node_id] = draft
+        if folded_count:
+            draft.folded_count = folded_count
         for fqn in backing or []:
             if fqn not in draft.backing:
                 draft.backing.append(fqn)
@@ -98,6 +102,7 @@ class GraphAccumulator:
                 badges=sorted(d.badges),
                 effect_kind=d.effect_kind,
                 effect_target=d.effect_target,
+                folded_count=d.folded_count,
             )
             for d in self._nodes.values()
         ]
