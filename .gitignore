@@ -38,3 +38,6 @@ outputs/
 # Task
 .vscode/ 
 frontend/.env.local
+
+# Local diagram renders
+scratch_out/

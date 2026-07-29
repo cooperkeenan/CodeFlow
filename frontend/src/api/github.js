@@ -15,6 +15,8 @@ export const exchangeCode = (code) =>
 export const listRepos = (accessToken) =>
   request(`/github/repos?access_token=${accessToken}`)
 
+export const listMyRepos = () => request('/github/my-repos')
+
 export const linkGithub = (code) =>
   request('/github/link', {
     method: 'POST',

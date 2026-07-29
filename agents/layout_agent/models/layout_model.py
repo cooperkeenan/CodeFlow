@@ -1,14 +1,11 @@
 from pydantic import BaseModel
 
-from shared.models.diagram_spec import DiagramSpec, LayoutHint
-from shared.models.diagram_template import DiagramTemplate
+from shared.models.flow_graph import FlowGraph
 
 
 class LayoutRequest(BaseModel):
-    diagram_spec: DiagramSpec
+    flow_graph: FlowGraph
 
 
 class LayoutResponse(BaseModel):
-    layout_hint: LayoutHint
-    diagram_spec: DiagramSpec
-    diagram_templates: dict[str, DiagramTemplate]
+    flow_graph: FlowGraph

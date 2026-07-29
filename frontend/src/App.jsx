@@ -3,14 +3,15 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useAnalysis } from './hooks/useAnalysis'
-import { getSessionToken, saveSession } from './api/session'
+import { getSessionToken, saveSession, saveGithubToken } from './api/session'
 import { exchangeCode, linkGithub } from './api/github'
+import { RepoMapsProvider } from './hooks/RepoMapsContext'
 import RequireAuth from './components/RequireAuth'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
-import DiagramPage from './pages/DiagramPage'
+import FlowPage from './pages/FlowPage'
 
 export default function App() {
   const navigate = useNavigate()
@@ -28,12 +29,12 @@ export default function App() {
       linkGithub(code).then(() => finish('/settings')).catch(() => finish('/settings'))
     } else {
       exchangeCode(code)
-        .then(d => { saveSession(d.session_token, d.user); finish('/') })
+        .then(d => { saveSession(d.session_token, d.user); saveGithubToken(d.github_access_token); finish('/') })
         .catch(() => finish('/login'))
     }
   }, [])
 
-  const openMap = (map) => { show(map); navigate('/diagram') }
+  const openMap = (map) => { show(map); navigate('/flow') }
 
   if (oauthPending) {
     return (
@@ -44,29 +45,31 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route
-        path="/"
-        element={
-          <RequireAuth>
-            <DashboardPage onOpenMap={openMap} />
-          </RequireAuth>
-        }
-      />
-      <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
-      <Route
-        path="/diagram"
-        element={
-          <RequireAuth>
-            {analysis
-              ? <DiagramPage analysis={analysis} onBack={() => { reset(); navigate('/') }} />
-              : <Navigate to="/" replace />}
-          </RequireAuth>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <RepoMapsProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/"
+          element={
+            <RequireAuth>
+              <DashboardPage onOpenMap={openMap} />
+            </RequireAuth>
+          }
+        />
+        <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+        <Route
+          path="/flow"
+          element={
+            <RequireAuth>
+              {analysis
+                ? <FlowPage analysis={analysis} onBack={() => { reset(); navigate('/') }} />
+                : <Navigate to="/" replace />}
+            </RequireAuth>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </RepoMapsProvider>
   )
 }

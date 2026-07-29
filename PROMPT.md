@@ -148,31 +148,34 @@ There used to be a flat `DiagramSpec.layers: dict[zone_name, list[Component]]` a
 
 ## Current Status
 
-The pipeline runs **profiler → tracer → layout → render → frontend**. Diagram treatment is now
-**hierarchy-aware** — the higher up the codebase you are, the more the LLM interprets; the lower
-down, the more deterministic.
+The pipeline runs **profiler → tracer → layout → render → frontend** and produces **one
+decision-flow page** for the whole codebase — no drill-down. The design and per-stage spec live in
+`features/` and `docs/decision_flow_tracer.md`. The governing principle: **static analysis owns
+100% of structure; the LLM only names things.** The tracer output is byte-identical across runs.
 
-**Top level (system view)** — shows only **runnable services** (modules with an entry marker;
-`Module.is_service`, threaded profiler → tracer → layout). For CodeFlow that's `api` + the four
-agents; support modules (`shared`, `frontend`, `evaluation`) are excluded. Edges use the real
-module-to-module graph, with synthetic `sequence` edges filling gaps so the flow stays connected
-(`services/builders/_module_edge_builder.py`). Selection lives in
-`services/planning/hierarchy_classifier.py`: if any module is `is_service` it drives the set,
-otherwise it falls back to the directory-prefix tree + largest-connected-component logic
-(`helpers/hierarchy_tree.py`, `helpers/connected_components.py`).
+**Tracer (`agents/tracer_agent/services/analysis/`)** — a pure static pipeline, no LLM. It indexes
+the repo to a function-level symbol table (`project_indexer.py`), resolves a call graph with
+per-call-site control context (`call_resolver.py`), extracts **dispatch sites** — the seven forms of
+divergence: branch/match/except/table/route/polymorphic/dynamic (`dispatch_extractor.py`) — and I/O
+**effects** (http/db/llm/response, `effect_detector.py`). A deterministic **significance filter**
+(`significance_filter.py`) separates real decisions from guards via reach-set mutual exclusivity,
+then **condensation** (`flow_condenser.py`) projects everything onto a `FlowGraph` of
+entry/step/decision/parallel/effect nodes. **Stitching** (`flow_stitcher.py`) matches outbound HTTP
+effects to route entries in other services, and the **budget** (`page_budgeter.py`) folds the graph
+to one bounded page. Composed by `flow_pipeline.py`; `TracerResponse.flow_graph` is the payload.
 
-**Service level (module views)** — LLM-authored **semantic steps**, not file names. For a service
-module the LLM infers its purpose, picks a diagram type, and emits ≤8 behavioural steps
-(e.g. `Fetch & traverse codebase → Gather evidence → …`), each carrying `backing_components` so a
-step drills into the real component view. See `services/planning/service_step_planner.py`,
-`helpers/service_step_validator.py`, `services/builders/_service_view_builder.py`,
-`prompts/service_step_prompt.py`. Orchestrated in `services/planning/view_planner.py`. Step boxes
-show the title only (no per-box description); the purpose shows in the rationale bar.
+**Layout (`agents/layout_agent`)** — the ONLY LLM stage. `FlowLabeler` makes one temperature-0 call
+that can only fill in human labels keyed to ids the pipeline issued (`flow_labeler.py`,
+`helpers/flow_label_validator.py`); on failure it returns the graph with deterministic labels.
 
-**Component level (drill-in)** — deterministic. The tracer classifies each component
-`primary`/`secondary`; the render neighborhood placement lays **primaries on a horizontal spine and
-stacks secondary helpers below their calling primary** (`agents/render_agent/placement/neighborhood.py`,
-degrades byte-identically to the old flat layout when all-primary).
+**Render (`agents/render_agent/placement`)** — LLM-free geometry. `FlowPagePlacer` lays the graph out
+as horizontal swimlanes (one per service), left→right with a bold happy-path spine, effects
+right-aligned, and cross-lane stitch edges in the gutter — byte-identical coordinates.
+
+**Frontend (`frontend/src/pages/FlowPage.jsx`)** — a single React Flow canvas that renders the
+`RenderedView` verbatim, with per-kind node shapes, a legend, and a `file:line` provenance popover.
+
+Self-run acceptance: `python scripts/selfrun.py` runs the whole pipeline in-process on CodeFlow.
 
 **Ops:** `ENVIRONMENT=local` routes the gateway to local agent ports; `frontend/.env.local`
 `VITE_API_URL` points the browser at the local gateway; gateway→tracer/layout timeouts are 900s; a
@@ -181,21 +184,21 @@ live **progress bar** advances a checkpoint as each agent finishes
 
 ## Known Caveats / Next Steps
 
-1. **Tracer speed & density.** The tracer now includes helper components (as `tier: secondary`),
-   which raised the component count (~147 for CodeFlow) and pushed run time toward the timeout — the
-   count of LLM calls is unchanged (chunking is over static evidence), but output-per-call grew. If
-   drill-in views feel too dense, tighten the helper-inclusion wording in
-   `agents/tracer_agent/prompts/tracer_prompt.py` (readability, not speed).
-2. **Orchestrator spines can still be long.** If a service genuinely calls many *primary* services,
-   the spine stays wide (tiering only pulls off *helpers*). Next lever if needed: a spine-length cap
-   with overflow to a side column.
-3. **Large-codebase grouping deferred.** `hierarchy_classifier` can sub-cluster via the prefix tree
-   when service modules exceed the node cap (8), but rendering nested `group:` views isn't wired
-   (fine for CodeFlow's flat set).
-4. **Cleanup.** `ClusterPlanner` / `cluster_prompt` / the zoned `_view_builder.build_module` branch
-   are now dead for service modules (kept to avoid out-of-scope refactor) — a follow-up can remove them.
-5. **Trace the frontend / JS** — still 0 components and no `frontend → api` edge (tracing is
-   Python-only: jarviscg + Python AST).
+1. **Budget tuning (the top open decision).** `lane.mass = Σ decision scores + Σ route-arm counts`
+   lets a large API surface dominate: CodeFlow's `api` lane (20 routes) takes ~75% of the budget and
+   folds every lane's decisions/effects into `+N` chips, so the page is entry-heavy. The graph is
+   healthy pre-budget (3 decisions, 47 effects, 49 steps). Options: dampen the route-count term in
+   `lane_builder.py`, group routes by router into fewer entries, fold excess entries *before*
+   effects/decisions in `page_budgeter.py`, or raise `BudgetConfig.node_budget`. Best judged against
+   the rendered page — the constants are one-line changes.
+2. **CodeFlow is a near-linear pipeline.** Only ~3 genuine decisions exist across the whole repo, and
+   most are guard/fallback shaped, so the honest page is mostly entries → steps → effects with cross-
+   service stitches. Branchy repos will surface more decisions; this is the design working, not a bug.
+3. **api gateway orchestration** is rewired for the core `analyse` path + the new `GET
+   /repomaps/{repo}/flow` endpoint; the persisted-artifact shape (`RepoMapDetail.map.diagram`) now
+   holds the `RenderedView` — confirm the store round-trips it end-to-end in a live run.
+4. **Trace the frontend / JS** — still Python-only (the tracer front end is `ast`-based). A JS/TS
+   front end would let the `frontend → api` calls stitch too.
 
 ## Where Things Live (quick map)
 

@@ -11,13 +11,13 @@ class LayoutClient:
         self._http = http_client
         self._base_url = base_url
 
-    async def layout(self, diagram_spec: dict) -> dict:
+    async def layout(self, flow_graph: dict) -> dict:
         logger.info("Calling layout agent")
         for attempt in range(5):
             try:
                 response = await self._http.post(
                     f"{self._base_url}/layout",
-                    json={"diagram_spec": diagram_spec},
+                    json={"flow_graph": flow_graph},
                     timeout=900.0,
                 )
                 response.raise_for_status()

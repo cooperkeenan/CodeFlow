@@ -11,17 +11,17 @@ class RenderClient:
         self._http = http_client
         self._base_url = base_url
 
-    async def render(self, diagram_templates: dict) -> dict:
+    async def render(self, flow_graph: dict) -> dict:
         logger.info("Calling render agent")
         for attempt in range(5):
             try:
                 response = await self._http.post(
                     f"{self._base_url}/render",
-                    json={"diagram_templates": diagram_templates},
+                    json={"flow_graph": flow_graph},
                     timeout=300.0,
                 )
                 response.raise_for_status()
-                return {"views": response.json()["views"]}
+                return {"view": response.json()["view"]}
             except httpx.ConnectError:
                 if attempt == 4:
                     raise

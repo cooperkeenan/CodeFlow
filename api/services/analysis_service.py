@@ -49,17 +49,17 @@ class AnalysisService:
 
     async def analyse_from_trace(self, stored: AnalyseResponse) -> AnalyseResponse:
         logger.info("Re-running layout+render from stored trace for: %s", stored.repo)
-        layout_result = await self._layout.layout(stored.trace["diagram_spec"])
-        self._persister.write_json("layout.json", layout_result)
-        diagram_templates = layout_result["diagram_templates"]
-        stored.trace["diagram_templates"] = diagram_templates
-        diagram = await self._render.render(diagram_templates)
+        labeled = await self._layout.layout(stored.trace["flow_graph"])
+        self._persister.write_json("layout.json", labeled)
+        flow_graph = labeled["flow_graph"]
+        stored.trace["flow_graph"] = flow_graph
+        diagram = await self._render.render(flow_graph)
         self._persister.write_json("render.json", diagram)
         return AnalyseResponse(repo=stored.repo, profile=stored.profile, trace=stored.trace, diagram=diagram)
 
-    async def analyse_from_layout(self, stored: AnalyseResponse, diagram_templates: dict) -> AnalyseResponse:
+    async def analyse_from_layout(self, stored: AnalyseResponse, flow_graph: dict) -> AnalyseResponse:
         logger.info("Re-rendering from stored layout for: %s", stored.repo)
-        diagram = await self._render.render(diagram_templates)
+        diagram = await self._render.render(flow_graph)
         self._persister.write_json("render.json", diagram)
         return AnalyseResponse(repo=stored.repo, profile=stored.profile, trace=stored.trace, diagram=diagram)
 
@@ -79,38 +79,19 @@ class AnalysisService:
         self._progress.complete("tracer")
         self._persister.write_json("tracer.json", trace)
 
-        spec = trace["diagram_spec"]
-        component_count = sum(len(cs) for m in spec.get("modules", []) for cs in m.get("zones", {}).values())
-        logger.info("[tracer] modules=%d components=%d edges=%d",
-                    len(spec.get("modules", [])), component_count, len(spec.get("edges", [])))
-        
-        layout_result = await self._layout.layout(spec)
+        flow_graph = trace["flow_graph"]
+        logger.info("[tracer] lanes=%d nodes=%d edges=%d",
+                    len(flow_graph.get("lanes", [])), len(flow_graph.get("nodes", [])),
+                    len(flow_graph.get("edges", [])))
+
+        labeled = await self._layout.layout(flow_graph)
         self._progress.complete("layout")
-        self._persister.write_json("layout.json", layout_result)
-        
-        layout_hint = layout_result["layout_hint"]
-        enriched_spec = layout_result["diagram_spec"]
-        diagram_templates = layout_result["diagram_templates"]
-        system_tmpl = diagram_templates.get("system", {})
-        logger.info("[layout] archetype=%s order=%s", layout_hint.get("archetype"), layout_hint.get("module_order"))
-        logger.info("[template] system_type=%s views=%d", system_tmpl.get("type"), len(diagram_templates))
-        trace["diagram_spec"] = enriched_spec
-        trace["diagram_templates"] = diagram_templates
-        self._persister.write_json("layout_reasoning.json", self._build_reasoning(diagram_templates))
-        diagram = await self._render.render(diagram_templates)
+        self._persister.write_json("layout.json", labeled)
+        flow_graph = labeled["flow_graph"]
+        trace["flow_graph"] = flow_graph
+
+        diagram = await self._render.render(flow_graph)
         self._progress.complete("render")
         self._persister.write_json("render.json", diagram)
-        logger.info("[render] views=%d", len(diagram.get("views", {})))
+        logger.info("[render] nodes=%d", len(diagram.get("view", {}).get("nodes", [])))
         return AnalyseResponse(repo=repo_name, profile=profile, trace=trace, diagram=diagram)
-
-    def _build_reasoning(self, diagram_templates: dict) -> dict:
-        return {
-            view_id: {
-                "type": tmpl.get("type"),
-                "rationale": tmpl.get("meta", {}).get("rationale", ""),
-                "node_count": len(tmpl.get("nodes", [])),
-                "edge_count": len(tmpl.get("edges", [])),
-            }
-            for view_id, tmpl in diagram_templates.items()
-            if isinstance(tmpl, dict)
-        }

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 
-from dependencies import get_placement_service
+from dependencies import get_flow_page_placer
 from models.render_model import RenderRequest, RenderResponse
-from services.placement_service import PlacementService
+from placement.flow_page_placer import FlowPagePlacer
 
 router = APIRouter(tags=["render"])
 
@@ -10,7 +10,7 @@ router = APIRouter(tags=["render"])
 @router.post("/render", response_model=RenderResponse)
 async def render(
     request: RenderRequest,
-    service: PlacementService = Depends(get_placement_service),
+    placer: FlowPagePlacer = Depends(get_flow_page_placer),
 ) -> RenderResponse:
-    views = service.render(request.diagram_templates)
-    return RenderResponse(views=views)
+    view = placer.place(request.flow_graph)
+    return RenderResponse(view=view)

@@ -1,11 +1,12 @@
 from pydantic import BaseModel
 
-from shared.models.diagram_template import DiagramTemplate, RenderedView
+from shared.models.diagram_template import RenderedView
+from shared.models.flow_graph import FlowGraph
 
 
 class RenderRequest(BaseModel):
-    diagram_templates: dict[str, DiagramTemplate]
+    flow_graph: FlowGraph
 
 
 class RenderResponse(BaseModel):
-    views: dict[str, RenderedView]
+    view: RenderedView
