@@ -7,6 +7,7 @@ from shared.models.flow_graph import FlowGraph
 
 from services.analysis.anchor_index import AnchorIndex
 from services.analysis.component_index import ComponentIndex
+from services.analysis.decision_seeder import DecisionSeeder
 from services.analysis.entry_finder import EntryFinder
 from services.analysis.event_collector import EventCollector
 from services.analysis.function_summarizer import FunctionSummarizer
@@ -46,8 +47,11 @@ class FlowCondenser:
             index, RouteHandlerLocator(index), self._roots, self._labels
         ).find(dispatch_sites)
         self._assemble(acc, summarizer, entries, index)
+        seeded = DecisionSeeder(index, self._roots, self._labels).seed(acc, summarizer, significance)
         StepMerger(acc, self._labels).merge()
-        lanes = LaneBuilder(self._roots, self._labels).build(entries, dispatch_sites, significance)
+        lanes = LaneBuilder(self._roots, self._labels).build(
+            entries + seeded, dispatch_sites, significance
+        )
         return FlowGraph(
             repo=repo,
             lanes=lanes,

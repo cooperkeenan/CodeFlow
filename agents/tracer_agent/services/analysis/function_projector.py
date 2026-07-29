@@ -10,6 +10,7 @@ from shared.models.flow_graph import Badge, SourceRef
 from services.analysis.anchor_index import AnchorIndex
 from services.analysis.chain_builder import ChainBuilder
 from services.analysis.collected_events import CollectedEvents
+from services.analysis.decision_labeler import DecisionLabeler
 from services.analysis.flow_event import FlowEvent
 from services.analysis.graph_accumulator import GraphAccumulator
 from services.analysis.label_synthesizer import LabelSynthesizer
@@ -31,6 +32,7 @@ class FunctionProjector:
         self._acc = acc
         self._labels = labels
         self._summarize = summarize
+        self._decision_labels = DecisionLabeler(labels)
 
     def project(self, fqn: str, events: CollectedEvents, lane: str) -> FlowSummary:
         head, tails = self._build_region(fqn, events, (), lane)
@@ -111,15 +113,21 @@ class FunctionProjector:
         self, chain: ChainBuilder, fqn: str, events: CollectedEvents, prefix: _Path, site: DispatchSite
     ) -> None:
         node_id = f"dec:{site.id}"
-        self._acc.upsert(node_id, "decision", chain.lane, self._labels.decision_label(site.selector_source))
+        verdict = self._anchors.site_verdict(site.id)
+        label = self._decision_labels.decision_label(site, verdict)
+        self._acc.upsert(node_id, "decision", chain.lane, label)
         chain.attach(node_id)
         tails: list[str] = []
         for arm in site.arms:
             ahead, atails = self._build_region(fqn, events, prefix + ((site.id, arm.index),), chain.lane)
+            arm_label = self._decision_labels.arm_label(arm, verdict)
             if ahead is None:
-                tails.append(node_id)
+                if arm.terminal == "falls_through":
+                    tails.append(node_id)
+                else:
+                    self._acc.add_badge(node_id, "guarded")
             else:
-                self._acc.connect(node_id, ahead, "arm", arm.label_source, site.id)
+                self._acc.connect(node_id, ahead, "arm", arm_label, site.id)
                 tails.extend(atails or [ahead])
         chain.fan_out(node_id, _dedup(tails))
 

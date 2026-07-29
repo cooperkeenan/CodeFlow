@@ -33,5 +33,6 @@ class PageBudgeter:
         self._folder.fold(work)
         self._recondenser.recondense(work)
         self._capper.cap(work)
+        self._admitter.sweep_orphaned(work)
         self._checker.enforce(work)
         return work.to_flow_graph()

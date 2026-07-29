@@ -16,7 +16,7 @@ def build_page_budgeter(config: BudgetConfig | None = None) -> PageBudgeter:
     recondenser = BudgetRecondenser(LabelSynthesizer())
     return PageBudgeter(
         LaneApportioner(cfg),
-        DecisionAdmitter(recondenser, DecisionDissolver(), LaneReducer()),
+        DecisionAdmitter(recondenser, DecisionDissolver(), LaneReducer(), cfg.visible_decisions),
         ArmFolder(cfg),
         recondenser,
         EffectCapper(),

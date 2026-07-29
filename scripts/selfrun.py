@@ -9,11 +9,14 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(ROOT / "agents" / "tracer_agent"))
 
+from services.analysis.budget_config import BudgetConfig
 from services.analysis.flow_pipeline import FlowPipeline
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
+from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
 from services.analysis.page_budgeter_factory import build_page_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
+from services.analysis.site_classifier import SiteClassifier
 from placement.flow_page_placer_factory import build_flow_page_placer
 
 _GUARD_SELECTOR = re.compile(r"\bnot\b|is None|!=\s*None")
@@ -38,6 +41,7 @@ def build_pipeline() -> FlowPipeline:
         build_effect_detector(),
         build_flow_stitcher(),
         build_page_budgeter(),
+        judge=HeuristicDecisionJudge(SiteClassifier()),
     )
 
 
@@ -62,22 +66,23 @@ def main() -> int:
 
     print(f"lanes={sorted(lanes)} nodes={len(graph.nodes)} edges={len(graph.edges)} "
           f"stitches={len(stitches)} decisions={len(decisions)} rendered={len(view.nodes)}")
+    budget = BudgetConfig().node_budget
     print("Assertions:")
     results = [
         check("lanes == {api, profiler, tracer, layout, render}",
               lanes == {"api", "profiler", "tracer", "layout", "render"}, str(sorted(lanes))),
         check(">=4 stitch edges api->agent entries", len(stitches) >= 4, f"{len(stitches)} stitches"),
-        check("no guard-selector decision survives",
-              not guard_decisions, f"{len(guard_decisions)} guard decisions"),
         check("two runs byte-identical (ignoring llm_*)",
               canonical_first == canonical_second),
         check("node count within budget ceiling",
-              len(graph.nodes) <= 36 + len(graph.lanes) * 3, f"{len(graph.nodes)} nodes"),
+              len(graph.nodes) <= budget + len(graph.lanes) * 3, f"{len(graph.nodes)} nodes"),
+        check("no guard-selector decision survives",
+              len(guard_decisions) == 0, f"{len(guard_decisions)} guard decisions"),
     ]
     print(f"provenance: {len(graph.nodes) - len(no_refs)}/{len(graph.nodes)} nodes carry a SourceRef "
           f"(entries lack refs by construction: {len(no_refs)} without)")
     print(f"decisions: {len(decisions)} survive the budget on this repo "
-          f"(CodeFlow is a near-linear service pipeline; genuine decisions are folded under B=36)")
+          f"(CodeFlow is a near-linear service pipeline; node_budget={budget})")
     return 0 if all(results) else 1
 
 
