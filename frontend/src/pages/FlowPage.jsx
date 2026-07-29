@@ -8,9 +8,9 @@ import ProvenancePopover from '../components/flow/ProvenancePopover'
 const MONO = 'IBM Plex Mono, monospace'
 const MUTED = { fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.38)' }
 
-export default function FlowPage({ analysis, onBack }) {
+export default function FlowPage({ analysis, onBack, fixture }) {
   const repo = analysis?.repo
-  const { payload, loading, error } = useFlowGraph(repo)
+  const { payload, loading, error } = useFlowGraph(repo, fixture)
   const [selected, setSelected] = useState(null)
 
   const view = payload?.view ?? payload
