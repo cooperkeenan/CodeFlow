@@ -16,6 +16,25 @@ async def list_repo_maps(
     return RepoMapListResponse(repo_maps=await service.list(user.id))
 
 
+@router.get("/{repo:path}/flow")
+async def get_repo_flow(
+    repo: str,
+    user: AuthUser = Depends(get_current_user),
+    service: RepoMapService = Depends(get_repo_map_service),
+) -> dict:
+    detail = await service.get(user.id, repo)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Repo map not found")
+    flow_graph = detail.map.trace.get("flow_graph", {})
+    view = detail.map.diagram.get("view", {})
+    return {
+        "page_title": flow_graph.get("page_title", repo),
+        "repo": repo,
+        "repo_url": "",
+        "view": view,
+    }
+
+
 @router.get("/{repo:path}", response_model=RepoMapDetail)
 async def get_repo_map(
     repo: str,

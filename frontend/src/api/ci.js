@@ -6,4 +6,10 @@ export const runLocalCi = (path) =>
     body: JSON.stringify({ path: path || null }),
   })
 
+export const runGithubCi = (repoName) =>
+  request('/ci/analyse/github', {
+    method: 'POST',
+    body: JSON.stringify({ repo_name: repoName }),
+  })
+
 export const getProgress = () => request('/ci/progress')

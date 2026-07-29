@@ -32,6 +32,7 @@ class AuthService:
         user_id = await self._users.upsert(
             identity["id"], identity["login"], identity["name"], identity["avatar_url"]
         )
+        await self._users.set_github_token(user_id, github_token)
         raw, token_hash, prefix = self._hasher.mint(_SESSION_PREFIX)
         await self._tokens.create(user_id, _SESSION_KIND, None, token_hash, prefix)
         user = AuthUser(id=user_id, github_id=identity["id"], github_login=identity["login"])
@@ -47,6 +48,7 @@ class AuthService:
             identity["name"],
             identity["avatar_url"],
         )
+        await self._users.set_github_token(user.id, github_token)
         record = await self._users.get(user.id)
         if record is None:
             raise ValueError(f"User {user.id} not found after upsert")
