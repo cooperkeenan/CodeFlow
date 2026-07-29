@@ -17,6 +17,8 @@ from services.archive_extractor import ArchiveExtractor
 from services.auth_service import AuthService
 from services.ci_ingest_service import CiIngestService
 from services.code_read_service import CodeReadService
+from services.github_ci_service import GitHubCiService
+from services.github_repo_service import GitHubRepoService
 from services.github_service import GitHubService
 from services.local_ci_service import LocalCiService
 from services.output_persister import OutputPersister
@@ -186,6 +188,22 @@ def get_local_ci_service(
     progress_tracker: ProgressTracker = Depends(get_progress_tracker),
 ) -> LocalCiService:
     return LocalCiService(analysis_service, repo_map_service, progress_tracker)
+
+
+def get_github_repo_service(
+    user_store: UserStore = Depends(get_user_store),
+    github_service: GitHubService = Depends(get_github_service),
+) -> GitHubRepoService:
+    return GitHubRepoService(user_store, github_service)
+
+
+def get_github_ci_service(
+    analysis_service: AnalysisService = Depends(get_analysis_service),
+    repo_map_service: RepoMapService = Depends(get_repo_map_service),
+    user_store: UserStore = Depends(get_user_store),
+    progress_tracker: ProgressTracker = Depends(get_progress_tracker),
+) -> GitHubCiService:
+    return GitHubCiService(analysis_service, repo_map_service, user_store, progress_tracker)
 
 
 def _bearer_token(authorization: str | None) -> str | None:
