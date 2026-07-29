@@ -12,11 +12,14 @@ class ProjectIndex:
         classes: Mapping[str, ClassRecord],
         functions: Mapping[str, FunctionRecord],
         implementations_index: Mapping[str, tuple[str, ...]],
+        *,
+        sources: Mapping[str, str] = {},
     ) -> None:
         self.modules = modules
         self.classes = classes
         self.functions = functions
         self._implementations = implementations_index
+        self.sources = sources
 
     def implementations(self, base_fqn: str) -> tuple[str, ...]:
         return self._implementations.get(base_fqn, ())
