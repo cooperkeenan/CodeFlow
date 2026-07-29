@@ -8,11 +8,13 @@ from core.config import Settings, get_settings
 from dependencies import (
     get_ci_ingest_service,
     get_current_user,
+    get_github_ci_service,
     get_local_ci_service,
     get_progress_tracker,
 )
 from models.auth_model import AuthUser
 from services.ci_ingest_service import CiIngestService
+from services.github_ci_service import GitHubCiService
 from services.local_ci_service import LocalCiService
 from services.progress_tracker import ProgressTracker
 
@@ -21,6 +23,10 @@ router = APIRouter(prefix="/ci", tags=["ci"])
 
 class LocalCiRequest(BaseModel):
     path: str | None = None
+
+
+class GithubCiRequest(BaseModel):
+    repo_name: str
 
 
 @router.post("/analyse")
@@ -55,4 +61,21 @@ async def ci_analyse_local(
         return {"started": False, "busy": True}
     progress.start()
     http_request.app.state.analysis_task = asyncio.create_task(service.run_background(user.id, path))
+    return {"started": True}
+
+
+@router.post("/analyse/github")
+async def ci_analyse_github(
+    http_request: Request,
+    request: GithubCiRequest,
+    user: AuthUser = Depends(get_current_user),
+    service: GitHubCiService = Depends(get_github_ci_service),
+    progress: ProgressTracker = Depends(get_progress_tracker),
+) -> dict:
+    if progress.snapshot()["active"]:
+        return {"started": False, "busy": True}
+    progress.start()
+    http_request.app.state.analysis_task = asyncio.create_task(
+        service.run_background(user.id, request.repo_name)
+    )
     return {"started": True}

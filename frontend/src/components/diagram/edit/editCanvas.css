@@ -1,0 +1,22 @@
+.edit-mode .react-flow__handle {
+  opacity: 0 !important;
+  width: 10px !important;
+  height: 10px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  background: #39FF14 !important;
+  border: 2px solid #121212 !important;
+  border-radius: 50% !important;
+  transition: opacity 120ms ease;
+}
+
+.edit-mode .react-flow__node:hover .react-flow__handle,
+.edit-mode .react-flow__handle.connecting,
+.edit-mode .react-flow__handle-connecting {
+  opacity: 1 !important;
+}
+
+.edit-mode .react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--text) !important;
+  stroke-width: 3 !important;
+}

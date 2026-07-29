@@ -1,0 +1,36 @@
+[data-theme="light"] .cf-node {
+  background: #FFFFFF !important;
+  color: var(--text) !important;
+}
+
+[data-theme="light"] .cf-node-title {
+  color: var(--text) !important;
+}
+
+[data-theme="light"] .cf-node-desc {
+  color: var(--text-medium) !important;
+}
+
+[data-theme="light"] .cf-group-node {
+  background: rgba(0,0,0,0.03) !important;
+}
+
+[data-theme="light"] .cf-text-node {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+[data-theme="light"] .react-flow__controls-button {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+  fill: var(--text) !important;
+}
+
+[data-theme="light"] .react-flow__controls-button:hover {
+  background: var(--surface-3) !important;
+}
+
+[data-theme="light"] .react-flow__edge-label {
+  color: var(--text-medium) !important;
+}

@@ -1,60 +1,43 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Typography } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
-import { getRepoMap, listRepoMaps } from '../../api/repomaps'
-import { getProgress, runLocalCi } from '../../api/ci'
+import GitHubIcon from '@mui/icons-material/GitHub'
+import { getRepoMap } from '../../api/repomaps'
+import { useRepoMaps } from '../../hooks/RepoMapsContext'
+import { useCiProgress } from '../../hooks/useCiProgress'
+import GithubRepoPicker from './GithubRepoPicker'
 
 export default function RepoMapsPanel({ onOpenMap }) {
-  const [maps, setMaps] = useState([])
-  const [error, setError] = useState(null)
-  const [running, setRunning] = useState(false)
-  const [progress, setProgress] = useState(null)
+  const { maps, error: listError, refresh } = useRepoMaps()
+  const { running, progress, error, setError, startRun, startGithubRun } = useCiProgress(refresh)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [openError, setOpenError] = useState(null)
 
-  const refresh = () => listRepoMaps().then(d => setMaps(d.repo_maps)).catch(e => setError(e.message))
-  useEffect(() => { refresh() }, [])
+  const open = (repo) => getRepoMap(repo).then(d => onOpenMap(d.map)).catch(e => setOpenError(e.message))
 
-  const open = (repo) => getRepoMap(repo).then(d => onOpenMap(d.map)).catch(e => setError(e.message))
-
-  const runCi = async () => {
+  const onGithubClick = () => {
     setError(null)
-    setProgress(null)
-    setRunning(true)
-    try {
-      const res = await runLocalCi()
-      if (res && res.started === false) {
-        setError('An analysis is already running')
-        setRunning(false)
-        return
-      }
-    } catch (e) {
-      setError(e.message)
-      setRunning(false)
-      return
-    }
-    const timer = setInterval(async () => {
-      try {
-        const p = await getProgress()
-        setProgress(p)
-        if (!p.active) {
-          clearInterval(timer)
-          setRunning(false)
-          setProgress(null)
-          if (p.error) setError(p.error)
-          else refresh()
-        }
-      } catch {
-        /* transient poll failure — keep polling */
-      }
-    }, 1500)
+    setOpenError(null)
+    setPickerOpen(true)
+  }
+
+  const onPickRepo = (fullName) => {
+    setPickerOpen(false)
+    startGithubRun(fullName)
   }
 
   return (
     <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Typography variant="h6">Repo Maps</Typography>
-        <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={runCi} disabled={running}>
-          {running ? 'Running…' : 'Run Local CI'}
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<GitHubIcon />} onClick={onGithubClick} disabled={running}>
+            Select GitHub Repo
+          </Button>
+          <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={startRun} disabled={running}>
+            {running ? 'Running…' : 'Run Local CI'}
+          </Button>
+        </Stack>
       </Stack>
       {running && (
         <Box sx={{ mb: 2 }}>
@@ -64,7 +47,9 @@ export default function RepoMapsPanel({ onOpenMap }) {
           </Typography>
         </Box>
       )}
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {(error || openError || listError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>{error || openError || listError}</Alert>
+      )}
       {maps.length === 0 && <Typography color="text.secondary">No saved RepoMaps yet. Run Local CI to generate one.</Typography>}
       <Stack spacing={1}>
         {maps.map(m => (
@@ -83,6 +68,7 @@ export default function RepoMapsPanel({ onOpenMap }) {
           </Paper>
         ))}
       </Stack>
+      <GithubRepoPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={onPickRepo} />
     </Box>
   )
 }

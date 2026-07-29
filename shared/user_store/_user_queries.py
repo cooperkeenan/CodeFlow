@@ -15,7 +15,12 @@ MIGRATIONS = (
     "ALTER TABLE users ALTER COLUMN github_login DROP NOT NULL",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS email text UNIQUE",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash text",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS github_access_token text",
 )
+
+SET_GITHUB_TOKEN = "UPDATE users SET github_access_token=%s, updated_at=now() WHERE id=%s"
+
+SELECT_GITHUB_TOKEN = "SELECT github_access_token FROM users WHERE id=%s"
 
 UPSERT = """
 INSERT INTO users (github_id, github_login, name, avatar_url, updated_at)

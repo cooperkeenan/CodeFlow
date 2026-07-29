@@ -1,12 +1,18 @@
 from fastapi import APIRouter, Depends
 
-from dependencies import get_auth_service, get_current_user, get_github_service
+from dependencies import (
+    get_auth_service,
+    get_current_user,
+    get_github_repo_service,
+    get_github_service,
+)
 from models.auth_model import AuthUser, SignInResponse
 from models.github_model import (
     GitHubCallbackRequest,
     RepositoriesResponse,
 )
 from services.auth_service import AuthService
+from services.github_repo_service import GitHubRepoService
 from services.github_service import GitHubService
 
 router = APIRouter(prefix="/github", tags=["github"])
@@ -35,3 +41,11 @@ async def list_repos(
     service: GitHubService = Depends(get_github_service),
 ) -> RepositoriesResponse:
     return await service.list_repositories(access_token)
+
+
+@router.get("/my-repos", response_model=RepositoriesResponse)
+async def list_my_repos(
+    user: AuthUser = Depends(get_current_user),
+    service: GitHubRepoService = Depends(get_github_repo_service),
+) -> RepositoriesResponse:
+    return await service.list_for_user(user.id)

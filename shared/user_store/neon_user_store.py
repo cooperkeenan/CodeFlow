@@ -75,6 +75,18 @@ class NeonUserStore:
             "email": row[5],
         }
 
+    async def set_github_token(self, user_id: int, token: str) -> None:
+        pool = await self._get_pool()
+        async with pool.connection() as conn:
+            await conn.execute(q.SET_GITHUB_TOKEN, (token, user_id))
+
+    async def get_github_token(self, user_id: int) -> str | None:
+        pool = await self._get_pool()
+        async with pool.connection() as conn:
+            cursor = await conn.execute(q.SELECT_GITHUB_TOKEN, (user_id,))
+            row = await cursor.fetchone()
+        return row[0] if row else None
+
     async def get_by_email(self, email: str) -> dict | None:
         pool = await self._get_pool()
         async with pool.connection() as conn:
