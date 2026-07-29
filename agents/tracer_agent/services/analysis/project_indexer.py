@@ -44,6 +44,7 @@ class ProjectIndexer:
             classes=dict(sorted(classes.items())),
             functions=dict(sorted(functions.items())),
             implementations_index=self._merge(nominal, structural),
+            sources=files,
         )
 
     def _merge(

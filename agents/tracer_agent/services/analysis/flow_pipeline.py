@@ -1,8 +1,10 @@
 from collections.abc import Mapping
 
+from models.significance_result import SignificanceResult
 from shared.models.flow_graph import FlowGraph
 
 from services.analysis.call_resolver import CallResolver
+from services.analysis.decision_judge import DecisionJudge
 from services.analysis.dispatch_extractor_factory import build_dispatch_extractor
 from services.analysis.effect_detector import EffectDetector
 from services.analysis.entry_finder import EntryFinder
@@ -26,6 +28,7 @@ class FlowPipeline:
         budgeter: PageBudgeter,
         significance_config: SignificanceConfig | None = None,
         service_hints: frozenset[str] | None = None,
+        judge: DecisionJudge | None = None,
     ) -> None:
         self._indexer = indexer
         self._effects = effect_detector
@@ -33,13 +36,21 @@ class FlowPipeline:
         self._budgeter = budgeter
         self._config = significance_config or SignificanceConfig()
         self._hints = service_hints
+        self._judge = judge
+        self._last_significance: SignificanceResult | None = None
+
+    def last_significance(self) -> SignificanceResult | None:
+        return self._last_significance
 
     def run(self, repo: str, files: Mapping[str, str]) -> FlowGraph:
         index = self._indexer.index(files)
         callsites = CallResolver(index).resolve_project()
         dispatch = build_dispatch_extractor(index).extract(callsites)
         effects = self._effects.detect(index, callsites)
-        significance = build_significance_filter(index, self._config).run(callsites, dispatch)
+        significance = build_significance_filter(index, self._config, judge=self._judge).run(
+            callsites, dispatch
+        )
+        self._last_significance = significance
         graph = build_flow_condenser(self._hints).condense(
             repo, index, callsites, dispatch, effects, significance
         )
