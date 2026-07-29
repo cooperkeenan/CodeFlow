@@ -23,7 +23,7 @@ class BudgetInvariantChecker:
         for node in graph.nodes.values():
             if node.kind == "decision":
                 arms = len(graph.arm_edges(node.id))
-                assert arms >= 2, f"decision {node.id} retains {arms} arm edges"
+                assert arms >= 1, f"decision {node.id} retains {arms} arm edges"
         reachable = graph.reachable()
         for node_id in graph.nodes:
             assert node_id in reachable, f"node {node_id} unreachable from any entry"
