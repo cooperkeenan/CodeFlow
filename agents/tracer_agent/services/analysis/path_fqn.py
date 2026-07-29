@@ -18,21 +18,15 @@ def is_project_path(name: str, project_modules: frozenset[str]) -> bool:
     return any(module.startswith(prefix) for module in project_modules)
 
 
-def agent_root_of(importing_module_fqn: str) -> str | None:
-    parts = importing_module_fqn.split(".")
-    if len(parts) >= 2 and parts[0] == "agents":
-        return f"{parts[0]}.{parts[1]}"
-    if parts and parts[0] == "api":
-        return "api"
-    return None
-
-
 def resolve_absolute(name: str, importing_module_fqn: str, project_modules: frozenset[str]) -> str:
+    if not name:
+        return "ext:"
     if is_project_path(name, project_modules):
         return name
-    root = agent_root_of(importing_module_fqn)
-    if root is not None:
-        candidate = f"{root}.{name}"
+    parts = importing_module_fqn.split(".")
+    for i in range(len(parts) - 1, 0, -1):
+        prefix = ".".join(parts[:i])
+        candidate = f"{prefix}.{name}"
         if is_project_path(candidate, project_modules):
             return candidate
-    return f"ext:{name.split('.')[0]}" if name else "ext:"
+    return f"ext:{name.split('.')[0]}"
