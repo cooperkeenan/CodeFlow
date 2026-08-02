@@ -8,6 +8,7 @@ sys.path.insert(0, str(REPO_ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
 
 from render_repo import load_dotenv, read_python_sources
+from save_command import parse_save_flag, save_to_account
 from services.analysis.flow_pipeline import FlowPipeline
 from services.analysis.decision_judge_factory import build_decision_judge
 from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
@@ -69,10 +70,11 @@ def _print_summary(graph, png_path: Path) -> None:
 
 def main(argv: list[str]) -> int:
     load_dotenv(REPO_ROOT / ".env")
-    no_llm = "--no-llm" in argv
-    positional = [a for a in argv[1:] if a != "--no-llm"]
+    save_handle, rest = parse_save_flag(argv[1:])
+    no_llm = "--no-llm" in rest
+    positional = [a for a in rest if a != "--no-llm"]
     if len(positional) < 1:
-        print("usage: screenshot_flow.py <repo_path> [out_dir] [--no-llm]")
+        print("usage: screenshot_flow.py <repo_path> [out_dir] [--no-llm] [--save <handle>]")
         return 1
     target = Path(positional[0]).resolve()
     out_dir = Path(positional[1]).resolve() if len(positional) > 1 else REPO_ROOT / "scratch_out"
@@ -91,6 +93,8 @@ def main(argv: list[str]) -> int:
     screenshotter.run()
 
     _print_summary(graph, png_path)
+    if save_handle is not None:
+        return save_to_account(target.name, graph, view, save_handle)
     return 0
 
 
