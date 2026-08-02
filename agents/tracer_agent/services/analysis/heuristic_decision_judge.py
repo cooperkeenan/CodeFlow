@@ -14,4 +14,4 @@ class HeuristicDecisionJudge:
         verdict = self._site_classifier.classify(
             candidate.site, candidate.arm_classes, candidate.arm_reaches
         )
-        return DecisionVerdict(verdict=verdict, question="", arm_labels=(), confidence=1.0)
+        return DecisionVerdict(verdict=verdict, question="", arm_labels=(), confidence=1.0, importance=0.5)

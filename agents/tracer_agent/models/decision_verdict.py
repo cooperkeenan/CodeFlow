@@ -9,3 +9,4 @@ class DecisionVerdict:
     question: str
     arm_labels: tuple[str, ...]
     confidence: float
+    importance: float

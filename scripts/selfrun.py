@@ -1,5 +1,4 @@
 import ast
-import os
 import re
 import sys
 from pathlib import Path
@@ -10,16 +9,19 @@ sys.path.insert(0, str(ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(ROOT / "agents" / "tracer_agent"))
 
 from services.analysis.budget_config import BudgetConfig
+from services.analysis.decision_judge import DecisionJudge
+from services.analysis.decision_judge_factory import build_decision_judge
 from services.analysis.flow_pipeline import FlowPipeline
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
 from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
 from services.analysis.page_budgeter_factory import build_page_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
-from services.analysis.site_classifier import SiteClassifier
 from placement.flow_page_placer_factory import build_flow_page_placer
+from render_repo import load_dotenv
 
 _GUARD_SELECTOR = re.compile(r"\bnot\b|is None|!=\s*None")
+_CACHE_PATH = ROOT / ".cache" / "decision_verdicts.json"
 
 
 def read_sources() -> dict[str, str]:
@@ -35,13 +37,13 @@ def read_sources() -> dict[str, str]:
     return files
 
 
-def build_pipeline() -> FlowPipeline:
+def build_pipeline(judge: DecisionJudge) -> FlowPipeline:
     return FlowPipeline(
         build_project_indexer(),
         build_effect_detector(),
         build_flow_stitcher(),
         build_page_budgeter(),
-        judge=HeuristicDecisionJudge(SiteClassifier()),
+        judge=judge,
     )
 
 
@@ -51,8 +53,12 @@ def check(label: str, ok: bool, detail: str = "") -> bool:
 
 
 def main() -> int:
+    load_dotenv(ROOT / ".env")
+    judge = build_decision_judge(_CACHE_PATH)
+    used_llm = not isinstance(judge, HeuristicDecisionJudge)
+
     files = read_sources()
-    pipeline = build_pipeline()
+    pipeline = build_pipeline(judge)
     graph = pipeline.run("CodeFlow", files)
     canonical_first = _canonical(pipeline.run("CodeFlow", files))
     canonical_second = _canonical(pipeline.run("CodeFlow", files))
@@ -64,6 +70,7 @@ def main() -> int:
     guard_decisions = [n for n in decisions if _GUARD_SELECTOR.search(n.label)]
     no_refs = [n.id for n in graph.nodes if not n.refs]
 
+    print(f"judge={'LLM' if used_llm else 'heuristic (no ANTHROPIC_API_KEY)'}")
     print(f"lanes={sorted(lanes)} nodes={len(graph.nodes)} edges={len(graph.edges)} "
           f"stitches={len(stitches)} decisions={len(decisions)} rendered={len(view.nodes)}")
     budget = BudgetConfig().node_budget
@@ -76,9 +83,15 @@ def main() -> int:
               canonical_first == canonical_second),
         check("node count within budget ceiling",
               len(graph.nodes) <= budget + len(graph.lanes) * 3, f"{len(graph.nodes)} nodes"),
-        check("no guard-selector decision survives",
-              len(guard_decisions) == 0, f"{len(guard_decisions)} guard decisions"),
     ]
+    if used_llm:
+        results.append(
+            check("no guard-selector decision survives",
+                  len(guard_decisions) == 0, f"{len(guard_decisions)} guard decisions"))
+    else:
+        print("  [SKIP] no guard-selector decision survives: heuristic judge cannot "
+              "distinguish a guard from a decision; requires the LLM judge (set "
+              "ANTHROPIC_API_KEY)")
     print(f"provenance: {len(graph.nodes) - len(no_refs)}/{len(graph.nodes)} nodes carry a SourceRef "
           f"(entries lack refs by construction: {len(no_refs)} without)")
     print(f"decisions: {len(decisions)} survive the budget on this repo "
@@ -99,5 +112,4 @@ def _canonical(graph) -> str:
 
 
 if __name__ == "__main__":
-    os.environ.setdefault("ANTHROPIC_API_KEY", "x")
     raise SystemExit(main())

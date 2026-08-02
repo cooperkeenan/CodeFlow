@@ -2,9 +2,9 @@ from shared.models.diagram_template import RenderedView
 from shared.models.flow_graph import FlowGraph, FlowNode
 from placement.flow_emit import build_edge_dict, build_header_dict, build_node_dict
 from placement.flow_grid_config import FlowGridConfig
-from placement.lane_layout import LaneLayout
 from placement.lane_packer import LanePacker
 from placement.spine_router import SpineRouter
+from placement.tree_layout import TreeLayout
 
 
 class FlowPagePlacer:
@@ -13,12 +13,12 @@ class FlowPagePlacer:
         config: FlowGridConfig,
         spine_router: SpineRouter,
         lane_packer: LanePacker,
-        lane_layout: LaneLayout,
+        tree_layout: TreeLayout,
     ) -> None:
         self._config = config
         self._spine_router = spine_router
         self._lane_packer = lane_packer
-        self._lane_layout = lane_layout
+        self._tree_layout = tree_layout
 
     def place(self, graph: FlowGraph) -> RenderedView:
         spine = self._spine_router.route(graph)
@@ -31,7 +31,7 @@ class FlowPagePlacer:
         band_top = 0
         for lane_id in order:
             lane_nodes = nodes_by_lane.get(lane_id, [])
-            band = self._lane_layout.layout(
+            band = self._tree_layout.layout(
                 lane_nodes, graph.edges, spine.node_ids, band_top
             )
             lane = lanes_by_id.get(lane_id)

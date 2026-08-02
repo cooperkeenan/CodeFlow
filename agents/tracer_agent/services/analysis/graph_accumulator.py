@@ -90,6 +90,18 @@ class GraphAccumulator:
     def edges(self) -> dict[tuple[str, str, str], _EdgeDraft]:
         return self._edges
 
+    def remove_node(self, node_id: str) -> None:
+        self._nodes.pop(node_id, None)
+        for key in [k for k, e in self._edges.items() if e.source == node_id or e.target == node_id]:
+            del self._edges[key]
+
+    def backing_index(self) -> dict[str, str]:
+        index: dict[str, str] = {}
+        for draft in self._nodes.values():
+            for fqn in draft.backing:
+                index.setdefault(fqn, draft.id)
+        return index
+
     def to_flow_nodes(self) -> list[FlowNode]:
         return [
             FlowNode(

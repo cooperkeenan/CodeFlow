@@ -93,9 +93,13 @@ class LlmDecisionJudge:
         if verdict is None or not isinstance(confidence, (int, float)):
             return None
         arm_labels = entry.get("arm_labels") or ()
+        importance = entry.get("importance")
+        if not isinstance(importance, (int, float)):
+            importance = 0.0
         return DecisionVerdict(
             verdict=verdict,
             question=str(entry.get("question", "")),
             arm_labels=tuple(arm_labels),
             confidence=float(confidence),
+            importance=float(importance),
         )

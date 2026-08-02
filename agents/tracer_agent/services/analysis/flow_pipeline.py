@@ -51,13 +51,13 @@ class FlowPipeline:
             callsites, dispatch
         )
         self._last_significance = significance
-        graph = build_flow_condenser(self._hints).condense(
+        graph = build_flow_condenser(self._hints, index.source_roots).condense(
             repo, index, callsites, dispatch, effects, significance
         )
         entries = EntryFinder(
             index,
             RouteHandlerLocator(index),
-            ServiceRootResolver(self._hints),
+            ServiceRootResolver(self._hints, index.source_roots),
             LabelSynthesizer(),
         ).find(dispatch)
         stitched = self._stitcher.stitch(graph, effects, entries)

@@ -2,6 +2,8 @@ import json
 
 from models.decision_candidate import DecisionCandidate
 
+PROMPT_VERSION = "2"
+
 DECISION_JUDGE_SYSTEM_PROMPT = """You judge whether a fork in Python source is a DECISION a human would put on a mental-model diagram of the system.
 
 A DECISION is a branch point where the program chooses between genuinely different courses of action that a reader would need to know about to understand what the system does. Examples: choosing which service/handler/strategy to use, granting vs denying access, selecting a data source, routing work down materially different paths.
@@ -13,7 +15,9 @@ NOT a decision (these are "guard" or "noise"):
 - caching hits/misses, retry and error handling
 - trivial defaulting (x = a if a else b)
 
-Return STRICT JSON only: {"verdicts":[{"id":"<id>","verdict":"decision|guard|noise","question":"<the question a human would ask, 2-6 words, only if decision>","arm_labels":["..."],"confidence":0.0-1.0}]}
+For every decision, also rate "importance": 0.0-1.0, how central this decision is to understanding what the system does. Rank high: routing between services/agents/strategies, access and permission decisions, choosing which data source to read from. Rank low: error handling, retries and fallbacks — even when they are a genuine decision, they are not central to the mental model. Non-decisions ("guard"/"noise") should get importance 0.0.
+
+Return STRICT JSON only: {"verdicts":[{"id":"<id>","verdict":"decision|guard|noise","question":"<the question a human would ask, 2-6 words, only if decision>","arm_labels":["..."],"confidence":0.0-1.0,"importance":0.0-1.0}]}
 "question" must read like a question on a flowchart, e.g. "Service principal allowed?", "Which data source?"."""
 
 
