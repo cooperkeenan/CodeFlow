@@ -1,7 +1,7 @@
 from shared.models.flow_graph import FlowEdge, Lane
 from placement.flow_grid_config import FlowGridConfig
 from placement.flow_node_treatment import node_data, shape_for
-from placement.lane_layout import NodePlacement
+from placement.tree_layout import NodePlacement
 
 _DASHED_ARMS = frozenset({"except", "exception", "error"})
 

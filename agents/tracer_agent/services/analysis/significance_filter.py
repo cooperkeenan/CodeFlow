@@ -52,13 +52,15 @@ class SignificanceFilter:
         )
         judge_verdicts = self._judge.judge(candidates)
         verdicts: dict[str, SiteVerdict] = {}
-        ranking: list[tuple[float, str, int, str]] = []
+        ranking: list[tuple[float, float, str, int, str]] = []
         for site, candidate in zip(sites, candidates):
             verdict = self._site_verdict(site, candidate, judge_verdicts[site.id])
             verdicts[site.id] = verdict
             if verdict.verdict == "decision":
-                ranking.append((verdict.score, site.owner, site.span.line, site.id))
-        ranked = tuple(item[3] for item in sorted(ranking, key=lambda i: (-i[0], i[1], i[2])))
+                ranking.append((verdict.importance, verdict.score, site.owner, site.span.line, site.id))
+        ranked = tuple(
+            item[4] for item in sorted(ranking, key=lambda i: (-i[0], -i[1], i[2], i[3]))
+        )
         return SignificanceResult(utilities=utilities, verdicts=verdicts, ranked_decisions=ranked)
 
     def _site_verdict(
@@ -73,4 +75,5 @@ class SignificanceFilter:
             arm_classes=candidate.arm_classes,
             question=decision_verdict.question,
             arm_labels=decision_verdict.arm_labels,
+            importance=decision_verdict.importance,
         )

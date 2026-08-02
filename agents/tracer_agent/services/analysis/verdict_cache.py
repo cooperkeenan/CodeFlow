@@ -41,6 +41,7 @@ class VerdictCache:
             "question": verdict.question,
             "arm_labels": list(verdict.arm_labels),
             "confidence": verdict.confidence,
+            "importance": verdict.importance,
         }
 
     def _deserialize(self, value: dict) -> DecisionVerdict:
@@ -49,4 +50,5 @@ class VerdictCache:
             question=value["question"],
             arm_labels=tuple(value["arm_labels"]),
             confidence=value["confidence"],
+            importance=value.get("importance", 0.0),
         )

@@ -11,6 +11,7 @@ class FlowGridConfig:
     lane_header_width: int = 220
     lane_header_height: int = 44
     lane_padding: int = 40
+    subtree_gap_rows: int = 1
 
     @property
     def col_step(self) -> int:

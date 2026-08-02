@@ -9,14 +9,18 @@ from services.analysis.label_synthesizer import LabelSynthesizer
 from services.analysis.lane_apportioner import LaneApportioner
 from services.analysis.lane_reducer import LaneReducer
 from services.analysis.page_budgeter import PageBudgeter
+from services.analysis.spine_protector import SpineProtector
 
 
 def build_page_budgeter(config: BudgetConfig | None = None) -> PageBudgeter:
     cfg = config or BudgetConfig()
     recondenser = BudgetRecondenser(LabelSynthesizer())
+    admitter = DecisionAdmitter(
+        recondenser, DecisionDissolver(), LaneReducer(), SpineProtector(), cfg.visible_decisions
+    )
     return PageBudgeter(
         LaneApportioner(cfg),
-        DecisionAdmitter(recondenser, DecisionDissolver(), LaneReducer(), cfg.visible_decisions),
+        admitter,
         ArmFolder(cfg),
         recondenser,
         EffectCapper(),

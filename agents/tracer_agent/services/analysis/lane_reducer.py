@@ -5,15 +5,21 @@ _PRIORITY = {"effect": 0, "parallel": 1, "step": 2}
 
 
 class LaneReducer:
-    def reduce(self, graph: BudgetWorkGraph, lane_id: str, budget: int) -> None:
+    def reduce(
+        self,
+        graph: BudgetWorkGraph,
+        lane_id: str,
+        budget: int,
+        spine: frozenset[str] = frozenset(),
+    ) -> None:
         while graph.lane_node_count(lane_id) > budget:
-            node_id = self._pick(graph, lane_id)
+            node_id = self._pick(graph, lane_id, spine)
             if node_id is None:
                 return
             self._fold(graph, node_id)
 
-    def _pick(self, graph: BudgetWorkGraph, lane_id: str) -> str | None:
-        protected: set[str] = set()
+    def _pick(self, graph: BudgetWorkGraph, lane_id: str, spine: frozenset[str]) -> str | None:
+        protected: set[str] = set(spine)
         for edge in graph.edges.values():
             if edge.kind == "arm":
                 protected.add(edge.target)
