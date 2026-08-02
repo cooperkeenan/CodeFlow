@@ -19,6 +19,8 @@ from services.analysis.page_budgeter_factory import build_page_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
 from placement.flow_page_placer_factory import build_flow_page_placer
 
+from save_command import parse_save_flag, save_to_account
+
 _SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build"}
 _CACHE_PATH = REPO_ROOT / ".cache" / "decision_verdicts.json"
 
@@ -70,9 +72,10 @@ def _print_significance(pipeline: FlowPipeline) -> None:
 
 def main(argv: list[str]) -> int:
     load_dotenv(REPO_ROOT / ".env")
-    include_tests = "--include-tests" in argv
-    no_llm = "--no-llm" in argv
-    positional = [a for a in argv[1:] if a not in ("--include-tests", "--no-llm")]
+    save_handle, rest = parse_save_flag(argv[1:])
+    include_tests = "--include-tests" in rest
+    no_llm = "--no-llm" in rest
+    positional = [a for a in rest if a not in ("--include-tests", "--no-llm")]
     target = Path(positional[0]).resolve() if len(positional) > 0 else REPO_ROOT
     out_dir = Path(positional[1]).resolve() if len(positional) > 1 else REPO_ROOT / "scratch_out"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -102,6 +105,8 @@ def main(argv: list[str]) -> int:
     _print_significance(pipeline)
     print(f"wrote {out_dir / 'flow_graph.json'}")
     print(f"wrote {out_dir / 'rendered_view.json'}")
+    if save_handle is not None:
+        return save_to_account(target.name, graph, view, save_handle)
     return 0
 
 
