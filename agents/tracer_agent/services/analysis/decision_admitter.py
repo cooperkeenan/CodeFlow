@@ -94,9 +94,11 @@ class DecisionAdmitter:
         )
         return [node.id for node in ordered]
 
-    def _score(self, node_id: str, significance: SignificanceResult) -> float:
+    def _score(self, node_id: str, significance: SignificanceResult) -> tuple[float, float]:
         verdict = significance.verdicts.get(node_id[4:])
-        return verdict.score if verdict is not None else 0.0
+        if verdict is None:
+            return (0.0, 0.0)
+        return (verdict.importance, verdict.score)
 
     def _dissolve_thin(self, graph: BudgetWorkGraph) -> bool:
         thin = [
