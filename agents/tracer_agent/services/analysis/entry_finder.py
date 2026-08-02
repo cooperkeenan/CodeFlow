@@ -75,6 +75,8 @@ class EntryFinder:
         )
 
     def _handler_fqn(self, site: DispatchSite, arm: Arm, method: str, path: str) -> str | None:
+        if arm.handler_fqn is not None:
+            return arm.handler_fqn
         if arm.callsites:
             return arm.callsites[0].caller
         located = self._locator.locate(site.owner, method.lower(), path)
