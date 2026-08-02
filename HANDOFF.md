@@ -1,22 +1,29 @@
-# Handoff — Decision-Flow Tracer: the diagram shows the wrong thing
+# Handoff — Progressive-disclosure decision diagram
 
-Read this first. It explains what was built, what's wrong, and the exact next step.
-Branch: `claude/codeflow-decision-diagrams-ea5bn1`. Open PR: **#14** (`cooperkeenan/CodeFlow`).
+Read this first. It states the next job, what already works, and every known gap.
+
+Branch: `featue/decision-nodes`. Open PR: #14. **5 commits are local and unpushed.**
 
 ---
 
-## 1. Mission (what the user actually asked for)
+## 1. The job
 
-> "An algorithm that traverses the codebase, finds the **key decision nodes**, and lays the
-> whole codebase out as a human would map it in their head."
+The diagram currently renders everything it has chosen to show, all at once, in one flat page.
+The user wants **progressive disclosure**:
 
-The mental model is a **decision tree**, not a wiring/flow diagram. The canonical example
-(from `docs/decision_flow_tracer.md` and the user's own sketch):
+- **One high-level diagram of the whole codebase**, always visible. This is the skeleton — the
+  services, entry points and major outcomes. It must stay readable at a glance.
+- **A `+` / `−` control per branch** that reveals or hides the decisions sitting *between* a parent
+  and its outcomes. Expanding one branch must not disturb the rest of the page.
+- The high-level view is never navigated away from. There is no drill-down to a separate page —
+  detail is spliced into the diagram in place.
+
+The user's reference sketch:
 
 ```
                  Orchestrator
                 /            \
-        (Correct Product ID?)   (Correct Product ID?)
+        (Correct Product ID?)  (Correct Product ID?)
               |                       |
         Regulatory Agent           MRF Agent
               |                       |
@@ -25,170 +32,153 @@ The mental model is a **decision tree**, not a wiring/flow diagram. The canonica
      CPT Tool   MUE Tool          Query MRF Data
 ```
 
-- **Decisions are the load-bearing structure.** Gray nodes = outcomes (agents, tools);
-  orange nodes = decisions ("which agent?", "do we need both services?").
-- **Top-down tree**, rooted at the main orchestrator/entry.
-- A **"+" depth control** reveals the next, finer layer of decisions in place (progressive
-  reveal on one page — NOT navigate-away drill-down). The orange nodes in the sketch are
-  what "+" reveals.
-- Infrastructure (health checks, CRUD, auth, plumbing) is **secondary** — hidden by default,
-  "added later."
+Grey = outcomes (services, agents, tools, handlers). Orange = decisions. **The orange nodes are
+what `+` reveals.** Note their position: a decision sits *on the edge* between a parent and its
+outcome. Collapsed, `Orchestrator → Regulatory Agent`; expanded, `Orchestrator → (Correct Product
+ID?) → Regulatory Agent`.
 
-## 2. What was actually built (F01–F13, all on the branch, PR #14)
+That shape matters for the data model. A decision is best treated as an **edge annotation that
+gets promoted to a node on expand**, not as a node that is hidden and shown. Modelling it as a
+hidden node forces the layout to reflow the whole page on every toggle.
 
-A full static-analysis pipeline. **The engine that finds decisions EXISTS and works** — the
-problem is the output is organized around the wrong axis. Stages (all under
-`agents/tracer_agent/services/analysis/` unless noted):
+### Design constraint that is currently violated
 
-| stage | file | status |
+The backend today **destroys** decisions to fit a page budget (`BudgetConfig.node_budget = 40`,
+`visible_decisions = 8`). For progressive disclosure the backend must instead **emit the full tree
+with a visibility level per node**, and let the frontend decide what to draw. Folding must become
+reversible metadata, not deletion. This is the single biggest change required.
+
+---
+
+## 2. What already works — do not rebuild it
+
+| Stage | Where | State |
 |---|---|---|
-| F01 FlowGraph contract | `shared/models/flow_graph.py` | ✅ solid |
-| F02 index | `project_indexer.py` (+ factory) | ✅ |
-| F03 call resolver (call graph + control context) | `call_resolver.py` | ✅ |
-| F04 **dispatch extraction (finds crossroads)** | `dispatch_extractor.py` + `*_detector.py` | ✅ **this is the decision-finder** |
-| F05 effects (http/db/llm/response) | `effect_detector.py` (+ factory) | ✅ |
-| F06 **significance filter (decision vs guard)** | `significance_filter.py`, `site_classifier.py`, `reach_computer.py` | ✅ **this ranks decisions** |
-| F07 condensation → FlowGraph | `flow_condenser.py` | ⚠️ entry-first (see §3) |
-| F08 cross-service stitching | `flow_stitcher.py` | ✅ |
-| F09 one-page budget | `page_budgeter.py` | ❌ **folds decisions, protects entries — backwards** |
-| F10 LLM labeling (only LLM stage) | `agents/layout_agent/services/planning/flow_labeler.py` | ✅ |
-| F11 layout geometry | `agents/render_agent/placement/flow_page_placer.py` | ⚠️ left-right swimlanes, not a tree |
-| F12 frontend one page | `frontend/src/pages/FlowPage.jsx` | ✅ renders whatever backend emits |
-| F13 cutover + delete legacy | wired across all 4 agents | ✅ |
+| Import resolution | `services/analysis/path_fqn.py` | ancestor-prefix, layout-agnostic |
+| Service roots | `service_root_resolver.py` + `project_indexer.py` | derived from imports |
+| Fork extraction | `dispatch_extractor.py` + `*_detector.py` | branch/match/except/route/table/polymorphic/dynamic |
+| **Decision judging** | `llm_decision_judge.py`, `prompts/decision_judge_prompt.py` | LLM decides real decision vs guard, writes the question |
+| Verdict cache | `verdict_cache.py`, `decision_fingerprint.py` | content-addressed, prompt-versioned |
+| Entry points | `fastapi_route_scanner.py`, `django_route_scanner.py` | FastAPI + Django URLconf |
+| Tree geometry | `placement/tree_layout.py`, `tree_structure.py` | tidy tree, parent centring, cycle-safe |
+| Screenshot loop | `scripts/screenshot_flow.py` | renders any local repo to a PNG |
+| Account save | `scripts/repo_map_saver.py` | `--save <handle>` writes a viewable `repo_maps` row |
 
-The pipeline runs end-to-end, is **byte-identical across runs**, every node carries a
-`file:line` ref. Self-run: `python scripts/selfrun.py` (runs the whole thing in-process on
-CodeFlow). Spec for every stage: `features/01`–`13`.
+**The demo/test repo is `django-helpdesk`**, cloned at `/Users/cooperkeenan/github/django-helpdesk`
+and set as `LOCAL_REPO_PATH`. It is a support-ticket system: relatable for a demo, conventional
+Django routing, and decision-dense. Its decisions read like *"User can access ticket?"*, *"Create
+new ticket or update only?"*, *"User has queue access?"*, *"User is superuser?"*.
 
-## 3. The core problem — WHY the output is wrong
+---
 
-The user ran it on `TA_Platform` (an LLM-agent orchestration system with real routing
-decisions) and got a **flat vertical list of ~18 API routes all flowing into "Check service
-health" → "Respond"** — i.e. an *inventory of entry points*, with **zero decision nodes**.
-The decision tree — the entire point — did not appear.
+## 3. Gap analysis
 
-Two compounding mistakes, both in the OUTPUT, not the engine:
+### 3a. Blocking the main job
 
-1. **Entry-first, not decision-first.** `flow_condenser.py` makes every route an entry node
-   and lays them out left→right in swimlanes (`FlowPagePlacer`). It never picks a **root**
-   and branches from its **decisions**. There is no tree.
-2. **The budget is inverted.** `page_budgeter.py` **protects entries and folds decisions**.
-   On CodeFlow, **0 decisions survive** the budget; pre-budget there are only ~3 (CodeFlow is
-   a near-linear pipeline). So the presentation throws away exactly the nodes that matter.
+**G1 — Most decisions never reach the graph.** On django-helpdesk the judge finds **225** decisions;
+**43** nodes reach the graph; **8** decisions render. Ranking cannot promote what was never
+condensed in. `DecisionSeeder` attaches decisions whose owner is unreachable from an entry to a flat
+synthetic anchor (`entry:seed:<root>`), which both loses hierarchy and caps how many arrive. Until
+this is fixed, progressive disclosure has almost nothing to disclose.
 
-A third, honest trap: the pipeline was **only ever validated on CodeFlow itself**, which is
-nearly decision-free — so "0 decisions, here are the routes" looked *plausible* and the
-absence of the whole point went unnoticed. **Do not repeat this — validate on a
-decision-heavy repo.**
-
-## 4. THE IMMEDIATE NEXT STEP (do this before any rework)
-
-We must answer one question first, because the fix differs:
-**On TA_Platform, are the orchestrator's decisions FOUND-BUT-FOLDED, or NOT-DETECTED?**
-
-Agent routing is frequently an **LLM tool-call** or an **agent registry/dict**, which F04 can
-only partially see (it flags `dynamic` dispatch but can't name the branches). So:
-
-1. Ask the user to add the repo: `cooperkeenan/TA_Platform` (use `add_repo`, then clone +
-   `register_repo_root`). The user offered this.
-2. Run **only** F02→F06 on it in-process (recipe in §6) and **dump the raw decision list**:
-   every `DispatchSite` with its `SiteVerdict` (decision/guard/noise), kind, owner, and
-   arm reach sizes — BEFORE condensation/budget/layout.
-3. Interpret:
-   - If the "CPT vs MRF agent" crossroad **is** in the list as a `decision` → it's a
-     **presentation problem** (§5a): re-center layout + budget on decisions. Medium effort.
-   - If it's **absent or classified `dynamic`/`noise`** → it's a **detection problem** (§5b):
-     the orchestrator routes via a registry/LLM the static detectors miss. Deeper work.
-
-Paste that decision list to the user. Stop guessing from screenshots.
-
-## 5. The reframe (what "good" requires)
-
-### 5a. Presentation fixes (needed regardless)
-- **Decision-first tree.** Root = the primary orchestrator entry (the one whose subtree
-  contains the most/highest-scored decisions). Build the tree from decisions; outcomes
-  (agents/tools/effects) hang below. Rework `flow_condenser.py` to emit a decision-rooted
-  tree and `FlowPagePlacer` to lay it out **top-down** (like the sketch), not left-right lanes.
-- **Invert the budget.** `page_budgeter.py` must **rank and keep decisions first**, and demote
-  routes/health/CRUD/plumbing (fold or hide them). Today it does the opposite.
-- **Bring back the "+" depth control.** The original design (`docs/decision_flow_tracer.md`,
-  "depth control") had it; it was dropped for a static one-page budget. The user wants top
-  decisions shown, "+" reveals the next layer **in place**. `FlowNode.folded_count` + the
-  frontend's existing progressive-reveal mechanism are the hooks. This partially revisits the
-  earlier "one page, no drill-down" decision — reconcile as: one page that starts shallow and
-  expands decisions on demand, not separate drill pages.
-- **Relevance ranking.** Business-logic decisions rank above infrastructure. Health/CRUD/auth
-  routes should not dominate. (Route-entry grouping by router already exists in
-  `entry_finder.py::_grouped` — a start, but entries still shouldn't be the skeleton.)
-
-### 5b. Detection fixes (only if §4 shows decisions are missed)
-- Teach F04/F05 to recognize **agent-registry dispatch** (a dict/list of agent or tool
-  objects the orchestrator selects from) and **LLM tool-routing** (tool definitions passed to
-  an LLM call = the branch set; each tool = an arm). This is the hybrid the original design
-  doc anticipated: static analysis gathers candidate crossroads, the LLM names them. For agent
-  systems the "arms" may come from tool/agent registries and system prompts, not `if` bodies.
-- `dynamic` dispatch should not be silently dropped — a runtime-routed fan-out to N known
-  agents IS the decision; surface it (honestly labeled) rather than folding it.
-
-## 6. How to run / verify (verified-working recipe)
-
-Self-run (in-process, on CodeFlow): `python scripts/selfrun.py` — asserts lanes, stitches,
-byte-identical, budget ceiling, provenance.
-
-Full pipeline wiring (sys.path = repo root + `agents/tracer_agent`; add `agents/render_agent`
-too for layout, and put tracer FIRST so `services.analysis` resolves):
+**G2 — The graph is a forest, not a tree.** `tree_layout.py` is correct; it is handed a graph with
+many roots and faithfully draws many disconnected islands. Measure before changing anything:
 
 ```python
-idx = build_project_indexer().index(files)                 # files: dict[relpath, source]
-cs  = CallResolver(idx).resolve_project()
-disp = build_dispatch_extractor(idx).extract(cs)           # <-- DispatchSites (the crossroads)
-eff = EffectDetector(CallEffectMatcher(EffectTargetExtractor()),
-                     RouteHandlerInspector(), StoreEffectSurfacer()).detect(idx, cs)
-sig = build_significance_filter(idx, SignificanceConfig()).run(cs, disp)  # <-- verdicts + ranking
-graph = build_flow_condenser().condense("Repo", idx, cs, disp, eff, sig)
-entries = EntryFinder(idx, RouteHandlerLocator(idx), ServiceRootResolver(None),
-                      LabelSynthesizer()).find(disp)
-stitched = build_flow_stitcher().stitch(graph, eff, entries)
-budgeted = build_page_budgeter().budget(stitched, sig)     # <-- FlowGraph (shared.models.flow_graph)
+from placement.tree_structure import build_forest, select_root
+from placement.flow_reach import longest_path_depths
+```
+Print root count, per-root subtree size and child count, and max depth. TA_Platform was 17 roots /
+depth 3; django-oscar 3 roots / depth 5. **A tree is 1 root.**
+
+**G3 — No expand/collapse anywhere.** `FlowNode.folded_count` is emitted and `NodeChrome.jsx`
+renders it as a `chip`, but nothing consumes a click. `useGraphTransform.js` maps view nodes 1:1
+with no expansion state. `FlowPage.jsx`'s only interaction is a provenance popover. This is the
+user-facing half of the job and it is entirely unbuilt.
+
+**G4 — Decisions are modelled as ordinary nodes.** To splice a decision onto an edge on expand,
+either the edge must carry its hidden decision, or the node must carry enough parent/child context
+to be inserted without a full relayout. Decide this deliberately before writing frontend code.
+
+### 3b. Detection limits (known and documented — not bugs to "fix" blindly)
+
+**G5 — SDK-mediated HTTP is invisible.** `effect_registry.py` detects outbound HTTP by matching
+httpx/requests/aiohttp method names. A call made *inside* a third-party SDK (e.g.
+`agent_framework.a2a`) produces no `EffectSite`, so no cross-service candidate exists.
+`LlmStitchDetector` is built, cached and working — it correctly returns "no match" on genuine
+third-party calls — but on TA_Platform it has nothing to judge. Widening effect detection to
+recognise a client constructed with a URL argument would create the candidate.
+
+**G6 — Decisions expressed as classes are invisible.** DDD-style codebases encode rules as objects:
+`class SellerMustBeEligible(BusinessRule): def is_broken(self) -> bool: return ...`. There is no
+fork, so fork detection sees nothing. This is a real limitation of the technique and worth stating
+plainly in the dissertation rather than papering over.
+
+**G7 — Plugin/dynamic routing is invisible.** django-oscar wires views through
+`OscarConfig.get_urls()` and a string-keyed `get_class()` service locator. Supporting it would mean
+hardcoding one project's idioms — correctly rejected.
+
+### 3c. Engineering debt
+
+**G8 — Lint and types.** `ruff check .` fails with ~200 errors; **193 of these pre-date this work**
+(mostly `B008` function-call-in-default-argument and unsorted imports on `main`). Roughly 8 were
+added recently. `mypy` reports 6 errors, 2 of them ours in `llm_decision_judge.py:69,91` (indexing
+`dict[str, Any]` with `Any | None`). CI runs both and has been red on `main` for a while.
+
+**G9 — CD is not gated on CI.** `.github/workflows/cd.yml` triggers on push to `main`, builds five
+backend images and runs `railway redeploy`. Its `deploy` job only `needs: push-images`, so a red
+lint never blocks a deploy. **The frontend is not in the pipeline at all** — it is served via the
+Cloudflare tunnel (`tunnel.sh`).
+
+**G10 — Unpushed work.** Five commits sit on `featue/decision-nodes`. The user asked about deploying
+the branch directly via `scripts/build-push.sh` rather than through the `main` pipeline; that was
+never done and is still open.
+
+**G11 — Ranking is only half-effective.** `DecisionAdmitter._score` now orders by
+`(importance, score)`, but with only 8 of 225 decisions present the ordering rarely bites. Re-check
+once G1 is fixed.
+
+**G12 — Host disk.** The dev machine ran out of space mid-session. `ENOSPC` kills `Bash` entirely,
+since it cannot write its own output file. Keep temp files small and clean up after yourself.
+
+---
+
+## 4. How to run and verify
+
+```bash
+cd /Users/cooperkeenan/GitHub/CodeFlow && source venv/bin/activate
+
+python scripts/render_repo.py /Users/cooperkeenan/github/django-helpdesk /tmp/hd   # JSON + decision list
+python scripts/render_repo.py /Users/cooperkeenan/github/django-helpdesk /tmp/hd2  # run twice
+diff /tmp/hd/flow_graph.json /tmp/hd2/flow_graph.json                              # must be empty
+
+python scripts/selfrun.py                                                          # 5 assertions, must pass
+python scripts/screenshot_flow.py /Users/cooperkeenan/github/django-helpdesk       # PNG of the real page
+python scripts/screenshot_flow.py --save cooperkeenan <repo>                       # also save to the account
 ```
 
-Factories are `*_factory.py` next to each service. For §4, stop after `sig` and print
-`disp` + `sig.verdicts` + `sig.ranked_decisions`.
+`scratch_out/flow.png` can be opened with the Read tool. **Look at it every iteration** — in this
+project the metrics improved several times while the picture got worse. `--no-llm` forces the
+deterministic heuristic judge. The verdict cache is at `.cache/decision_verdicts.json`; deleting it
+costs a cold re-judge (~4 min on django-helpdesk, ~12 min on django-oscar).
 
-To inspect geometry, run `FlowPagePlacer` (`build_flow_page_placer().place(graph)`) and look
-at node `position` x/y. (A layout blowup on cyclic graphs was already fixed in
-`flow_reach.py` — Kahn topological longest-path; the FlowGraph is NOT a guaranteed DAG.)
+For frontend work, `/flow-fixture` renders the real `FlowPage` against
+`frontend/public/fixture/rendered_view.json` with no API, DB or login.
 
-## 7. Constraints (do not violate)
+---
 
-- `CLAUDE.md` is law: ≤150 lines/file, constructor injection, one class per file, type
-  annotations everywhere, no explanatory comments/docstrings, no unused imports, no unsolicited
-  tests (the self-run script is solicited).
-- **Determinism is non-negotiable:** same repo in → byte-identical FlowGraph out (labels
-  excepted; the one LLM call is temperature 0). Sort all set/dict iteration; ties break on
-  `(file, line, name)`.
-- **Static analysis owns structure; the LLM only names things.** The labeler may never add,
-  remove, merge, or rewire a node/edge.
-- Workflow the user uses: Opus plans + reviews, spawns a **Sonnet sub-agent per feature**,
-  reviews the diff against that feature's acceptance before committing. Each sub-agent starts
-  cold — point it at the specific `features/*.md` + the files it touches.
+## 5. Constraints
 
-## 8. Git / ops
-
-- Commit as `Claude <noreply@anthropic.com>`; end messages with the Co-Authored-By +
-  Claude-Session trailers already used on the branch.
-- Push `-u origin claude/codeflow-decision-diagrams-ea5bn1` with exponential-backoff retry.
-- Don't open a new PR — #14 is the one. Don't push to other branches.
-- GitHub ops via `mcp__github__*` (load with ToolSearch). No `gh` CLI.
-
-## 9. What was done THIS session (already committed/pushed)
-
-- Built F01–F13, cut over all 4 agents to the FlowGraph pipeline, deleted the legacy
-  chunk-tracing/assembly/layout stack + jarviscg. Self-run green.
-- Fixed a catastrophic layout blowup (cycle → x=18,460) — `flow_reach.py` cycle-safe.
-- Added route-entry grouping by router (`entry_finder.py::_grouped`) — api entries 24→7.
-  Helpful but does NOT fix the core problem: the diagram is still entry-first, not a
-  decision tree.
-
-**The next agent's job is §4 then §5 — make the decision tree the primary output.** Start by
-adding TA_Platform and dumping the raw decision list. Don't rebuild the engine; re-point it.
+- `CLAUDE.md` is law: ≤150 lines per file, one class per file, constructor injection, type
+  annotations, no docstrings or explanatory comments, no unsolicited tests.
+- **Determinism**: same repo in → byte-identical `flow_graph.json` out. Sort every set/dict
+  iteration; break ties on `(file, line, name)`. The LLM runs at temperature 0 behind a
+  content-addressed cache; bump `PROMPT_VERSION` when a prompt changes, or stale verdicts get reused.
+- **Static analysis owns structure.** The LLM judges significance and writes labels. It may never
+  add, remove, merge or rewire a node or edge.
+- **No domain hardcoding.** Framework support (FastAPI, Django) is fine. Searching for "agent",
+  "tool", or one project's idioms is not.
+- **Validate on a repo that is not CodeFlow.** Two separate bugs here were invisible because
+  CodeFlow satisfies its own assumptions by construction — see `CLAUDE.md`.
+- Never weaken an assertion to make a run pass. If one genuinely no longer applies, say so and leave
+  it failing.

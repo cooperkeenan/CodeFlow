@@ -43,3 +43,37 @@
 - Do not refactor files that are not in scope for the current PBI
 - Do not add logging statements beyond what already exists in the file being modified
 - Do not use global variables or module-level mutable state
+
+## Never Hardcode This Repo's Own Layout
+CodeFlow analyses arbitrary Python repos, so any assumption about directory names is a bug —
+and one that is invisible when testing on CodeFlow, because CodeFlow satisfies its own
+assumptions by construction. This has already cost two separate outages of the whole feature:
+
+- `path_fqn.agent_root_of` keyed on the literal `"agents"`, so on a repo laid out as
+  `app/<service>/src` nearly every internal call resolved to `ext:` and the call graph was shredded.
+- `service_root_resolver.root_of` had the identical bug, collapsing four services into one lane.
+
+Both are now derived from where imports actually resolve. Do not reintroduce the pattern. The same
+rule covers domain terms: framework support (FastAPI, Django) is legitimate; searching for "agent",
+"tool", or one project's idioms is not.
+
+## Validate On A Repo That Is Not CodeFlow
+Never accept "it works" from a CodeFlow self-run alone. Use the demo target
+(`LOCAL_REPO_PATH`, currently `django-helpdesk`) and look at the rendered PNG via
+`python scripts/screenshot_flow.py <repo>` — read the image, not just the counts. Metrics in this
+project have improved several times while the diagram got visibly worse.
+
+## Determinism
+Same repo in → byte-identical `flow_graph.json` out. Sort every set/dict iteration; break ties on
+`(file, line, name)`. LLM calls run at temperature 0 behind a content-addressed cache — bump the
+prompt's `PROMPT_VERSION` when the prompt changes, or stale cached verdicts are silently reused.
+
+## Static Analysis Owns Structure
+Static analysis finds every candidate fork and builds the graph. The LLM judges which forks are
+real decisions and writes their human-readable labels. The LLM must never add, remove, merge or
+rewire a node or edge.
+
+## Do Not Weaken Checks To Go Green
+Never loosen an assertion, invariant or budget to make a run pass. If a check genuinely no longer
+applies, say so and leave it failing — a red assertion is information. Report honest negatives with
+the real numbers rather than presenting a partial result as success.
