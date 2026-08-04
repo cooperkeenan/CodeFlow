@@ -10,13 +10,11 @@ const HIDDEN = {
   background: 'transparent',
 }
 
-export default function Handles() {
+export default function Handles({ target = Position.Top, source = Position.Bottom }) {
   return (
     <>
-      <Handle type="target" position={Position.Left} style={HIDDEN} />
-      <Handle type="target" position={Position.Top} style={HIDDEN} />
-      <Handle type="source" position={Position.Right} style={HIDDEN} />
-      <Handle type="source" position={Position.Bottom} style={HIDDEN} />
+      <Handle type="target" position={target} style={HIDDEN} />
+      <Handle type="source" position={source} style={HIDDEN} />
     </>
   )
 }

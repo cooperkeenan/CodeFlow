@@ -8,6 +8,7 @@ from shared.models.flow_graph import FlowGraph
 from services.analysis.anchor_index import AnchorIndex
 from services.analysis.call_ancestry_resolver import CallAncestryResolver
 from services.analysis.component_index import ComponentIndex
+from services.analysis.container_assigner import ContainerAssigner
 from services.analysis.decision_seeder import DecisionSeeder
 from services.analysis.entry_finder import EntryFinder
 from services.analysis.event_collector import EventCollector
@@ -51,9 +52,10 @@ class FlowCondenser:
         self._assemble(acc, summarizer, entries, index)
         entries = TrivialEntryFolder(self._labels).fold(acc, entries)
         ancestry = CallAncestryResolver(callsites)
-        seeded = DecisionSeeder(index, self._roots, self._labels, ancestry).seed(
+        seeded = DecisionSeeder(index, self._roots, self._labels, ancestry, components).seed(
             acc, summarizer, significance, entries
         )
+        ContainerAssigner().assign(acc)
         StepMerger(acc, self._labels).merge()
         lanes = LaneBuilder(self._roots, self._labels).build(
             entries + seeded, dispatch_sites, significance
@@ -82,3 +84,4 @@ class FlowCondenser:
                 summary = summarizer.summarize(handler)
                 if summary.head is not None:
                     acc.connect(entry.id, summary.head, "sequence")
+                    acc.add_container(summary.head, entry.id)

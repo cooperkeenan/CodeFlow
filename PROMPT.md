@@ -88,7 +88,26 @@ python scripts/render_repo.py --no-llm <repo>     # force the deterministic heur
 python scripts/screenshot_flow.py <repo>          # → scratch_out/flow.png via headless Chrome
 python scripts/screenshot_flow.py --save <handle> <repo>   # also save to a user account
 python scripts/selfrun.py                         # in-process self-analysis, 5 assertions
+python scripts/flow_agent.py <repo> <action>...   # drive the real page in a browser
 ```
+
+### `flow_agent.py` — drive the diagram without a human relaying screenshots
+
+Playwright (dev-only, `requirements-dev.txt`; uses the installed Chrome via `channel="chrome"`, so
+no browser download) opens the real `FlowPage` and runs a sequence of actions. It reports the
+rendered page **as text**, so state can be asserted rather than eyeballed.
+
+```bash
+python scripts/flow_agent.py <repo> --rebuild state overlaps
+python scripts/flow_agent.py <repo> "toggle:<node_id>" fit "shot:scratch_out/x.png"
+python scripts/flow_agent.py <repo> "press:collapse all" state
+```
+
+Actions: `state` (every visible node with position, label and `+N` control), `overlaps` (colliding
+node pairs — **0 is the goal**, and this is the check that catches bad layout), `toggle:<id>`,
+`click:<id>`, `press:<button text>`, `fit`, `shot:<path>`. `--rebuild` re-runs the pipeline first;
+without it the existing fixture is reused. Nested expansion works — toggle a revealed decision or a
+`more:` node to go deeper.
 
 `screenshot_flow.py` serves the result to the real `FlowPage` through a dev-only `/flow-fixture`
 route — no API, DB or login. `--save` upserts a `repo_maps` row viewable in the web UI, resolving

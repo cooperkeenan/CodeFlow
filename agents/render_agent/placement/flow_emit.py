@@ -44,6 +44,7 @@ def build_edge_dict(edge: FlowEdge, is_spine: bool) -> dict:
         "dashed": dashed,
         "confidence": edge.confidence,
         "routed": "gutter" if edge.kind == "stitch" else "lane",
+        "hiddenPath": list(edge.hidden_path),
     }
     if edge.kind == "stitch":
         result["targetPort"] = "entry"

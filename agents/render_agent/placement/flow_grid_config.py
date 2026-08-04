@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from shared.models.node_geometry import NODE_GEOMETRY
+
 
 @dataclass(frozen=True)
 class FlowGridConfig:
@@ -11,12 +13,12 @@ class FlowGridConfig:
     lane_header_width: int = 220
     lane_header_height: int = 44
     lane_padding: int = 40
-    subtree_gap_rows: int = 1
+    subtree_gap_rows: int = 0
 
     @property
     def col_step(self) -> int:
-        return self.column_width + self.column_gutter
+        return max(g.width for g in NODE_GEOMETRY.values()) + self.column_gutter
 
     @property
     def row_step(self) -> int:
-        return self.row_height + self.row_gutter
+        return max(g.height for g in NODE_GEOMETRY.values()) + self.row_gutter

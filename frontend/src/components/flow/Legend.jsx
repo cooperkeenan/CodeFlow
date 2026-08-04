@@ -8,12 +8,14 @@ const HEAD = { fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase',
 const SHAPES = [
   ['⬭', 'entry', KIND_ACCENT.entry],
   ['▭', 'step', KIND_ACCENT.step],
-  ['◇', 'decision', KIND_ACCENT.decision],
+  ['▌◇', 'decision', KIND_ACCENT.decision],
   ['⑃', 'parallel split', KIND_ACCENT.parallel],
   ['◆', 'effect', KIND_ACCENT.effect],
+  ['●', 'outcome', KIND_ACCENT.outcome],
 ]
 const EDGES = [
-  ['spine (bold)', '━'],
+  ['tree (solid)', '━'],
+  ['cross-link (faded)', '─'],
   ['except / dynamic (dashed)', '╌'],
   ['stitch (gutter)', '┈'],
 ]

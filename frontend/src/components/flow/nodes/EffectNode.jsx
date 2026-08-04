@@ -1,33 +1,29 @@
 import Handles from '../Handles'
-import NodeBadges from '../NodeBadges'
-import { KIND_ACCENT, SURFACE, MONO, LABEL_STYLE, TEXT_MUTED, EFFECT_ICON, shellStyle } from '../styles'
+import NodeChrome from '../NodeChrome'
+import { KIND_ACCENT, SURFACE, EFFECT_ICON, shellStyle, scalePad } from '../styles'
 
-const BASE = {
-  width: 184,
-  minHeight: 50,
-  padding: '9px 12px',
-  borderRadius: 8,
-  background: SURFACE,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 9,
-}
+const FALLBACK = { width: 184, height: 60 }
 
-export default function EffectNode({ data, selected }) {
+export default function EffectNode({ data, selected, sourcePosition, targetPosition }) {
   const icon = EFFECT_ICON[data.effectKind] ?? '◆'
+  const { width, height } = data.geometry ?? FALLBACK
+  const scale = data.scale ?? 1
+  const base = {
+    width,
+    minHeight: height,
+    padding: scalePad(9, 12, scale),
+    borderRadius: 8,
+    background: SURFACE,
+    display: 'flex',
+    alignItems: 'center',
+    gap: Math.round(9 * scale),
+    boxSizing: 'border-box',
+  }
   return (
-    <div style={shellStyle(BASE, KIND_ACCENT.effect, { selected, highlighted: data.highlighted, dashed: data.dashed })}>
-      <Handles />
-      <span title={data.effectKind ?? 'effect'} style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{icon}</span>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-        <span style={LABEL_STYLE}>{data.label}</span>
-        {data.effectTarget && (
-          <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT_MUTED, wordBreak: 'break-all' }}>
-            {data.effectTarget}
-          </span>
-        )}
-        <NodeBadges badges={data.badges} guardSource={data.guardSource} />
-      </div>
+    <div style={shellStyle(base, KIND_ACCENT.effect, { selected, highlighted: data.highlighted, dashed: data.dashed })}>
+      <Handles target={targetPosition} source={sourcePosition} />
+      <span title={data.effectKind ?? 'effect'} style={{ fontSize: Math.round(16 * scale), lineHeight: 1, flexShrink: 0 }}>{icon}</span>
+      <NodeChrome data={data} subtitle={data.effectTarget || null} />
     </div>
   )
 }

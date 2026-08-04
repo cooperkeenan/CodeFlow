@@ -33,6 +33,7 @@ class ArmFolder:
         graph.nodes[fold_id] = FlowNode(
             id=fold_id, kind="step", lane=node.lane, label=label,
             backing=backing, folded_count=len(drop), badges=["folded"],
+            owner_fqn=node.owner_fqn, containers=list(node.containers),
         )
         graph.add_edge(node_id, fold_id, "arm", label)
         graph.prune_unreachable()

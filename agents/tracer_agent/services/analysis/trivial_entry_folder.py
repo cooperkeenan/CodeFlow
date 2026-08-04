@@ -1,5 +1,6 @@
 from models.flow_entry import FlowEntry
-from services.analysis.graph_accumulator import GraphAccumulator, _NodeDraft
+from services.analysis.graph_accumulator import GraphAccumulator
+from services.analysis.graph_drafts import _NodeDraft
 from services.analysis.label_synthesizer import LabelSynthesizer
 
 _INTERESTING_KINDS = {"decision", "parallel"}

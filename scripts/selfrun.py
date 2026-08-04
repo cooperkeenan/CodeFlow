@@ -15,7 +15,7 @@ from services.analysis.flow_pipeline import FlowPipeline
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
 from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
-from services.analysis.page_budgeter_factory import build_page_budgeter
+from services.analysis.visibility_budgeter_factory import build_visibility_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
 from placement.flow_page_placer_factory import build_flow_page_placer
 from render_repo import load_dotenv
@@ -42,7 +42,7 @@ def build_pipeline(judge: DecisionJudge) -> FlowPipeline:
         build_project_indexer(),
         build_effect_detector(),
         build_flow_stitcher(),
-        build_page_budgeter(),
+        build_visibility_budgeter(),
         judge=judge,
     )
 
@@ -69,6 +69,12 @@ def main() -> int:
     decisions = [n for n in graph.nodes if n.kind == "decision"]
     guard_decisions = [n for n in decisions if _GUARD_SELECTOR.search(n.label)]
     no_refs = [n.id for n in graph.nodes if not n.refs]
+    skeleton = [n for n in graph.nodes if n.level == 0]
+    revealed = {n.id for n in graph.nodes if n.level == 1}
+    parented: set[str] = set()
+    for node in graph.nodes:
+        parented.update(node.hidden_children)
+    stranded = sorted(revealed - parented)
 
     print(f"judge={'LLM' if used_llm else 'heuristic (no ANTHROPIC_API_KEY)'}")
     print(f"lanes={sorted(lanes)} nodes={len(graph.nodes)} edges={len(graph.edges)} "
@@ -81,8 +87,11 @@ def main() -> int:
         check(">=4 stitch edges api->agent entries", len(stitches) >= 4, f"{len(stitches)} stitches"),
         check("two runs byte-identical (ignoring llm_*)",
               canonical_first == canonical_second),
-        check("node count within budget ceiling",
-              len(graph.nodes) <= budget + len(graph.lanes) * 3, f"{len(graph.nodes)} nodes"),
+        check("skeleton node count within budget ceiling",
+              len(skeleton) <= budget + len(graph.lanes) * 3,
+              f"{len(skeleton)} skeleton nodes of {len(graph.nodes)} total"),
+        check("every revealed node is reachable from a parent's hidden_children",
+              not stranded, f"{len(stranded)} stranded"),
     ]
     if used_llm:
         results.append(
@@ -94,8 +103,8 @@ def main() -> int:
               "ANTHROPIC_API_KEY)")
     print(f"provenance: {len(graph.nodes) - len(no_refs)}/{len(graph.nodes)} nodes carry a SourceRef "
           f"(entries lack refs by construction: {len(no_refs)} without)")
-    print(f"decisions: {len(decisions)} survive the budget on this repo "
-          f"(CodeFlow is a near-linear service pipeline; node_budget={budget})")
+    print(f"decisions: {len(decisions)} emitted, all revealable; "
+          f"{len(skeleton)} skeleton nodes form the collapsed page (node_budget={budget})")
     return 0 if all(results) else 1
 
 

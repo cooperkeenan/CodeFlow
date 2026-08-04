@@ -57,11 +57,44 @@ Both are now derived from where imports actually resolve. Do not reintroduce the
 rule covers domain terms: framework support (FastAPI, Django) is legitimate; searching for "agent",
 "tool", or one project's idioms is not.
 
+## Always Run It And Look At The Picture
+Every change to the pipeline, the graph or the layout ends with the same loop, every iteration —
+not once at the end:
+
+```bash
+python scripts/screenshot_flow.py --save cooperkeenan <repo>
+```
+
+Then **open `scratch_out/flow.png` with the Read tool and actually look at it**, and ask whether
+what you see is the goal — not whether the code ran. Counts are not evidence. Overlapping nodes,
+spaghetti edges, empty canvases and 50-node fans all pass every assertion in this repo. Metrics
+here have improved several times while the diagram got visibly worse.
+
+`--save cooperkeenan` writes the run to the user's account in the same pass, so they never have to
+re-run it themselves. Always include it.
+
+To check *interaction* rather than the static image, drive the real page yourself instead of asking
+the user to relay what they see:
+
+```bash
+python scripts/flow_agent.py <repo> --rebuild state overlaps
+python scripts/flow_agent.py <repo> "toggle:<node_id>" fit "shot:scratch_out/x.png"
+```
+
+`state` prints every visible node with its position and `+N` control; `overlaps` lists colliding
+node pairs and **must be 0**. Assert on that output — it catches layout regressions that a
+screenshot alone hides.
+
 ## Validate On A Repo That Is Not CodeFlow
 Never accept "it works" from a CodeFlow self-run alone. Use the demo target
-(`LOCAL_REPO_PATH`, currently `django-helpdesk`) and look at the rendered PNG via
-`python scripts/screenshot_flow.py <repo>` — read the image, not just the counts. Metrics in this
-project have improved several times while the diagram got visibly worse.
+(`LOCAL_REPO_PATH`, currently `django-helpdesk`). CodeFlow satisfies its own assumptions by
+construction, so a self-run hides exactly the bugs that matter.
+
+## The Top-Level Diagram Is At Most 15 Nodes
+The first thing shown is the whole codebase at a high level: **max 15 nodes.** Detail is not
+deleted to achieve this — it is demoted to a deeper visibility level and reached by expanding a
+branch. Expanding a branch shows the decisions sitting *between two nodes*, so a single expansion
+must stay small too; a `+` that reveals 50 nodes at once is a bug, not disclosure.
 
 ## Determinism
 Same repo in → byte-identical `flow_graph.json` out. Sort every set/dict iteration; break ties on

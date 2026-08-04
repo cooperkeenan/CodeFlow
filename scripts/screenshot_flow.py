@@ -15,7 +15,7 @@ from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
 from services.analysis.site_classifier import SiteClassifier
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
-from services.analysis.page_budgeter_factory import build_page_budgeter
+from services.analysis.visibility_budgeter_factory import build_visibility_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
 from placement.flow_page_placer_factory import build_flow_page_placer
 
@@ -34,7 +34,7 @@ def _build_view(target: Path, no_llm: bool):
     judge = HeuristicDecisionJudge(SiteClassifier()) if no_llm else build_decision_judge(_CACHE_PATH)
     pipeline = FlowPipeline(
         build_project_indexer(), build_effect_detector(),
-        build_flow_stitcher(), build_page_budgeter(),
+        build_flow_stitcher(), build_visibility_budgeter(),
         judge=judge,
     )
     graph = pipeline.run(target.name, files)
@@ -72,6 +72,11 @@ def main(argv: list[str]) -> int:
     load_dotenv(REPO_ROOT / ".env")
     save_handle, rest = parse_save_flag(argv[1:])
     no_llm = "--no-llm" in rest
+    expand = ""
+    if "--expand" in rest:
+        index = rest.index("--expand")
+        expand = rest[index + 1] if index + 1 < len(rest) else ""
+        rest = rest[:index] + rest[index + 2 :]
     positional = [a for a in rest if a != "--no-llm"]
     if len(positional) < 1:
         print("usage: screenshot_flow.py <repo_path> [out_dir] [--no-llm] [--save <handle>]")
@@ -87,7 +92,7 @@ def main(argv: list[str]) -> int:
         frontend_dir=REPO_ROOT / "frontend",
         port=DEV_PORT,
         chrome_path=CHROME_PATH,
-        url=FLOW_URL,
+        url=f"{FLOW_URL}?expand={expand}" if expand else FLOW_URL,
         out_png=png_path,
     )
     screenshotter.run()

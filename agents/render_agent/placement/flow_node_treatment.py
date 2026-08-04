@@ -1,7 +1,5 @@
 from shared.models.flow_graph import FlowNode
 
-_TABLE_ARM_THRESHOLD = 3
-
 
 def shape_for(node: FlowNode, arm_count: int) -> str:
     if node.kind == "entry":
@@ -12,9 +10,9 @@ def shape_for(node: FlowNode, arm_count: int) -> str:
         return "split_bar"
     if node.kind == "effect":
         return "effect"
-    if arm_count >= _TABLE_ARM_THRESHOLD:
-        return "trapezoid"
-    return "diamond"
+    if node.kind == "outcome":
+        return "outcome"
+    return "decision"
 
 
 def node_data(
