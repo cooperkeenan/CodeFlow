@@ -3,6 +3,7 @@ from shared.models.flow_graph import FlowGraph, FlowNode
 from shared.models.node_geometry import geometry_payload
 from placement.flow_emit import build_edge_dict, build_header_dict, build_node_dict
 from placement.flow_grid_config import FlowGridConfig
+from placement.flow_node_treatment import linear_run_ids
 from placement.hidden_emitter import HiddenEmitter
 from placement.lane_packer import LanePacker
 from placement.spine_router import SpineRouter
@@ -28,6 +29,7 @@ class FlowPagePlacer:
         spine = self._spine_router.route(graph)
         order = self._lane_packer.order(graph)
         arm_counts = self._arm_counts(graph)
+        run_ids = linear_run_ids(graph, arm_counts)
         lanes_by_id = {lane.id: lane for lane in graph.lanes}
         skeleton_ids = frozenset(node.id for node in graph.nodes if node.level == 0)
         skeleton_edges = [
@@ -54,7 +56,8 @@ class FlowPagePlacer:
                 out_nodes.append(build_header_dict(lane, band.center_y, self._config))
             for placement in band.placements:
                 node_dict = build_node_dict(
-                    placement, lane_id, arm_counts.get(placement.node.id, 0)
+                    placement, lane_id, arm_counts.get(placement.node.id, 0),
+                    placement.node.id in run_ids,
                 )
                 out_nodes.append(node_dict)
                 placed.append((placement.node.id, node_dict, placement.node))
@@ -72,9 +75,10 @@ class FlowPagePlacer:
         out_edges.sort(key=lambda edge: edge["id"])
         return RenderedView(
             type="flow",
+            page_title=graph.page_title,
             nodes=out_nodes,
             edges=out_edges,
-            hidden=self._hidden.payloads(graph, arm_counts),
+            hidden=self._hidden.payloads(graph, arm_counts, run_ids),
             hidden_edges=self._hidden.edges(graph, skeleton_ids),
             node_geometry=geometry_payload(),
         )

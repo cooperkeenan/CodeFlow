@@ -11,7 +11,11 @@ sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
 
 from services.analysis.flow_pipeline import FlowPipeline
 from services.analysis.decision_judge_factory import build_decision_judge
+from services.analysis.flow_namer_factory import build_flow_namer
+from services.analysis.flow_reviewer_factory import build_flow_reviewer
 from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
+from services.analysis.heuristic_flow_namer import HeuristicFlowNamer
+from services.analysis.heuristic_flow_reviewer import HeuristicFlowReviewer
 from services.analysis.site_classifier import SiteClassifier
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
@@ -23,6 +27,8 @@ from save_command import parse_save_flag, save_to_account
 
 _SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build"}
 _CACHE_PATH = REPO_ROOT / ".cache" / "decision_verdicts.json"
+_NAME_CACHE_PATH = REPO_ROOT / ".cache" / "node_names.json"
+_REVIEW_CACHE_PATH = REPO_ROOT / ".cache" / "review_findings.json"
 
 
 def load_dotenv(path: Path) -> None:
@@ -70,6 +76,15 @@ def _print_significance(pipeline: FlowPipeline) -> None:
         print(f"  - [{site_id}] {verdict.question or '(no question)'}")
 
 
+def _print_review(pipeline: FlowPipeline) -> None:
+    findings = pipeline.last_review()
+    if findings is None:
+        return
+    print(f"review findings ({len(findings)}):")
+    for finding in findings:
+        print(f"  - [{finding.node_id}] {finding.issue}")
+
+
 def main(argv: list[str]) -> int:
     load_dotenv(REPO_ROOT / ".env")
     save_handle, rest = parse_save_flag(argv[1:])
@@ -83,10 +98,12 @@ def main(argv: list[str]) -> int:
     files = read_python_sources(target, include_tests)
     print(f"Indexed {len(files)} Python files from {target}")
     judge = HeuristicDecisionJudge(SiteClassifier()) if no_llm else build_decision_judge(_CACHE_PATH)
+    namer = HeuristicFlowNamer() if no_llm else build_flow_namer(_NAME_CACHE_PATH)
+    reviewer = HeuristicFlowReviewer() if no_llm else build_flow_reviewer(_REVIEW_CACHE_PATH)
     pipeline = FlowPipeline(
         build_project_indexer(), build_effect_detector(),
         build_flow_stitcher(), build_visibility_budgeter(),
-        judge=judge,
+        judge=judge, namer=namer, reviewer=reviewer,
     )
     graph = pipeline.run(target.name, files)
     view = build_flow_page_placer().place(graph)
@@ -103,6 +120,7 @@ def main(argv: list[str]) -> int:
     for node in decisions:
         print(f"  - {node.label}")
     _print_significance(pipeline)
+    _print_review(pipeline)
     print(f"wrote {out_dir / 'flow_graph.json'}")
     print(f"wrote {out_dir / 'rendered_view.json'}")
     if save_handle is not None:

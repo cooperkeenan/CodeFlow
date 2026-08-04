@@ -8,13 +8,14 @@ class NodeGeometry:
 
 
 NODE_GEOMETRY: dict[str, NodeGeometry] = {
-    "pill": NodeGeometry(220, 60),
-    "rect": NodeGeometry(180, 60),
-    "decision": NodeGeometry(200, 68),
-    "split_bar": NodeGeometry(200, 40),
-    "effect": NodeGeometry(184, 60),
-    "outcome": NodeGeometry(160, 52),
+    "pill": NodeGeometry(280, 130),
+    "rect": NodeGeometry(280, 130),
+    "decision": NodeGeometry(280, 138),
+    "split_bar": NodeGeometry(240, 56),
+    "effect": NodeGeometry(280, 130),
+    "outcome": NodeGeometry(200, 88),
     "lane_header": NodeGeometry(220, 44),
+    "pipeline": NodeGeometry(280, 108),
 }
 
 

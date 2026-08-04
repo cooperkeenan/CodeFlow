@@ -1,10 +1,12 @@
 from services.analysis.budget_work_graph import BudgetWorkGraph
+from services.analysis.container_repointer import ContainerRepointer
 from services.analysis.label_synthesizer import LabelSynthesizer
 
 
 class BudgetRecondenser:
-    def __init__(self, labels: LabelSynthesizer) -> None:
+    def __init__(self, labels: LabelSynthesizer, repointer: ContainerRepointer) -> None:
         self._labels = labels
+        self._repointer = repointer
 
     def recondense(self, graph: BudgetWorkGraph) -> None:
         while self._pass(graph):
@@ -36,37 +38,7 @@ class BudgetRecondenser:
         head.folded_count += tail.folded_count
         for edge in graph.out_edges(target):
             graph.add_edge(source, edge.target, edge.kind, edge.arm_label)
-        self._repoint_containers(graph, source, target)
+        self._repointer.repoint(graph.nodes, source, target)
         graph.remove_node(target)
         if head.backing:
             head.label = self._labels.step_label(head.backing)
-
-    def _repoint_containers(self, graph: BudgetWorkGraph, source: str, target: str) -> None:
-        for node_id in sorted(graph.nodes):
-            if node_id == target:
-                continue
-            node = graph.nodes[node_id]
-            if target in node.containers:
-                node.containers.remove(target)
-                if (
-                    source != node_id
-                    and source not in node.containers
-                    and not self._is_descendant(graph, source, node_id)
-                ):
-                    node.containers.append(source)
-                node.containers.sort()
-
-    def _is_descendant(self, graph: BudgetWorkGraph, node_id: str, ancestor: str) -> bool:
-        seen = {node_id}
-        frontier = list(graph.nodes[node_id].containers) if node_id in graph.nodes else []
-        while frontier:
-            next_frontier: list[str] = []
-            for candidate in frontier:
-                if candidate == ancestor:
-                    return True
-                if candidate in seen or candidate not in graph.nodes:
-                    continue
-                seen.add(candidate)
-                next_frontier.extend(graph.nodes[candidate].containers)
-            frontier = next_frontier
-        return False

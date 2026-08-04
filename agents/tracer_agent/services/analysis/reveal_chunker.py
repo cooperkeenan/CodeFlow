@@ -20,7 +20,9 @@ class RevealChunker:
         out: dict[str, list[str]] = {}
         current = owner
         index = 0
+        split = False
         while len(kids) > self._max:
+            split = True
             head = kids[: self._max - 1]
             kids = kids[self._max - 1 :]
             more_id = f"more:{owner}:{index}"
@@ -28,10 +30,14 @@ class RevealChunker:
             graph.add_edge(current, more_id, "sequence")
             if head and head[-1] != current:
                 graph.add_edge(head[-1], more_id, "sequence")
-            out[current] = head + [more_id]
+            piece = head + [more_id]
+            out[current] = piece
+            graph.nodes[current].body_kind = self._kind_for(graph, piece)
             current = more_id
             index += 1
         out[current] = kids
+        if split:
+            graph.nodes[current].body_kind = self._kind_for(graph, kids)
         return out
 
     def _add_more(
@@ -47,5 +53,15 @@ class RevealChunker:
             folded_count=remaining,
             owner_fqn=host.owner_fqn,
             containers=[parent_id],
-            body_kind=host.body_kind,
         )
+
+    def _kind_for(self, graph: BudgetWorkGraph, members: list[str]) -> str:
+        if len(members) <= 1:
+            return "flow"
+        member_set = set(members)
+        internal = sum(
+            1
+            for edge in graph.edges.values()
+            if edge.source in member_set and edge.target in member_set
+        )
+        return "flow" if internal >= len(members) - 1 else "list"

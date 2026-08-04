@@ -6,15 +6,17 @@ from placement.tree_layout import NodePlacement
 _DASHED_ARMS = frozenset({"except", "exception", "error"})
 
 
-def build_node_dict(placement: NodePlacement, lane_id: str, arm_count: int) -> dict:
+def build_node_dict(
+    placement: NodePlacement, lane_id: str, arm_count: int, in_run: bool = False
+) -> dict:
     node = placement.node
-    data = node_data(node, lane_id, placement.column, placement.is_spine, arm_count)
+    data = node_data(node, lane_id, placement.column, placement.is_spine, arm_count, in_run)
     return {
         "id": node.id,
         "type": "flow",
         "position": {"x": placement.x, "y": placement.y},
         "kind": node.kind,
-        "shape": shape_for(node, arm_count),
+        "shape": shape_for(node, arm_count, in_run),
         "label": node.llm_label or node.label,
         "data": data,
     }

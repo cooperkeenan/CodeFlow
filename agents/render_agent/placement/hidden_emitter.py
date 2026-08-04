@@ -31,16 +31,20 @@ class HiddenEmitter:
             )
         return placements
 
-    def payloads(self, graph: FlowGraph, arm_counts: dict[str, int]) -> list[dict]:
+    def payloads(
+        self, graph: FlowGraph, arm_counts: dict[str, int], run_ids: frozenset[str] = frozenset()
+    ) -> list[dict]:
         return [
             {
                 "id": node.id,
                 "type": "flow",
                 "kind": node.kind,
-                "shape": shape_for(node, arm_counts.get(node.id, 0)),
+                "shape": shape_for(node, arm_counts.get(node.id, 0), node.id in run_ids),
                 "label": node.llm_label or node.label,
                 "data": {
-                    **node_data(node, node.lane, 0, False, arm_counts.get(node.id, 0)),
+                    **node_data(
+                        node, node.lane, 0, False, arm_counts.get(node.id, 0), node.id in run_ids
+                    ),
                     "hidden": True,
                     "hiddenChildren": self.offsets(node),
                 },

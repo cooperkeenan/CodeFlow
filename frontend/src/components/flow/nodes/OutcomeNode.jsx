@@ -1,11 +1,10 @@
 import Handles from '../Handles'
 import NodeChrome from '../NodeChrome'
 import { KIND_ACCENT, SURFACE, shellStyle, scalePad } from '../styles'
-
-const FALLBACK = { width: 160, height: 52 }
+import { GEOMETRY_FALLBACK } from '../geometryFallback'
 
 export default function OutcomeNode({ data, selected, sourcePosition, targetPosition }) {
-  const { width, height } = data.geometry ?? FALLBACK
+  const { width, height } = data.geometry ?? GEOMETRY_FALLBACK.outcome
   const base = {
     width,
     minHeight: height,

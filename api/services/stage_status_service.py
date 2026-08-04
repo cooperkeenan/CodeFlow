@@ -5,12 +5,11 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _RUNS_PATH = _PROJECT_ROOT / "shared" / "outputs" / "stage_runs.json"
 
-STAGE_ORDER = ["profiler", "tracer", "layout", "render"]
+STAGE_ORDER = ["profiler", "tracer", "render"]
 
 _STAGE_DIRS: dict[str, Path] = {
     "profiler": _PROJECT_ROOT / "agents" / "profiler_agent",
     "tracer":   _PROJECT_ROOT / "agents" / "tracer_agent",
-    "layout":   _PROJECT_ROOT / "agents" / "layout_agent",
     "render":   _PROJECT_ROOT / "agents" / "render_agent",
 }
 

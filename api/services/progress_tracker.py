@@ -1,4 +1,4 @@
-_STAGES = ["profiler", "tracer", "layout", "render"]
+_STAGES = ["profiler", "tracer", "render"]
 
 
 class ProgressTracker:

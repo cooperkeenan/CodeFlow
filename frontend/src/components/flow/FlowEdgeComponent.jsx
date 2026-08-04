@@ -20,12 +20,28 @@ export default function FlowEdgeComponent({
   const width = (d.highlighted ? 2.4 : d.secondary ? 1 : 1.6) * scale
   const base = d.confidence === 'inferred' ? 0.6 : 1
   const opacity = d.secondary ? base * 0.25 : base
+  const markerId = `arrowhead-${id}`
+  const markerSize = Math.max(5, Math.round(7 * scale))
 
   return (
     <>
+      <defs>
+        <marker
+          id={markerId}
+          markerWidth={markerSize}
+          markerHeight={markerSize}
+          refX={markerSize - 0.5}
+          refY={markerSize / 2}
+          orient="auto-start-reverse"
+          markerUnits="userSpaceOnUse"
+        >
+          <path d={`M0,0 L${markerSize},${markerSize / 2} L0,${markerSize} z`} fill={stroke} opacity={opacity} />
+        </marker>
+      </defs>
       <BaseEdge
         id={id}
         path={path}
+        markerEnd={`url(#${markerId})`}
         style={{ stroke, strokeWidth: width, strokeDasharray: dashArray, opacity }}
       />
       {label && (

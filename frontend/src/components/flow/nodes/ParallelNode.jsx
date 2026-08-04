@@ -1,11 +1,10 @@
 import Handles from '../Handles'
 import NodeChrome from '../NodeChrome'
 import { KIND_ACCENT, SURFACE, shellStyle, scalePad } from '../styles'
-
-const FALLBACK = { width: 200, height: 40 }
+import { GEOMETRY_FALLBACK } from '../geometryFallback'
 
 export default function ParallelNode({ data, selected, sourcePosition, targetPosition }) {
-  const { width, height } = data.geometry ?? FALLBACK
+  const { width, height } = data.geometry ?? GEOMETRY_FALLBACK.split_bar
   const scale = data.scale ?? 1
   const base = {
     width,

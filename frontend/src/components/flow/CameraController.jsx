@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useReactFlow, useStore } from 'reactflow'
 import { scaleOf } from './depthScale'
+import { GEOMETRY_FALLBACK } from './geometryFallback'
 
 const DURATION = 360
 const MAX_ZOOM = 2.6
@@ -9,8 +10,8 @@ const FIT_OPTIONS = { padding: 0.25, duration: 360 }
 function boundsOf(nodes) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
   for (const node of nodes) {
-    const w = node.width ?? 200
-    const h = node.height ?? 60
+    const w = node.width ?? GEOMETRY_FALLBACK.rect.width
+    const h = node.height ?? GEOMETRY_FALLBACK.rect.height
     minX = Math.min(minX, node.position.x)
     minY = Math.min(minY, node.position.y)
     maxX = Math.max(maxX, node.position.x + w)
