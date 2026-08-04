@@ -1,4 +1,3 @@
-import ast
 import re
 import sys
 from pathlib import Path
@@ -22,7 +21,7 @@ from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
 from services.analysis.visibility_budgeter_factory import build_visibility_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
 from placement.flow_page_placer_factory import build_flow_page_placer
-from render_repo import load_dotenv
+from render_repo import load_dotenv, read_python_sources
 
 _GUARD_SELECTOR = re.compile(r"\bnot\b|is None|!=\s*None")
 _CACHE_PATH = ROOT / ".cache" / "decision_verdicts.json"
@@ -31,16 +30,7 @@ _REVIEW_CACHE_PATH = ROOT / ".cache" / "review_findings.json"
 
 
 def read_sources() -> dict[str, str]:
-    files: dict[str, str] = {}
-    for base in ("agents", "shared", "api"):
-        for path in (ROOT / base).glob("**/*.py"):
-            try:
-                text = path.read_text(encoding="utf-8")
-                ast.parse(text)
-                files[path.relative_to(ROOT).as_posix()] = text
-            except (OSError, SyntaxError):
-                continue
-    return files
+    return read_python_sources(ROOT)
 
 
 def build_pipeline(judge: DecisionJudge, namer: FlowNaming, reviewer: FlowReviewing) -> FlowPipeline:
