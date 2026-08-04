@@ -11,7 +11,11 @@ from render_repo import load_dotenv, read_python_sources
 from save_command import parse_save_flag, save_to_account
 from services.analysis.flow_pipeline import FlowPipeline
 from services.analysis.decision_judge_factory import build_decision_judge
+from services.analysis.flow_namer_factory import build_flow_namer
+from services.analysis.flow_reviewer_factory import build_flow_reviewer
 from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
+from services.analysis.heuristic_flow_namer import HeuristicFlowNamer
+from services.analysis.heuristic_flow_reviewer import HeuristicFlowReviewer
 from services.analysis.site_classifier import SiteClassifier
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
@@ -26,16 +30,20 @@ FLOW_URL = "http://localhost:5173/flow-fixture"
 CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 DEV_PORT = 5173
 _CACHE_PATH = REPO_ROOT / ".cache" / "decision_verdicts.json"
+_NAME_CACHE_PATH = REPO_ROOT / ".cache" / "node_names.json"
+_REVIEW_CACHE_PATH = REPO_ROOT / ".cache" / "review_findings.json"
 
 
 def _build_view(target: Path, no_llm: bool):
     files = read_python_sources(target)
     print(f"Indexed {len(files)} Python files from {target}")
     judge = HeuristicDecisionJudge(SiteClassifier()) if no_llm else build_decision_judge(_CACHE_PATH)
+    namer = HeuristicFlowNamer() if no_llm else build_flow_namer(_NAME_CACHE_PATH)
+    reviewer = HeuristicFlowReviewer() if no_llm else build_flow_reviewer(_REVIEW_CACHE_PATH)
     pipeline = FlowPipeline(
         build_project_indexer(), build_effect_detector(),
         build_flow_stitcher(), build_visibility_budgeter(),
-        judge=judge,
+        judge=judge, namer=namer, reviewer=reviewer,
     )
     graph = pipeline.run(target.name, files)
     view = build_flow_page_placer().place(graph)

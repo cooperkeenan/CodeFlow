@@ -4,6 +4,7 @@ export const KIND_ACCENT = {
   entry: '#39FF14',
   step: '#64B5F6',
   decision: '#FFB84D',
+  pipeline: '#FFB84D',
   parallel: '#CE93D8',
   effect: '#4DD0E1',
   outcome: '#9E9E9E',
@@ -24,9 +25,20 @@ export const LABEL_STYLE = {
   wordBreak: 'break-word',
   display: '-webkit-box',
   WebkitBoxOrient: 'vertical',
-  WebkitLineClamp: 2,
+  WebkitLineClamp: 3,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+  minWidth: 0,
+}
+
+export const PROVENANCE_STYLE = {
+  fontFamily: MONO,
+  fontSize: 8,
+  color: TEXT_MUTED,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  borderTop: '1px solid rgba(255,255,255,0.08)',
   minWidth: 0,
 }
 

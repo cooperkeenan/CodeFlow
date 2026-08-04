@@ -1,5 +1,5 @@
 export const DEPTH_SCALE = 0.76
-export const MIN_SCALE = 0.42
+export const MIN_SCALE = 0.62
 
 export function scaleOf(depth) {
   const raw = DEPTH_SCALE ** Math.max(depth, 0)

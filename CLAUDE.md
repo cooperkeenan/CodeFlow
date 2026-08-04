@@ -85,6 +85,24 @@ python scripts/flow_agent.py <repo> "toggle:<node_id>" fit "shot:scratch_out/x.p
 node pairs and **must be 0**. Assert on that output — it catches layout regressions that a
 screenshot alone hides.
 
+Also run the structural harness, every iteration, alongside the two above — not instead of them:
+
+```bash
+python scripts/flow_metrics.py <out_dir>
+```
+
+It must **exit 0**. It prints containment shape (roots, depth, body sizes, the fork/chain split)
+and asserts the parts that really are invariant: a single-rooted DAG, total reachability, cohesion,
+and zero overlapping node boxes in the rendered view. The rest of what it prints — the I3
+single-entry count, body_kind counts, fork vs. chain counts — is context for a human, not a
+pass/fail gate. See the next rule for why.
+
+## The Flow/List Ratio Is Not A Quality Metric
+A decision's arms are mutually exclusive alternatives, so a fork is correctly `body_kind == "list"`
+— that is not a regression. A falling flow/list ratio, on its own, tells you nothing about whether
+the diagram got better or worse. Judge forks and chains **separately** (`scripts/flow_metrics.py`
+prints both), and settle any real disagreement by opening the PNG, not by staring at the ratio.
+
 ## Validate On A Repo That Is Not CodeFlow
 Never accept "it works" from a CodeFlow self-run alone. Use the demo target
 (`LOCAL_REPO_PATH`, currently `django-helpdesk`). CodeFlow satisfies its own assumptions by

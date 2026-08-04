@@ -9,6 +9,7 @@ from services.analysis.anchor_index import AnchorIndex
 from services.analysis.call_ancestry_resolver import CallAncestryResolver
 from services.analysis.component_index import ComponentIndex
 from services.analysis.container_assigner import ContainerAssigner
+from services.analysis.container_repointer import ContainerRepointer
 from services.analysis.decision_seeder import DecisionSeeder
 from services.analysis.entry_finder import EntryFinder
 from services.analysis.event_collector import EventCollector
@@ -56,7 +57,7 @@ class FlowCondenser:
             acc, summarizer, significance, entries
         )
         ContainerAssigner().assign(acc)
-        StepMerger(acc, self._labels).merge()
+        StepMerger(acc, self._labels, ContainerRepointer()).merge()
         lanes = LaneBuilder(self._roots, self._labels).build(
             entries + seeded, dispatch_sites, significance
         )

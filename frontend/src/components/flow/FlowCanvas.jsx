@@ -4,6 +4,7 @@ import 'reactflow/dist/style.css'
 import EntryNode from './nodes/EntryNode'
 import StepNode from './nodes/StepNode'
 import DecisionNode from './nodes/DecisionNode'
+import PipelineNode from './nodes/PipelineNode'
 import ParallelNode from './nodes/ParallelNode'
 import EffectNode from './nodes/EffectNode'
 import OutcomeNode from './nodes/OutcomeNode'
@@ -17,6 +18,7 @@ const NODE_TYPES = {
   entry: EntryNode,
   step: StepNode,
   decision: DecisionNode,
+  pipeline: PipelineNode,
   parallel: ParallelNode,
   effect: EffectNode,
   outcome: OutcomeNode,

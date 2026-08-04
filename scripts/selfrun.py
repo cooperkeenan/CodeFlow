@@ -11,7 +11,11 @@ sys.path.insert(0, str(ROOT / "agents" / "tracer_agent"))
 from services.analysis.budget_config import BudgetConfig
 from services.analysis.decision_judge import DecisionJudge
 from services.analysis.decision_judge_factory import build_decision_judge
+from services.analysis.flow_naming import FlowNaming
+from services.analysis.flow_namer_factory import build_flow_namer
 from services.analysis.flow_pipeline import FlowPipeline
+from services.analysis.flow_reviewer_factory import build_flow_reviewer
+from services.analysis.flow_reviewing import FlowReviewing
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
 from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
@@ -22,6 +26,8 @@ from render_repo import load_dotenv
 
 _GUARD_SELECTOR = re.compile(r"\bnot\b|is None|!=\s*None")
 _CACHE_PATH = ROOT / ".cache" / "decision_verdicts.json"
+_NAME_CACHE_PATH = ROOT / ".cache" / "node_names.json"
+_REVIEW_CACHE_PATH = ROOT / ".cache" / "review_findings.json"
 
 
 def read_sources() -> dict[str, str]:
@@ -37,13 +43,15 @@ def read_sources() -> dict[str, str]:
     return files
 
 
-def build_pipeline(judge: DecisionJudge) -> FlowPipeline:
+def build_pipeline(judge: DecisionJudge, namer: FlowNaming, reviewer: FlowReviewing) -> FlowPipeline:
     return FlowPipeline(
         build_project_indexer(),
         build_effect_detector(),
         build_flow_stitcher(),
         build_visibility_budgeter(),
         judge=judge,
+        namer=namer,
+        reviewer=reviewer,
     )
 
 
@@ -55,11 +63,14 @@ def check(label: str, ok: bool, detail: str = "") -> bool:
 def main() -> int:
     load_dotenv(ROOT / ".env")
     judge = build_decision_judge(_CACHE_PATH)
+    namer = build_flow_namer(_NAME_CACHE_PATH)
+    reviewer = build_flow_reviewer(_REVIEW_CACHE_PATH)
     used_llm = not isinstance(judge, HeuristicDecisionJudge)
 
     files = read_sources()
-    pipeline = build_pipeline(judge)
+    pipeline = build_pipeline(judge, namer, reviewer)
     graph = pipeline.run("CodeFlow", files)
+    pre_review = pipeline.last_pre_review()
     canonical_first = _canonical(pipeline.run("CodeFlow", files))
     canonical_second = _canonical(pipeline.run("CodeFlow", files))
     view = build_flow_page_placer().place(graph)
@@ -92,6 +103,13 @@ def main() -> int:
               f"{len(skeleton)} skeleton nodes of {len(graph.nodes)} total"),
         check("every revealed node is reachable from a parent's hidden_children",
               not stranded, f"{len(stranded)} stranded"),
+        check("node/edge counts unchanged across reviewer stage",
+              pre_review is not None
+              and len(pre_review.nodes) == len(graph.nodes)
+              and len(pre_review.edges) == len(graph.edges),
+              f"pre={len(pre_review.nodes) if pre_review else '?'}n/"
+              f"{len(pre_review.edges) if pre_review else '?'}e "
+              f"post={len(graph.nodes)}n/{len(graph.edges)}e"),
     ]
     if used_llm:
         results.append(
@@ -111,8 +129,10 @@ def main() -> int:
 def _canonical(graph) -> str:
     stripped = graph.model_copy(deep=True)
     stripped.page_title = ""
+    stripped.meta.pop("review_findings", None)
     for node in stripped.nodes:
         node.llm_label = None
+        node.one_liner = ""
     for edge in stripped.edges:
         edge.llm_label = None
     for lane in stripped.lanes:

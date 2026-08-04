@@ -1,11 +1,15 @@
+from services.analysis.container_repointer import ContainerRepointer
 from services.analysis.graph_accumulator import GraphAccumulator
 from services.analysis.label_synthesizer import LabelSynthesizer
 
 
 class StepMerger:
-    def __init__(self, acc: GraphAccumulator, labels: LabelSynthesizer) -> None:
+    def __init__(
+        self, acc: GraphAccumulator, labels: LabelSynthesizer, repointer: ContainerRepointer
+    ) -> None:
         self._acc = acc
         self._labels = labels
+        self._repointer = repointer
 
     def merge(self) -> None:
         while self._merge_pass():
@@ -42,37 +46,8 @@ class StepMerger:
             if new_key not in edges and source != key[1]:
                 edge.source = source
                 edges[new_key] = edge
-        self._repoint_containers(nodes, source, target)
+        self._repointer.repoint(nodes, source, target)
         del nodes[target]
-
-    def _repoint_containers(self, nodes: dict, source: str, target: str) -> None:
-        for node_id in sorted(nodes):
-            if node_id == target:
-                continue
-            draft = nodes[node_id]
-            if target in draft.containers:
-                draft.containers.remove(target)
-                if (
-                    source != node_id
-                    and source not in draft.containers
-                    and not self._is_descendant(nodes, source, node_id)
-                ):
-                    draft.containers.append(source)
-
-    def _is_descendant(self, nodes: dict, node_id: str, ancestor: str) -> bool:
-        seen = {node_id}
-        frontier = list(nodes[node_id].containers) if node_id in nodes else []
-        while frontier:
-            next_frontier: list[str] = []
-            for candidate in frontier:
-                if candidate == ancestor:
-                    return True
-                if candidate in seen or candidate not in nodes:
-                    continue
-                seen.add(candidate)
-                next_frontier.extend(nodes[candidate].containers)
-            frontier = next_frontier
-        return False
 
     def _is_step(self, node_id: str, nodes: dict) -> bool:
         node = nodes.get(node_id)

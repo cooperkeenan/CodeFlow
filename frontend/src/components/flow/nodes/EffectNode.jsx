@@ -1,12 +1,11 @@
 import Handles from '../Handles'
 import NodeChrome from '../NodeChrome'
 import { KIND_ACCENT, SURFACE, EFFECT_ICON, shellStyle, scalePad } from '../styles'
-
-const FALLBACK = { width: 184, height: 60 }
+import { GEOMETRY_FALLBACK } from '../geometryFallback'
 
 export default function EffectNode({ data, selected, sourcePosition, targetPosition }) {
   const icon = EFFECT_ICON[data.effectKind] ?? '◆'
-  const { width, height } = data.geometry ?? FALLBACK
+  const { width, height } = data.geometry ?? GEOMETRY_FALLBACK.effect
   const scale = data.scale ?? 1
   const base = {
     width,

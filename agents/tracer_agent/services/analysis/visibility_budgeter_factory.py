@@ -2,6 +2,7 @@ from services.analysis.arm_folder import ArmFolder
 from services.analysis.budget_config import BudgetConfig
 from services.analysis.budget_invariants import BudgetInvariantChecker
 from services.analysis.budget_recondenser import BudgetRecondenser
+from services.analysis.container_repointer import ContainerRepointer
 from services.analysis.containment_indexer import ContainmentIndexer
 from services.analysis.containment_invariants import ContainmentInvariants
 from services.analysis.effect_capper import EffectCapper
@@ -11,6 +12,7 @@ from services.analysis.repo_root_anchor import RepoRootAnchor
 from services.analysis.reveal_chunker import RevealChunker
 from services.analysis.pillar_gateway_selector import PillarGatewaySelector
 from services.analysis.seed_anchor_folder import SeedAnchorFolder
+from services.analysis.sequence_chainer import SequenceChainer
 from services.analysis.skeleton_projector import SkeletonProjector
 from services.analysis.skeleton_reducer import SkeletonReducer
 from services.analysis.visibility_budgeter import VisibilityBudgeter
@@ -19,10 +21,11 @@ from services.analysis.visibility_budgeter import VisibilityBudgeter
 def build_visibility_budgeter(config: BudgetConfig | None = None) -> VisibilityBudgeter:
     cfg = config or BudgetConfig()
     gateways = PillarGatewaySelector()
+    repointer = ContainerRepointer()
     return VisibilityBudgeter(
-        BudgetRecondenser(LabelSynthesizer()),
+        BudgetRecondenser(LabelSynthesizer(), repointer),
         ArmFolder(cfg),
-        EffectCapper(),
+        EffectCapper(repointer),
         LaneApportioner(cfg),
         SkeletonReducer(gateways),
         SkeletonProjector(),
@@ -32,5 +35,6 @@ def build_visibility_budgeter(config: BudgetConfig | None = None) -> VisibilityB
         BudgetInvariantChecker(ContainmentInvariants()),
         RepoRootAnchor(),
         ContainmentIndexer(),
+        SequenceChainer(),
         cfg.skeleton_budget,
     )

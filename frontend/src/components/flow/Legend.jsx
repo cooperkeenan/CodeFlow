@@ -9,6 +9,7 @@ const SHAPES = [
   ['⬭', 'entry', KIND_ACCENT.entry],
   ['▭', 'step', KIND_ACCENT.step],
   ['▌◇', 'decision', KIND_ACCENT.decision],
+  ['●', 'pipeline step', KIND_ACCENT.pipeline],
   ['⑃', 'parallel split', KIND_ACCENT.parallel],
   ['◆', 'effect', KIND_ACCENT.effect],
   ['●', 'outcome', KIND_ACCENT.outcome],

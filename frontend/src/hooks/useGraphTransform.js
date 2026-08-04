@@ -6,7 +6,9 @@ const GROUP_TYPE = 'flowGroup'
 
 function toNode(node, onToggle, geometry) {
   const type =
-    node.type === HEADER_TYPE || node.type === GROUP_TYPE ? node.type : node.kind
+    node.type === HEADER_TYPE || node.type === GROUP_TYPE
+      ? node.type
+      : node.shape === 'pipeline' ? 'pipeline' : node.kind
   const scale = node.scale ?? 1
   return {
     id: node.id,

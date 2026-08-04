@@ -52,12 +52,19 @@ Composed by `services/analysis/flow_pipeline.py`:
    human would ask ("User can access ticket?") and an importance score. `HeuristicDecisionJudge`
    wraps the old reach heuristic and is the offline default when no API key is present.
 6. **Condense** (`flow_condenser.py`) — projects onto a `FlowGraph` of
-   entry/step/decision/parallel/effect nodes; `decision_seeder.py` attaches decisions whose owner is
-   not call-reachable from an entry.
+   entry/step/decision/parallel/effect/outcome nodes. `DecisionProjector` emits each decision node
+   and, for arms that terminate without reaching further code, an `outcome` node labelled by
+   `OutcomeLabeler` (`Returns`/`Raises`/`Continues`, or a verdict-supplied label);
+   `decision_seeder.py` attaches decisions whose owner is not call-reachable from an entry.
 7. **Stitch** (`flow_stitcher.py`) — `HttpStitchDetector` matches outbound URLs to route entries;
    `LlmStitchDetector` judges the ones URL matching cannot resolve.
-8. **Budget** (`page_budgeter.py`) — folds to a bounded page (`node_budget=40`,
-   `visible_decisions=8`).
+8. **Budget** (`visibility_budgeter.py`) — folds nothing away; it demotes. `BudgetRecondenser`,
+   `ArmFolder` and `EffectCapper` collapse mergeable nodes (via the shared `ContainerRepointer`,
+   which re-parents onto the survivor and refuses containment cycles); `SequenceChainer` links
+   same-owner body members into a `sequence` edge where safe; `ContainmentIndexer` computes each
+   node's containment `level`, `hidden_children`, `body_kind` and `body_head`/`body_tails` from the
+   `containers` set; `SkeletonReducer` demotes low-ranked nodes to a deeper level rather than
+   deleting them. A node's `hidden_children` is exactly what its `+` reveals in the UI.
 
 **Determinism**: same repo in → byte-identical `flow_graph.json` out. LLM verdicts are cached in
 `.cache/decision_verdicts.json`, content-addressed on the fork's source, arm labels and reach sizes
@@ -65,8 +72,12 @@ plus a `PROMPT_VERSION`. Cold run on django-helpdesk ≈4 min; warm ≈3s.
 
 ## Data models (`shared/models/flow_graph.py`)
 
-- `FlowNode{ id, kind ∈ [entry|step|decision|parallel|effect], lane, label, llm_label, one_liner,
-  backing, refs: [SourceRef], badges, folded_count, effect_kind, effect_target }`
+- `FlowNode{ id, kind ∈ [entry|step|decision|parallel|effect|outcome], lane, label, llm_label,
+  one_liner, backing, refs: [SourceRef], badges, folded_count, effect_kind, effect_target, level,
+  hidden_children, containers, body_kind ∈ [flow|list], body_head, body_tails }`. `containers` is
+  the containment parent set; everything else in that list is derived from it by
+  `ContainmentIndexer` — see `HANDOFF.md` §2 for what each field means and why `body_kind` is a
+  derivation, not an assert.
 - `FlowEdge{ source, target, kind ∈ [sequence|arm|parallel|stitch], arm_label, group_id,
   confidence ∈ [resolved|inferred|dynamic], is_spine }`
 - `Lane{ id, name, llm_title, entry_ids, mass }` — one per detected service root.
@@ -115,20 +126,14 @@ the account by `github_login` or `email`.
 
 ## Current Status
 
-The pipeline produces one decision page per repo. On the demo target `django-helpdesk` the judge
-finds **225** decisions with labels like *"User can access ticket?"* and *"Create new ticket or
-update only?"*.
+The pipeline produces one progressive-disclosure decision page per repo: a ≤15-node skeleton always
+visible, with a `+` per branch revealing nested decisions and outcomes via `hidden_children`. On the
+demo target `django-helpdesk` the judge finds **222** decisions, all revealable, with labels like
+*"User can access ticket?"* and *"Create new ticket or update only?"*.
 
-**The two open problems**, both detailed in `HANDOFF.md`:
-
-1. **Only a fraction of decisions reach the graph** — 225 judged, 43 nodes, 8 rendered. Ranking
-   cannot promote what was never condensed in.
-2. **The layout is not yet a tree.** `placement/tree_layout.py` implements a correct tidy tree, but
-   it is handed a forest with many roots and faithfully draws disconnected islands.
-
-The next feature is **progressive disclosure**: one always-visible high-level diagram, with `+`/`−`
-per branch splicing the in-between decisions in place. `FlowNode.folded_count` and the `chip` in
-`NodeChrome.jsx` are the hooks; nothing consumes a click yet.
+For the current honest list of open defects with real numbers — the top level's thin connectivity,
+a gateway-selector scoring gap, a chain-linking gap, a mislabelled single-arm decision shape — see
+`HANDOFF.md` §6. That file is the gap analysis; this file stays a primer.
 
 ## Known Limits (by design, worth stating rather than hiding)
 
@@ -151,8 +156,8 @@ it is **not** gated on CI, and the frontend is not in the pipeline (served via `
 - Judging: `llm_decision_judge.py`, `heuristic_decision_judge.py`, `decision_judge_factory.py`,
   `prompts/decision_judge_prompt.py`, `verdict_cache.py`, `decision_fingerprint.py`
 - Entry detection: `fastapi_route_scanner.py`, `django_route_scanner.py`, `entry_finder.py`
-- Condensation/budget: `flow_condenser.py`, `decision_seeder.py`, `page_budgeter.py`,
-  `decision_admitter.py`, `budget_config.py`
+- Condensation/budget: `flow_condenser.py`, `decision_seeder.py`, `visibility_budgeter.py`,
+  `containment_indexer.py`, `container_repointer.py`, `budget_config.py`
 - Geometry: `agents/render_agent/placement/{flow_page_placer,tree_layout,tree_structure,flow_emit}.py`
 - Frontend flow page: `frontend/src/pages/FlowPage.jsx`, `hooks/useGraphTransform.js`,
   `components/flow/{FlowCanvas,NodeChrome,ProvenancePopover}.jsx`

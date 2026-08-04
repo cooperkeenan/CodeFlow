@@ -10,6 +10,7 @@ from services.analysis.reveal_chunker import RevealChunker
 from services.analysis.component_index import ComponentIndex
 from services.analysis.pillar_gateway_selector import PillarGatewaySelector
 from services.analysis.seed_anchor_folder import SeedAnchorFolder
+from services.analysis.sequence_chainer import SequenceChainer
 from services.analysis.skeleton_projector import SkeletonProjector
 from services.analysis.skeleton_reducer import SkeletonReducer
 
@@ -33,6 +34,7 @@ class VisibilityBudgeter:
         checker: BudgetInvariantChecker,
         root_anchor: RepoRootAnchor,
         indexer: ContainmentIndexer,
+        sequencer: SequenceChainer,
         skeleton_budget: int,
     ) -> None:
         self._recondenser = recondenser
@@ -47,6 +49,7 @@ class VisibilityBudgeter:
         self._checker = checker
         self._root_anchor = root_anchor
         self._indexer = indexer
+        self._sequencer = sequencer
         self._skeleton_budget = skeleton_budget
 
     def budget(
@@ -57,6 +60,7 @@ class VisibilityBudgeter:
         self._folder.fold(work)
         self._capper.cap(work)
         self._root_anchor.anchor(work)
+        self._sequencer.link(work)
         self._indexer.index(work)
         self._checker.enforce_containment(work)
         self._seeds.fold(work, pillars)

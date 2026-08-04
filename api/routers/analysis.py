@@ -89,7 +89,7 @@ async def analyse_local_from_trace(
     stored = AnalyseResponse.model_validate(json.loads(path.read_text()))
     result = await service.analyse_from_trace(stored)
     (_OUTPUTS_DIR / "tracer_output.json").write_text(result.model_dump_json(indent=2))
-    stage_status.record_run("layout")
+    stage_status.record_run("render")
     return result
 
 

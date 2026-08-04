@@ -40,6 +40,7 @@ class DiagramTemplate(BaseModel):
 
 class RenderedView(BaseModel):
     type: str
+    page_title: str = ""
     nodes: list[dict]
     edges: list[dict]
     hidden: list[dict] = []
