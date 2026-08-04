@@ -4,7 +4,7 @@ from fastapi import Depends, Request
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_pipeline import FlowPipeline
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
-from services.analysis.page_budgeter_factory import build_page_budgeter
+from services.analysis.visibility_budgeter_factory import build_visibility_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
 from services.evidence.file_fetch_service import FileFetchService
 from services.source_persist_service import SourcePersistService
@@ -41,7 +41,7 @@ def get_flow_pipeline() -> FlowPipeline:
         build_project_indexer(),
         build_effect_detector(),
         build_flow_stitcher(),
-        build_page_budgeter(),
+        build_visibility_budgeter(),
     )
 
 

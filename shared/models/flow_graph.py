@@ -2,11 +2,12 @@ from typing import Literal
 
 from pydantic import BaseModel, model_validator
 
-NodeKind = Literal["entry", "step", "decision", "parallel", "effect"]
+NodeKind = Literal["entry", "step", "decision", "parallel", "effect", "outcome"]
 EdgeKind = Literal["sequence", "arm", "parallel", "stitch"]
 Confidence = Literal["resolved", "inferred", "dynamic"]
 EffectKind = Literal["http_out", "database", "llm", "file", "queue", "email", "response"]
 Badge = Literal["loop", "recursive", "dynamic", "guarded", "folded"]
+BodyKind = Literal["flow", "list"]
 
 
 class SourceRef(BaseModel):
@@ -28,6 +29,14 @@ class FlowNode(BaseModel):
     folded_count: int = 0
     effect_kind: EffectKind | None = None
     effect_target: str = ""
+    level: int = 0
+    hidden_children: list[str] = []
+    owner_fqn: str = ""
+    arm_path: list[str] = []
+    containers: list[str] = []
+    body_kind: BodyKind = "flow"
+    body_head: str = ""
+    body_tails: list[str] = []
 
 
 class FlowEdge(BaseModel):
@@ -39,6 +48,7 @@ class FlowEdge(BaseModel):
     group_id: str = ""
     confidence: Confidence = "resolved"
     is_spine: bool = False
+    hidden_path: list[str] = []
 
 
 class Lane(BaseModel):

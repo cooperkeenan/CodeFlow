@@ -38,6 +38,37 @@ class EffectCapper:
                 graph.add_edge(edge.source, keep, edge.kind, edge.arm_label)
             for edge in graph.out_edges(other):
                 graph.add_edge(keep, edge.target, edge.kind, edge.arm_label)
+            self._repoint_containers(graph, keep, other)
             graph.remove_node(other)
         if fold:
             keeper.badges = sorted(set(keeper.badges) | {"folded"})
+
+    def _repoint_containers(self, graph: BudgetWorkGraph, keep: str, other: str) -> None:
+        for node_id in sorted(graph.nodes):
+            if node_id == other:
+                continue
+            node = graph.nodes[node_id]
+            if other in node.containers:
+                node.containers.remove(other)
+                if (
+                    keep != node_id
+                    and keep not in node.containers
+                    and not self._is_descendant(graph, keep, node_id)
+                ):
+                    node.containers.append(keep)
+                node.containers.sort()
+
+    def _is_descendant(self, graph: BudgetWorkGraph, node_id: str, ancestor: str) -> bool:
+        seen = {node_id}
+        frontier = list(graph.nodes[node_id].containers) if node_id in graph.nodes else []
+        while frontier:
+            next_frontier: list[str] = []
+            for candidate in frontier:
+                if candidate == ancestor:
+                    return True
+                if candidate in seen or candidate not in graph.nodes:
+                    continue
+                seen.add(candidate)
+                next_frontier.extend(graph.nodes[candidate].containers)
+            frontier = next_frontier
+        return False

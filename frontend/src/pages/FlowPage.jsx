@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useFlowGraph } from '../hooks/useFlowGraph'
+import { useExpansion } from '../hooks/useExpansion'
 import { useGraphTransform } from '../hooks/useGraphTransform'
 import FlowCanvas from '../components/flow/FlowCanvas'
 import Legend from '../components/flow/Legend'
@@ -8,15 +9,25 @@ import ProvenancePopover from '../components/flow/ProvenancePopover'
 const MONO = 'IBM Plex Mono, monospace'
 const MUTED = { fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.38)' }
 
+function initialExpansion() {
+  if (typeof window === 'undefined') return []
+  const raw = new URLSearchParams(window.location.search).get('expand')
+  return raw ? raw.split(',').filter(Boolean) : []
+}
+
 export default function FlowPage({ analysis, onBack, fixture }) {
   const repo = analysis?.repo
   const { payload, loading, error } = useFlowGraph(repo, fixture)
   const [selected, setSelected] = useState(null)
+  const [showSecondary, setShowSecondary] = useState(false)
 
   const view = payload?.view ?? payload
   const repoUrl = payload?.repo_url ?? null
   const pageTitle = payload?.page_title || analysis?.page_title || repo?.split('/').pop() || 'flow'
-  const { nodes, edges } = useGraphTransform(view)
+  const expansion = useExpansion(view, showSecondary, initialExpansion())
+  const { nodes, edges } = useGraphTransform(expansion, expansion.toggle, view?.node_geometry)
+  const drawn = nodes.filter(n => n.type !== 'flowGroup').length
+  const revealed = drawn - (view?.nodes?.length ?? 0)
 
   const onNodeClick = useCallback((_, node) => {
     if (node.type === 'laneHeader') return
@@ -32,8 +43,21 @@ export default function FlowPage({ analysis, onBack, fixture }) {
           {pageTitle}
         </h1>
         {repo && <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.38)' }}>{repo}</span>}
-        <span style={{ marginLeft: 'auto', ...MUTED }}>
-          {loading ? 'loading…' : error ? 'error' : `${nodes.length} nodes`}
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+          {!loading && !error && (
+            <>
+              <button className="back" onClick={() => setShowSecondary(v => !v)}>
+                {showSecondary ? 'hide cross-links' : 'show cross-links'}
+              </button>
+              {revealed > 0 && (
+                <button className="back" onClick={expansion.collapseAll}>collapse all</button>
+              )}
+              <span style={MUTED}>
+                {revealed > 0 ? `${view?.nodes?.length ?? 0} + ${revealed} revealed` : `${drawn} nodes`}
+              </span>
+            </>
+          )}
+          {(loading || error) && <span style={MUTED}>{loading ? 'loading…' : 'error'}</span>}
         </span>
       </header>
 
@@ -49,6 +73,7 @@ export default function FlowPage({ analysis, onBack, fixture }) {
               selectedId={selected?.id ?? null}
               onNodeClick={onNodeClick}
               onPaneClick={onPaneClick}
+              revealTrigger={expansion.lastReveal}
             />
             <Legend />
             {selected && (

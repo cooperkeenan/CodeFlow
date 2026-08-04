@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 
+from models.pillar_scores import PillarScores
 from models.significance_result import SignificanceResult
 from shared.models.flow_graph import FlowGraph
 
@@ -10,8 +11,10 @@ from services.analysis.effect_detector import EffectDetector
 from services.analysis.entry_finder import EntryFinder
 from services.analysis.flow_condenser_factory import build_flow_condenser
 from services.analysis.flow_stitcher import FlowStitcher
+from services.analysis.component_index import ComponentIndex
 from services.analysis.label_synthesizer import LabelSynthesizer
-from services.analysis.page_budgeter import PageBudgeter
+from services.analysis.pillar_ranker import PillarRanker
+from services.analysis.visibility_budgeter import VisibilityBudgeter
 from services.analysis.project_indexer import ProjectIndexer
 from services.analysis.route_handler_locator import RouteHandlerLocator
 from services.analysis.service_root_resolver import ServiceRootResolver
@@ -25,7 +28,7 @@ class FlowPipeline:
         indexer: ProjectIndexer,
         effect_detector: EffectDetector,
         stitcher: FlowStitcher,
-        budgeter: PageBudgeter,
+        budgeter: VisibilityBudgeter,
         significance_config: SignificanceConfig | None = None,
         service_hints: frozenset[str] | None = None,
         judge: DecisionJudge | None = None,
@@ -38,9 +41,13 @@ class FlowPipeline:
         self._hints = service_hints
         self._judge = judge
         self._last_significance: SignificanceResult | None = None
+        self._last_pillars: PillarScores | None = None
 
     def last_significance(self) -> SignificanceResult | None:
         return self._last_significance
+
+    def last_pillars(self) -> PillarScores | None:
+        return self._last_pillars
 
     def run(self, repo: str, files: Mapping[str, str]) -> FlowGraph:
         index = self._indexer.index(files)
@@ -61,4 +68,7 @@ class FlowPipeline:
             LabelSynthesizer(),
         ).find(dispatch)
         stitched = self._stitcher.stitch(graph, effects, entries)
-        return self._budgeter.budget(stitched, significance)
+        components = ComponentIndex(index)
+        pillars = PillarRanker(components, self._config).rank(callsites)
+        self._last_pillars = pillars
+        return self._budgeter.budget(stitched, pillars, components)

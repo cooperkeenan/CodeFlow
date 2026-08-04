@@ -15,7 +15,7 @@ from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
 from services.analysis.site_classifier import SiteClassifier
 from services.analysis.effect_detector_factory import build_effect_detector
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
-from services.analysis.page_budgeter_factory import build_page_budgeter
+from services.analysis.visibility_budgeter_factory import build_visibility_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
 from placement.flow_page_placer_factory import build_flow_page_placer
 
@@ -85,7 +85,7 @@ def main(argv: list[str]) -> int:
     judge = HeuristicDecisionJudge(SiteClassifier()) if no_llm else build_decision_judge(_CACHE_PATH)
     pipeline = FlowPipeline(
         build_project_indexer(), build_effect_detector(),
-        build_flow_stitcher(), build_page_budgeter(),
+        build_flow_stitcher(), build_visibility_budgeter(),
         judge=judge,
     )
     graph = pipeline.run(target.name, files)

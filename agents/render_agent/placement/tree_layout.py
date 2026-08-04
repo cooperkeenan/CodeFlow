@@ -22,6 +22,7 @@ class LaneBand:
     band_top: int
     band_height: int
     center_y: int
+    tree_pairs: frozenset[tuple[str, str]]
 
 
 class TreeLayout:
@@ -38,7 +39,9 @@ class TreeLayout:
         cfg = self._config
         center_y = band_top + cfg.lane_header_height + cfg.row_height // 2
         if not lane_nodes:
-            return LaneBand([], band_top, cfg.lane_header_height + cfg.lane_padding, center_y)
+            return LaneBand(
+                [], band_top, cfg.lane_header_height + cfg.lane_padding, center_y, frozenset()
+            )
         depths = longest_path_depths(lane_nodes, edges)
         primary_root = select_root(lane_nodes, edges)
         forest = build_forest(lane_nodes, edges, depths, primary_root)
@@ -50,7 +53,12 @@ class TreeLayout:
             for node_id, (row, slot) in sorted(positions.items())
         ]
         band_height = cfg.lane_header_height + (max_row + 1) * cfg.row_step + cfg.lane_padding
-        return LaneBand(placements, band_top, band_height, center_y)
+        pairs = frozenset(
+            (parent, child)
+            for parent, kids in forest.children.items()
+            for child in kids
+        )
+        return LaneBand(placements, band_top, band_height, center_y, pairs)
 
     def _place(
         self, node: FlowNode, slot: float, row: int, center_y: int, is_spine: bool

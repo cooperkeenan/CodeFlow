@@ -11,3 +11,5 @@ class SignificanceConfig:
     weight_provenance: float = 2.0
     weight_terminal: float = 2.0
     weight_dispatch_kind: float = 1.0
+    pillar_hits_iterations: int = 50
+    pillar_score_decimals: int = 6
