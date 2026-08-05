@@ -41,3 +41,7 @@ frontend/.env.local
 
 # Local diagram renders
 scratch_out/
+frontend/public/fixture/
+
+# Decision verdict cache
+.cache/

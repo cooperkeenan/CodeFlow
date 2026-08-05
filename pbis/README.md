@@ -270,6 +270,45 @@ Suggested internal order: **34 + 35** (independent tracer foundations) → **36*
 Frontend changes are authorized for PBI 37. Requires a Neon DB with `DATABASE_URL` set in
 `.env`. Master plan: `~/.claude/plans/snuggly-growing-kay.md`.
 
+### Phase 12 — fractal drill-down (reveals become mini-diagrams)
+
+Clicking `+` dumps a flat fan of unrelated decisions with lines crossing everywhere. The goal is the
+user's mockup: a `+` opens a dashed box holding a **smaller version of the main diagram** —
+alternating grey pillars and orange decisions — with one line entering from the parent pillar and one
+leaving to the next.
+
+Root cause (verified): `function_projector.py:77` `chain.splice(...)` **inlines every callee's body
+into its caller's chain**, so the FlowGraph has no call boundaries left and
+`skeleton_projector.py:43`'s "immediate successors" is semantically meaningless. Measured on
+`django-helpdesk`: **0** edges between the direct children of any skeleton node (all 15 reveals are
+pure stars), region overlap Jaccard **0.99**, containment depth **58**, **171 of 222** decisions have
+zero arm edges, **69** dead-end. Meanwhile **108 same-owner-function edges** exist that no `+` shows.
+
+Fix: derive `hidden_children` from **containment** (which function body a node lives in) instead of
+graph adjacency. A body is single-entry/single-exit by construction — `FlowSummary(head, tails)`
+already computes that port pair and discards it.
+
+Locked decisions this batch: a `+` reveals **a whole small body capped at ~6** (not one node);
+**shared helpers duplicate under each caller**, so containment is a **DAG, not a forest**;
+a **synthetic repo root** makes the top level just another body.
+
+**Batch 12** — PBIs 57–59. **There is a hard gate after 59**: measure body sizes and internal-edge
+counts, screenshot depths 1–3, and re-plan with the user before the layout/box work (importance-ranked
+capping, `BodyLayout`, instance ids + box-border edges, synthetic root).
+
+| PBI | Title | Depends on |
+|-----|-------|------------|
+| [57](pbi-57-carry-containment.md) | Carry containment metadata (`owner_fqn`, `arm_path`, `containers`) | — |
+| [58](pbi-58-containment-indexer.md) | Derive `hidden_children` from containment | 57 |
+| [59](pbi-59-terminal-outcome-nodes.md) | Terminal outcome nodes (every decision leads somewhere) | 58 |
+
+Run **57 → 58 → 59**, strictly in order — each depends on the previous one's fields. Frontend changes
+are authorized in 59 only, and only for the four files it names. Master plan:
+`~/.claude/plans/read-handover-md-then-claude-md-floating-phoenix.md`.
+
+**The number that proves the batch:** internal edges inside flow bodies going from **0** (today,
+everywhere) to `>= len(body) - 1`, and decisions with zero out-edges going **69 → 0**.
+
 ## End-to-end verification
 
 1. **Determinism:** run `/analyse` twice on the same repo; assert identical system-view node positions and identical chosen template type.

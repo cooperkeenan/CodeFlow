@@ -14,6 +14,7 @@ class ChainBuilder:
         self.lane = lane
         self.head: str | None = None
         self.frontier: list[str] = []
+        self.members: list[str] = []
         self._backing: list[str] = []
         self._refs: list[SourceRef] = []
         self._badges: set[Badge] = set()
@@ -38,6 +39,7 @@ class ChainBuilder:
             node_id, "step", self.lane, self._labels.step_label(self._backing),
             backing=list(self._backing), refs=list(self._refs), badges=set(self._badges),
         )
+        self._acc.set_owner(node_id, self._owner, [])
         self._link(node_id, "sequence", "", "")
         self._reset()
 
@@ -62,6 +64,8 @@ class ChainBuilder:
     ) -> None:
         if self.head is None:
             self.head = node_id
+        if node_id not in self.members:
+            self.members.append(node_id)
         for src in self.frontier:
             self._acc.connect(src, node_id, kind, arm_label, group_id)
         if advance:

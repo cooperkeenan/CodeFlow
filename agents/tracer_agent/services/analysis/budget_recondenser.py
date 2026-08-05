@@ -1,10 +1,12 @@
 from services.analysis.budget_work_graph import BudgetWorkGraph
+from services.analysis.container_repointer import ContainerRepointer
 from services.analysis.label_synthesizer import LabelSynthesizer
 
 
 class BudgetRecondenser:
-    def __init__(self, labels: LabelSynthesizer) -> None:
+    def __init__(self, labels: LabelSynthesizer, repointer: ContainerRepointer) -> None:
         self._labels = labels
+        self._repointer = repointer
 
     def recondense(self, graph: BudgetWorkGraph) -> None:
         while self._pass(graph):
@@ -36,6 +38,7 @@ class BudgetRecondenser:
         head.folded_count += tail.folded_count
         for edge in graph.out_edges(target):
             graph.add_edge(source, edge.target, edge.kind, edge.arm_label)
+        self._repointer.repoint(graph.nodes, source, target)
         graph.remove_node(target)
         if head.backing:
             head.label = self._labels.step_label(head.backing)

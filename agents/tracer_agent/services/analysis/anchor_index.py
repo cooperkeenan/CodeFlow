@@ -6,6 +6,7 @@ from models.effect_site import EffectSite
 from models.parallel_site import ParallelSite
 from models.project_index import ProjectIndex
 from models.significance_result import SignificanceResult
+from models.site_verdict import SiteVerdict
 from services.analysis.component_index import ComponentIndex
 
 
@@ -43,6 +44,9 @@ class AnchorIndex:
     def verdict_of(self, site_id: str) -> str | None:
         verdict = self._significance.verdicts.get(site_id)
         return verdict.verdict if verdict is not None else None
+
+    def site_verdict(self, site_id: str) -> SiteVerdict | None:
+        return self._significance.verdicts.get(site_id)
 
     def calls_of(self, fqn: str) -> tuple[CallSite, ...]:
         return tuple(sorted(self._calls.get(fqn, ()), key=lambda c: (c.line, c.call_source)))

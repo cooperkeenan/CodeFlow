@@ -33,6 +33,15 @@ class BudgetWorkGraph:
         if key not in self.edges:
             self.edges[key] = FlowEdge(source=source, target=target, kind=kind, arm_label=arm_label)
 
+    def upsert_hidden_edge(self, edge: FlowEdge) -> None:
+        key = self._key(edge)
+        existing = self.edges.get(key)
+        if existing is None:
+            self.edges[key] = edge
+            return
+        if not existing.hidden_path or len(edge.hidden_path) < len(existing.hidden_path):
+            existing.hidden_path = list(edge.hidden_path)
+
     def remove_edge(self, edge: FlowEdge) -> None:
         self.edges.pop(self._key(edge), None)
 

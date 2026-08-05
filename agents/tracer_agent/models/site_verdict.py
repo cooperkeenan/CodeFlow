@@ -12,3 +12,6 @@ class SiteVerdict:
     score: float
     arm_reach_sizes: tuple[int, ...]
     arm_classes: tuple[ArmClass, ...]
+    question: str = ""
+    arm_labels: tuple[str, ...] = ()
+    importance: float = 0.0

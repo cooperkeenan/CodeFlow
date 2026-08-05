@@ -1,11 +1,15 @@
 from collections import defaultdict
 
 from services.analysis.budget_work_graph import BudgetWorkGraph
+from services.analysis.container_repointer import ContainerRepointer
 
 _MAX_SAME_KIND = 3
 
 
 class EffectCapper:
+    def __init__(self, repointer: ContainerRepointer) -> None:
+        self._repointer = repointer
+
     def cap(self, graph: BudgetWorkGraph) -> None:
         self._dedupe(graph)
         self._collapse_kinds(graph)
@@ -38,6 +42,7 @@ class EffectCapper:
                 graph.add_edge(edge.source, keep, edge.kind, edge.arm_label)
             for edge in graph.out_edges(other):
                 graph.add_edge(keep, edge.target, edge.kind, edge.arm_label)
+            self._repointer.repoint(graph.nodes, keep, other)
             graph.remove_node(other)
         if fold:
             keeper.badges = sorted(set(keeper.badges) | {"folded"})
