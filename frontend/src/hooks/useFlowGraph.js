@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react'
 import { getFlowGraph } from '../api/flow'
 
-export function useFlowGraph(repo) {
+export function useFlowGraph(repo, fixtureUrl) {
   const [payload, setPayload] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!repo) return
+    if (!fixtureUrl && !repo) return
     let live = true
     setLoading(true)
     setError(null)
-    getFlowGraph(repo)
+    const request = fixtureUrl
+      ? fetch(fixtureUrl).then(res => res.json())
+      : getFlowGraph(repo)
+    request
       .then(data => { if (live) setPayload(data) })
       .catch(e => { if (live) setError(e.message) })
       .finally(() => { if (live) setLoading(false) })
     return () => { live = false }
-  }, [repo])
+  }, [repo, fixtureUrl])
 
   return { payload, loading, error }
 }

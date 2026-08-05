@@ -1,19 +1,23 @@
 import Handles from '../Handles'
 import NodeChrome from '../NodeChrome'
-import { KIND_ACCENT, SURFACE, shellStyle } from '../styles'
+import { KIND_ACCENT, SURFACE, shellStyle, scalePad } from '../styles'
+import { GEOMETRY_FALLBACK } from '../geometryFallback'
 
-const BASE = {
-  minWidth: 150,
-  maxWidth: 220,
-  padding: '10px 18px',
-  borderRadius: 999,
-  background: SURFACE,
-}
-
-export default function EntryNode({ data, selected }) {
+export default function EntryNode({ data, selected, sourcePosition, targetPosition }) {
+  const { width, height } = data.geometry ?? GEOMETRY_FALLBACK.pill
+  const base = {
+    width,
+    minHeight: height,
+    padding: scalePad(10, 18, data.scale ?? 1),
+    borderRadius: 999,
+    background: SURFACE,
+    display: 'flex',
+    alignItems: 'center',
+    boxSizing: 'border-box',
+  }
   return (
-    <div style={shellStyle(BASE, KIND_ACCENT.entry, { selected, highlighted: data.highlighted })}>
-      <Handles />
+    <div style={shellStyle(base, KIND_ACCENT.entry, { selected, highlighted: data.highlighted })}>
+      <Handles target={targetPosition} source={sourcePosition} />
       <NodeChrome data={data} align="center" />
     </div>
   )

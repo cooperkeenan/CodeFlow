@@ -1,11 +1,15 @@
+from services.analysis.container_repointer import ContainerRepointer
 from services.analysis.graph_accumulator import GraphAccumulator
 from services.analysis.label_synthesizer import LabelSynthesizer
 
 
 class StepMerger:
-    def __init__(self, acc: GraphAccumulator, labels: LabelSynthesizer) -> None:
+    def __init__(
+        self, acc: GraphAccumulator, labels: LabelSynthesizer, repointer: ContainerRepointer
+    ) -> None:
         self._acc = acc
         self._labels = labels
+        self._repointer = repointer
 
     def merge(self) -> None:
         while self._merge_pass():
@@ -42,6 +46,7 @@ class StepMerger:
             if new_key not in edges and source != key[1]:
                 edge.source = source
                 edges[new_key] = edge
+        self._repointer.repoint(nodes, source, target)
         del nodes[target]
 
     def _is_step(self, node_id: str, nodes: dict) -> bool:

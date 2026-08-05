@@ -4,25 +4,32 @@ import 'reactflow/dist/style.css'
 import EntryNode from './nodes/EntryNode'
 import StepNode from './nodes/StepNode'
 import DecisionNode from './nodes/DecisionNode'
+import PipelineNode from './nodes/PipelineNode'
 import ParallelNode from './nodes/ParallelNode'
 import EffectNode from './nodes/EffectNode'
+import OutcomeNode from './nodes/OutcomeNode'
 import LaneHeaderNode from './nodes/LaneHeaderNode'
+import GroupBox from './nodes/GroupBox'
 import FlowEdgeComponent from './FlowEdgeComponent'
+import CameraController from './CameraController'
 import { KIND_ACCENT } from './styles'
 
 const NODE_TYPES = {
   entry: EntryNode,
   step: StepNode,
   decision: DecisionNode,
+  pipeline: PipelineNode,
   parallel: ParallelNode,
   effect: EffectNode,
+  outcome: OutcomeNode,
   laneHeader: LaneHeaderNode,
+  flowGroup: GroupBox,
 }
 const EDGE_TYPES = { flow: FlowEdgeComponent }
 const FIT_OPTIONS = { padding: 0.25 }
 const MINIMAP_THRESHOLD = 20
 
-export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPaneClick }) {
+export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPaneClick, revealTrigger }) {
   const [hoveredEdge, setHoveredEdge] = useState(null)
 
   const highlightNodes = useMemo(() => {
@@ -58,8 +65,9 @@ export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPa
       nodesConnectable={false}
       proOptions={{ hideAttribution: true }}
     >
+      <CameraController revealTrigger={revealTrigger} />
       <Background color="#242424" gap={28} size={1} style={{ background: '#1E1E1E' }} />
-      <Controls style={{ background: '#1A1A1A', border: '1px solid #242424', borderRadius: 3 }} />
+      <Controls position="top-left" style={{ background: '#1A1A1A', border: '1px solid #242424', borderRadius: 3 }} />
       {nodes.length > MINIMAP_THRESHOLD && (
         <MiniMap
           style={{ background: '#121212', border: '1px solid #242424' }}

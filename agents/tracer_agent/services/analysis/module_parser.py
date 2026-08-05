@@ -14,11 +14,16 @@ from services.analysis.path_fqn import module_fqn
 
 class ModuleParseResult:
     def __init__(
-        self, module: ModuleRecord, classes: tuple[ClassAnalysis, ...], functions: tuple[FunctionRecord, ...]
+        self,
+        module: ModuleRecord,
+        classes: tuple[ClassAnalysis, ...],
+        functions: tuple[FunctionRecord, ...],
+        source_roots: frozenset[str] = frozenset(),
     ) -> None:
         self.module = module
         self.classes = classes
         self.functions = functions
+        self.source_roots = source_roots
 
 
 class ModuleParser:
@@ -65,4 +70,6 @@ class ModuleParser:
             classes=tuple(sorted(a.record.fqn for a in class_analyses)),
             functions=tuple(sorted(f.fqn for f in functions if f.cls is None)),
         )
-        return ModuleParseResult(module, tuple(class_analyses), tuple(functions))
+        return ModuleParseResult(
+            module, tuple(class_analyses), tuple(functions), frozenset(binder.source_roots)
+        )

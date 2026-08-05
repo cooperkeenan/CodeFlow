@@ -4,8 +4,10 @@ export const KIND_ACCENT = {
   entry: '#39FF14',
   step: '#64B5F6',
   decision: '#FFB84D',
+  pipeline: '#FFB84D',
   parallel: '#CE93D8',
   effect: '#4DD0E1',
+  outcome: '#9E9E9E',
 }
 
 export const SURFACE = '#1A1A1A'
@@ -21,6 +23,23 @@ export const LABEL_STYLE = {
   color: TEXT,
   lineHeight: 1.35,
   wordBreak: 'break-word',
+  display: '-webkit-box',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: 3,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  minWidth: 0,
+}
+
+export const PROVENANCE_STYLE = {
+  fontFamily: MONO,
+  fontSize: 8,
+  color: TEXT_MUTED,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  borderTop: '1px solid rgba(255,255,255,0.08)',
+  minWidth: 0,
 }
 
 export const CHIP_STYLE = {
@@ -51,6 +70,15 @@ export const BADGE_GLYPH = {
   recursive: { glyph: '⟲', title: 'recursive' },
   guarded: { glyph: '⛨', title: 'guarded' },
   dynamic: { glyph: '⚡', title: 'dynamic dispatch' },
+}
+
+export function scaleText(style, scale = 1) {
+  if (scale === 1) return style
+  return { ...style, fontSize: Math.round(style.fontSize * scale * 10) / 10 }
+}
+
+export function scalePad(vertical, horizontal, scale = 1) {
+  return `${Math.round(vertical * scale)}px ${Math.round(horizontal * scale)}px`
 }
 
 export function shellStyle(base, accent, { selected, highlighted, dashed }) {

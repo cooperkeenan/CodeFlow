@@ -10,9 +10,12 @@ from shared.models.flow_graph import Badge, SourceRef
 from services.analysis.anchor_index import AnchorIndex
 from services.analysis.chain_builder import ChainBuilder
 from services.analysis.collected_events import CollectedEvents
+from services.analysis.decision_labeler import DecisionLabeler
+from services.analysis.decision_projector import DecisionProjector
 from services.analysis.flow_event import FlowEvent
 from services.analysis.graph_accumulator import GraphAccumulator
 from services.analysis.label_synthesizer import LabelSynthesizer
+from services.analysis.outcome_labeler import OutcomeLabeler
 
 _Path = tuple[tuple[str, int], ...]
 
@@ -31,6 +34,9 @@ class FunctionProjector:
         self._acc = acc
         self._labels = labels
         self._summarize = summarize
+        self._decisions = DecisionProjector(
+            anchors, acc, DecisionLabeler(labels), OutcomeLabeler()
+        )
 
     def project(self, fqn: str, events: CollectedEvents, lane: str) -> FlowSummary:
         head, tails = self._build_region(fqn, events, (), lane)
@@ -50,15 +56,17 @@ class FunctionProjector:
         self, chain: ChainBuilder, fqn: str, events: CollectedEvents, prefix: _Path, item: FlowEvent
     ) -> None:
         if item.kind == "call":
-            self._handle_call(chain, events, item)
+            self._handle_call(chain, fqn, prefix, events, item)
         elif item.kind == "effect":
-            self._attach_effect(chain, item.payload, set())
+            self._attach_effect(chain, fqn, prefix, item.payload, set())
         elif item.kind == "parallel":
-            self._handle_parallel(chain, item.payload)
+            self._handle_parallel(chain, fqn, item.payload)
         else:
             self._handle_decision(chain, fqn, events, prefix, item.payload)
 
-    def _handle_call(self, chain: ChainBuilder, events: CollectedEvents, item: FlowEvent) -> None:
+    def _handle_call(
+        self, chain: ChainBuilder, fqn: str, prefix: _Path, events: CollectedEvents, item: FlowEvent
+    ) -> None:
         call = item.payload
         badges: set[Badge] = set()
         if any(frame.site_id in events.guarded_ids for frame in call.context):
@@ -72,9 +80,13 @@ class FunctionProjector:
                 extra: set[Badge] = {"recursive"} if summary.recursive else set()
                 chain.add_backing(proj[0].fqn, ref, badges | extra)
             else:
+                self._acc.record_call_boundary(fqn, self._local_container(prefix), proj[0].fqn)
                 chain.splice(summary.head, summary.tails, badges | loop)
         for effect in self._boundary_effects(call.targets):
-            self._attach_effect(chain, effect, badges)
+            self._attach_effect(chain, fqn, prefix, effect, badges)
+
+    def _local_container(self, prefix: _Path) -> str:
+        return f"dec:{prefix[-1][0]}" if prefix else ""
 
     def _boundary_effects(self, targets: tuple) -> tuple[EffectSite, ...]:
         seen: dict[str, EffectSite] = {}
@@ -83,12 +95,16 @@ class FunctionProjector:
                 seen[effect.id] = effect
         return tuple(sorted(seen.values(), key=lambda e: e.id))
 
-    def _attach_effect(self, chain: ChainBuilder, effect: EffectSite, badges: set[Badge]) -> None:
+    def _attach_effect(
+        self, chain: ChainBuilder, fqn: str, prefix: _Path, effect: EffectSite, badges: set[Badge]
+    ) -> None:
         self._acc.upsert(
             effect.id, "effect", chain.lane, self._labels.effect_label(effect.kind, effect.target),
             refs=[self._effect_ref(effect)], badges=set(badges),
             effect_kind=effect.kind, effect_target=effect.target,
         )
+        self._acc.set_owner(effect.id, effect.owner, [])
+        self._acc.record_effect_boundary(fqn, self._local_container(prefix), effect.id)
         chain.attach(effect.id)
 
     def _effect_ref(self, effect: EffectSite) -> SourceRef:
@@ -96,8 +112,9 @@ class FunctionProjector:
         file = record.span.file if record is not None else ""
         return SourceRef(file=file, line=effect.line, end_line=effect.line)
 
-    def _handle_parallel(self, chain: ChainBuilder, site: ParallelSite) -> None:
-        self._acc.upsert(site.id, "parallel", chain.lane, "Parallel")
+    def _handle_parallel(self, chain: ChainBuilder, fqn: str, site: ParallelSite) -> None:
+        self._acc.upsert(site.id, "parallel", chain.lane, "Parallel", refs=[site.span])
+        self._acc.set_owner(site.id, fqn, [])
         chain.attach(site.id)
         tails: list[str] = []
         for callee in site.callees:
@@ -110,19 +127,7 @@ class FunctionProjector:
     def _handle_decision(
         self, chain: ChainBuilder, fqn: str, events: CollectedEvents, prefix: _Path, site: DispatchSite
     ) -> None:
-        node_id = f"dec:{site.id}"
-        self._acc.upsert(node_id, "decision", chain.lane, self._labels.decision_label(site.selector_source))
-        chain.attach(node_id)
-        tails: list[str] = []
-        for arm in site.arms:
-            ahead, atails = self._build_region(fqn, events, prefix + ((site.id, arm.index),), chain.lane)
-            if ahead is None:
-                tails.append(node_id)
-            else:
-                self._acc.connect(node_id, ahead, "arm", arm.label_source, site.id)
-                tails.extend(atails or [ahead])
-        chain.fan_out(node_id, _dedup(tails))
-
+        self._decisions.handle(self._build_region, chain, fqn, events, prefix, site)
 
 def _dedup(values: list[str]) -> list[str]:
     seen: dict[str, None] = {}

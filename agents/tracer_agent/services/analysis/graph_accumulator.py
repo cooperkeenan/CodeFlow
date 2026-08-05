@@ -1,36 +1,14 @@
-from dataclasses import dataclass, field
-
 from shared.models.flow_graph import Badge, EdgeKind, EffectKind, FlowEdge, FlowNode, NodeKind, SourceRef
 
-
-@dataclass
-class _NodeDraft:
-    id: str
-    kind: NodeKind
-    lane: str
-    label: str
-    backing: list[str] = field(default_factory=list)
-    refs: list[SourceRef] = field(default_factory=list)
-    badges: set[Badge] = field(default_factory=set)
-    effect_kind: EffectKind | None = None
-    effect_target: str = ""
-    folded_count: int = 0
-
-
-@dataclass
-class _EdgeDraft:
-    source: str
-    target: str
-    kind: EdgeKind
-    arm_label: str = ""
-    group_id: str = ""
-    confidence: str = "resolved"
+from services.analysis.graph_drafts import _EdgeDraft, _NodeDraft
 
 
 class GraphAccumulator:
     def __init__(self) -> None:
         self._nodes: dict[str, _NodeDraft] = {}
         self._edges: dict[tuple[str, str, str], _EdgeDraft] = {}
+        self._call_boundaries: list[tuple[str, str, str]] = []
+        self._effect_boundaries: list[tuple[str, str, str]] = []
 
     def upsert(
         self,
@@ -69,6 +47,36 @@ class GraphAccumulator:
         if draft is not None:
             draft.badges.add(badge)
 
+    def set_owner(self, node_id: str, owner_fqn: str, arm_path: list[str]) -> None:
+        draft = self._nodes.get(node_id)
+        if draft is None or draft.owner_fqn:
+            return
+        draft.owner_fqn = owner_fqn
+        draft.arm_path = list(arm_path)
+
+    def add_container(self, node_id: str, container: str) -> None:
+        draft = self._nodes.get(node_id)
+        if draft is None or node_id == container:
+            return
+        if container not in draft.containers:
+            draft.containers.append(container)
+
+    def record_call_boundary(self, caller_fqn: str, local_container: str, callee_fqn: str) -> None:
+        entry = (caller_fqn, local_container, callee_fqn)
+        if entry not in self._call_boundaries:
+            self._call_boundaries.append(entry)
+
+    def call_boundaries(self) -> list[tuple[str, str, str]]:
+        return self._call_boundaries
+
+    def record_effect_boundary(self, caller_fqn: str, local_container: str, effect_id: str) -> None:
+        entry = (caller_fqn, local_container, effect_id)
+        if entry not in self._effect_boundaries:
+            self._effect_boundaries.append(entry)
+
+    def effect_boundaries(self) -> list[tuple[str, str, str]]:
+        return self._effect_boundaries
+
     def connect(
         self,
         source: str,
@@ -90,6 +98,18 @@ class GraphAccumulator:
     def edges(self) -> dict[tuple[str, str, str], _EdgeDraft]:
         return self._edges
 
+    def remove_node(self, node_id: str) -> None:
+        self._nodes.pop(node_id, None)
+        for key in [k for k, e in self._edges.items() if e.source == node_id or e.target == node_id]:
+            del self._edges[key]
+
+    def backing_index(self) -> dict[str, str]:
+        index: dict[str, str] = {}
+        for draft in self._nodes.values():
+            for fqn in draft.backing:
+                index.setdefault(fqn, draft.id)
+        return index
+
     def to_flow_nodes(self) -> list[FlowNode]:
         return [
             FlowNode(
@@ -103,6 +123,9 @@ class GraphAccumulator:
                 effect_kind=d.effect_kind,
                 effect_target=d.effect_target,
                 folded_count=d.folded_count,
+                owner_fqn=d.owner_fqn,
+                arm_path=list(d.arm_path),
+                containers=sorted(d.containers),
             )
             for d in self._nodes.values()
         ]

@@ -28,9 +28,11 @@ class ProjectIndexer:
         classes: dict[str, ClassRecord] = {}
         functions: dict[str, FunctionRecord] = {}
         all_analyses = []
+        source_roots: set[str] = set()
         for relpath in sorted(files):
             result = self._module_parser.parse(relpath, files[relpath], project_modules)
             modules[result.module.fqn] = result.module
+            source_roots |= result.source_roots
             for analysis in result.classes:
                 classes[analysis.record.fqn] = analysis.record
                 all_analyses.append(analysis)
@@ -44,6 +46,8 @@ class ProjectIndexer:
             classes=dict(sorted(classes.items())),
             functions=dict(sorted(functions.items())),
             implementations_index=self._merge(nominal, structural),
+            sources=files,
+            source_roots=frozenset(source_roots),
         )
 
     def _merge(

@@ -1,17 +1,25 @@
+from pathlib import Path
+
 import httpx
 from core.config import Settings, get_settings
 from fastapi import Depends, Request
+from services.analysis.decision_judge_factory import build_decision_judge
 from services.analysis.effect_detector_factory import build_effect_detector
+from services.analysis.flow_namer_factory import build_flow_namer
 from services.analysis.flow_pipeline import FlowPipeline
+from services.analysis.flow_reviewer_factory import build_flow_reviewer
 from services.analysis.flow_stitcher_factory import build_flow_stitcher
-from services.analysis.page_budgeter_factory import build_page_budgeter
+from services.analysis.visibility_budgeter_factory import build_visibility_budgeter
 from services.analysis.project_indexer_factory import build_project_indexer
 from services.evidence.file_fetch_service import FileFetchService
+from services.evidence.github_file_fetcher import GitHubFileFetcher
 from services.source_persist_service import SourcePersistService
 from services.tracer_service import TracerService
 
 from shared.code_store.code_store import CodeStore
 from shared.code_store.neon_code_store import NeonCodeStore
+
+_CACHE_ROOT = Path(__file__).resolve().parents[2] / ".cache"
 
 
 def get_http_client(request: Request) -> httpx.AsyncClient:
@@ -21,7 +29,7 @@ def get_http_client(request: Request) -> httpx.AsyncClient:
 def get_file_fetch_service(
     http_client: httpx.AsyncClient = Depends(get_http_client),
 ) -> FileFetchService:
-    return FileFetchService(http_client)
+    return FileFetchService(GitHubFileFetcher(http_client))
 
 
 def get_code_store(
@@ -41,7 +49,10 @@ def get_flow_pipeline() -> FlowPipeline:
         build_project_indexer(),
         build_effect_detector(),
         build_flow_stitcher(),
-        build_page_budgeter(),
+        build_visibility_budgeter(),
+        judge=build_decision_judge(_CACHE_ROOT / "decision_verdicts.json"),
+        namer=build_flow_namer(_CACHE_ROOT / "node_names.json"),
+        reviewer=build_flow_reviewer(_CACHE_ROOT / "review_findings.json"),
     )
 
 

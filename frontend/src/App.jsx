@@ -58,6 +58,7 @@ export default function App() {
           }
         />
         <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+        <Route path="/flow-fixture" element={<FlowPage fixture="/fixture/rendered_view.json" />} />
         <Route
           path="/flow"
           element={

@@ -1,6 +1,6 @@
 import ast
 
-from services.analysis.path_fqn import package_of, resolve_absolute
+from services.analysis.path_fqn import package_of, resolve_with_root
 
 
 class ImportBindingExtractor(ast.NodeVisitor):
@@ -9,13 +9,14 @@ class ImportBindingExtractor(ast.NodeVisitor):
         self._module_fqn = module_fqn
         self._project_modules = project_modules
         self.bindings: dict[str, str] = {}
+        self.source_roots: set[str] = set()
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             top = alias.name.split(".")[0]
             local = alias.asname or top
             target = alias.name if alias.asname else top
-            self.bindings[local] = resolve_absolute(target, self._module_fqn, self._project_modules)
+            self.bindings[local] = self._resolve(target)
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
@@ -33,8 +34,14 @@ class ImportBindingExtractor(ast.NodeVisitor):
 
     def _resolve_source(self, node: ast.ImportFrom) -> str:
         if node.level == 0:
-            return resolve_absolute(node.module or "", self._module_fqn, self._project_modules)
+            return self._resolve(node.module or "")
         base = package_of(self._relpath)
         for _ in range(node.level - 1):
             base = base.rsplit(".", 1)[0] if "." in base else ""
         return f"{base}.{node.module}" if node.module else base
+
+    def _resolve(self, target: str) -> str:
+        resolved, root = resolve_with_root(target, self._module_fqn, self._project_modules)
+        if root is not None:
+            self.source_roots.add(root)
+        return resolved

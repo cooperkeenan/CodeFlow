@@ -12,3 +12,4 @@ class Arm:
     label_source: str
     callsites: tuple[CallSite, ...]
     terminal: Terminal
+    handler_fqn: str | None = None

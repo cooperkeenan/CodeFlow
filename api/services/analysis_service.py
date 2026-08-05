@@ -48,11 +48,9 @@ class AnalysisService:
         return await self._run_from_profile(repo_name, local_path, profile, access_token)
 
     async def analyse_from_trace(self, stored: AnalyseResponse) -> AnalyseResponse:
-        logger.info("Re-running layout+render from stored trace for: %s", stored.repo)
-        labeled = await self._layout.layout(stored.trace["flow_graph"])
-        self._persister.write_json("layout.json", labeled)
-        flow_graph = labeled["flow_graph"]
-        stored.trace["flow_graph"] = flow_graph
+        logger.info("Re-running render from stored trace for: %s", stored.repo)
+        flow_graph = stored.trace["flow_graph"]
+        self._persister.write_json("layout.json", {"flow_graph": flow_graph})
         diagram = await self._render.render(flow_graph)
         self._persister.write_json("render.json", diagram)
         return AnalyseResponse(repo=stored.repo, profile=stored.profile, trace=stored.trace, diagram=diagram)
@@ -84,10 +82,7 @@ class AnalysisService:
                     len(flow_graph.get("lanes", [])), len(flow_graph.get("nodes", [])),
                     len(flow_graph.get("edges", [])))
 
-        labeled = await self._layout.layout(flow_graph)
-        self._progress.complete("layout")
-        self._persister.write_json("layout.json", labeled)
-        flow_graph = labeled["flow_graph"]
+        self._persister.write_json("layout.json", {"flow_graph": flow_graph})
         trace["flow_graph"] = flow_graph
 
         diagram = await self._render.render(flow_graph)
