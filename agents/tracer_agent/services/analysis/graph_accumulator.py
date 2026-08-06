@@ -1,14 +1,16 @@
 from shared.models.flow_graph import Badge, EdgeKind, EffectKind, FlowEdge, FlowNode, NodeKind, SourceRef
 
+from services.analysis.container_cycle_guard import ContainerCycleGuard
 from services.analysis.graph_drafts import _EdgeDraft, _NodeDraft
 
 
 class GraphAccumulator:
-    def __init__(self) -> None:
+    def __init__(self, cycle_guard: ContainerCycleGuard | None = None) -> None:
         self._nodes: dict[str, _NodeDraft] = {}
         self._edges: dict[tuple[str, str, str], _EdgeDraft] = {}
         self._call_boundaries: list[tuple[str, str, str]] = []
         self._effect_boundaries: list[tuple[str, str, str]] = []
+        self._cycle_guard = cycle_guard or ContainerCycleGuard()
 
     def upsert(
         self,
@@ -58,8 +60,11 @@ class GraphAccumulator:
         draft = self._nodes.get(node_id)
         if draft is None or node_id == container:
             return
-        if container not in draft.containers:
-            draft.containers.append(container)
+        if container in draft.containers:
+            return
+        if self._cycle_guard.creates_cycle(self._nodes, node_id, container):
+            return
+        draft.containers.append(container)
 
     def record_call_boundary(self, caller_fqn: str, local_container: str, callee_fqn: str) -> None:
         entry = (caller_fqn, local_container, callee_fqn)

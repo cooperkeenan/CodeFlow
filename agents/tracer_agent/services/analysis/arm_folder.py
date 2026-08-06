@@ -1,11 +1,13 @@
 from services.analysis.budget_config import BudgetConfig
 from services.analysis.budget_work_graph import BudgetWorkGraph
+from services.analysis.container_repointer import ContainerRepointer
 from shared.models.flow_graph import FlowEdge, FlowNode
 
 
 class ArmFolder:
-    def __init__(self, config: BudgetConfig) -> None:
+    def __init__(self, config: BudgetConfig, repointer: ContainerRepointer) -> None:
         self._config = config
+        self._repointer = repointer
 
     def fold(self, graph: BudgetWorkGraph) -> None:
         for node_id in sorted(n.id for n in graph.nodes.values() if n.kind == "decision"):
@@ -36,7 +38,7 @@ class ArmFolder:
             owner_fqn=node.owner_fqn, containers=list(node.containers),
         )
         graph.add_edge(node_id, fold_id, "arm", label)
-        graph.prune_unreachable()
+        graph.prune_unreachable(self._repointer)
 
     def _reach(self, graph: BudgetWorkGraph, start: str) -> int:
         return len(graph.reachable_from(start))

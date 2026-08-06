@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import ReactFlow, { Background, Controls, MiniMap } from 'reactflow'
 import 'reactflow/dist/style.css'
+import './isolate.css'
 import EntryNode from './nodes/EntryNode'
 import StepNode from './nodes/StepNode'
 import DecisionNode from './nodes/DecisionNode'
@@ -29,7 +30,7 @@ const EDGE_TYPES = { flow: FlowEdgeComponent }
 const FIT_OPTIONS = { padding: 0.25 }
 const MINIMAP_THRESHOLD = 20
 
-export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPaneClick, revealTrigger }) {
+export default function FlowCanvas({ nodes, edges, selectedId, isolatedId, onPaneClick, revealTrigger }) {
   const [hoveredEdge, setHoveredEdge] = useState(null)
 
   const highlightNodes = useMemo(() => {
@@ -40,13 +41,15 @@ export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPa
   const rfNodes = useMemo(() => nodes.map(n => ({
     ...n,
     selected: n.id === selectedId,
+    className: isolatedId && n.id !== isolatedId ? 'rf-dim' : undefined,
     data: { ...n.data, highlighted: highlightNodes.has(n.id) },
-  })), [nodes, selectedId, highlightNodes])
+  })), [nodes, selectedId, isolatedId, highlightNodes])
 
   const rfEdges = useMemo(() => edges.map(e => ({
     ...e,
+    className: isolatedId && e.source !== isolatedId && e.target !== isolatedId ? 'rf-dim' : undefined,
     data: { ...e.data, highlighted: e.id === hoveredEdge },
-  })), [edges, hoveredEdge])
+  })), [edges, hoveredEdge, isolatedId])
 
   return (
     <ReactFlow
@@ -54,7 +57,6 @@ export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPa
       edges={rfEdges}
       nodeTypes={NODE_TYPES}
       edgeTypes={EDGE_TYPES}
-      onNodeClick={onNodeClick}
       onPaneClick={onPaneClick}
       onEdgeMouseEnter={(_, edge) => setHoveredEdge(edge.id)}
       onEdgeMouseLeave={() => setHoveredEdge(null)}

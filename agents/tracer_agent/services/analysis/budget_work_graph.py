@@ -1,3 +1,4 @@
+from services.analysis.container_repointer import ContainerRepointer
 from shared.models.flow_graph import EdgeKind, FlowEdge, FlowGraph, FlowNode, Lane
 
 _EdgeKey = tuple[str, str, str, str]
@@ -88,10 +89,37 @@ class BudgetWorkGraph:
             stack.extend(adj.get(node_id, ()))
         return seen
 
-    def prune_unreachable(self) -> None:
-        keep = self.reachable()
-        for node_id in [nid for nid in self.nodes if nid not in keep]:
+    def prune_unreachable(self, repointer: ContainerRepointer) -> None:
+        keep_ids = self.reachable()
+        to_remove = sorted(nid for nid in self.nodes if nid not in keep_ids)
+        targets = {
+            node_id: self._nearest_surviving_container(node_id, keep_ids)
+            for node_id in to_remove
+        }
+        for node_id in to_remove:
+            target = targets[node_id]
+            if target is not None:
+                repointer.repoint(self.nodes, target, node_id)
+            else:
+                for other in self.nodes.values():
+                    if node_id in other.containers:
+                        other.containers = sorted(c for c in other.containers if c != node_id)
             self.remove_node(node_id)
+
+    def _nearest_surviving_container(self, node_id: str, keep_ids: set[str]) -> str | None:
+        seen = {node_id}
+        frontier = list(self.nodes[node_id].containers)
+        while frontier:
+            next_frontier: list[str] = []
+            for candidate in sorted(frontier):
+                if candidate in keep_ids:
+                    return candidate
+                if candidate in seen or candidate not in self.nodes:
+                    continue
+                seen.add(candidate)
+                next_frontier.extend(self.nodes[candidate].containers)
+            frontier = next_frontier
+        return None
 
     def to_flow_graph(self) -> FlowGraph:
         return FlowGraph(

@@ -4,7 +4,7 @@ import { scaleGeometry } from '../components/flow/depthScale'
 const HEADER_TYPE = 'laneHeader'
 const GROUP_TYPE = 'flowGroup'
 
-function toNode(node, onToggle, geometry) {
+function toNode(node, onToggle, onIsolate, geometry) {
   const type =
     node.type === HEADER_TYPE || node.type === GROUP_TYPE
       ? node.type
@@ -25,7 +25,9 @@ function toNode(node, onToggle, geometry) {
       nodeId: node.id,
       geometry: scaleGeometry(geometry?.[node.shape], scale),
       scale,
+      depth: node.depth,
       onToggle,
+      onIsolate,
     },
     ...(type === HEADER_TYPE || type === GROUP_TYPE
       ? {}
@@ -52,12 +54,12 @@ function toEdge(edge) {
   }
 }
 
-export function useGraphTransform(view, onToggle, geometry) {
+export function useGraphTransform(view, onToggle, onIsolate, geometry) {
   return useMemo(() => {
     if (!view?.nodes) return { nodes: [], edges: [] }
     return {
-      nodes: view.nodes.map(node => toNode(node, onToggle, geometry)),
+      nodes: view.nodes.map(node => toNode(node, onToggle, onIsolate, geometry)),
       edges: (view.edges ?? []).map(toEdge),
     }
-  }, [view, onToggle, geometry])
+  }, [view, onToggle, onIsolate, geometry])
 }

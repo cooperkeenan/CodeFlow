@@ -43,22 +43,25 @@ class LlmDecisionJudge:
         )
         for start in range(0, len(representatives), _BATCH_SIZE):
             batch = representatives[start : start + _BATCH_SIZE]
-            batch_verdicts = self._judge_batch(batch)
+            batch_verdicts, cacheable = self._judge_batch(batch)
             for candidate in batch:
                 fingerprint = fingerprints[candidate.site_id]
                 verdict = batch_verdicts[candidate.site_id]
-                self._cache.put(fingerprint, verdict)
+                if candidate.site_id in cacheable:
+                    self._cache.put(fingerprint, verdict)
                 for duplicate in groups[fingerprint]:
                     results[duplicate.site_id] = verdict
         self._cache.flush()
         return results
 
-    def _judge_batch(self, batch: list[DecisionCandidate]) -> dict[str, DecisionVerdict]:
+    def _judge_batch(
+        self, batch: list[DecisionCandidate]
+    ) -> tuple[dict[str, DecisionVerdict], set[str]]:
         try:
             entries = self._call(batch)
         except Exception as exc:
             logger.warning("Decision judging fell back for batch of %d: %s", len(batch), exc)
-            return self._fallback.judge(tuple(batch))
+            return self._fallback.judge(tuple(batch)), set()
         by_id = {c.site_id: c for c in batch}
         verdicts: dict[str, DecisionVerdict] = {}
         for entry in entries:
@@ -67,10 +70,11 @@ class LlmDecisionJudge:
             if verdict is None or site_id not in by_id:
                 continue
             verdicts[site_id] = verdict
+        cacheable = set(verdicts)
         missing = [c for c in batch if c.site_id not in verdicts]
         if missing:
             verdicts.update(self._fallback.judge(tuple(missing)))
-        return verdicts
+        return verdicts, cacheable
 
     def _call(self, batch: list[DecisionCandidate]) -> list[dict]:
         response = self._llm.messages.create(

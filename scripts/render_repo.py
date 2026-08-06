@@ -1,4 +1,3 @@
-import ast
 import json
 import os
 import sys
@@ -58,10 +57,8 @@ def read_python_sources(target: Path, include_tests: bool = False) -> dict[str, 
         if not include_tests and _is_test_path(relpath):
             continue
         try:
-            text = path.read_text(encoding="utf-8")
-            ast.parse(text)
-            files[relpath.as_posix()] = text
-        except (OSError, SyntaxError):
+            files[relpath.as_posix()] = path.read_text(encoding="utf-8")
+        except OSError:
             continue
     return files
 
@@ -104,6 +101,7 @@ def main(argv: list[str]) -> int:
         build_project_indexer(), build_effect_detector(),
         build_flow_stitcher(), build_visibility_budgeter(),
         judge=judge, namer=namer, reviewer=reviewer,
+        embed_symbol_sources=True,
     )
     graph = pipeline.run(target.name, files)
     view = build_flow_page_placer().place(graph)

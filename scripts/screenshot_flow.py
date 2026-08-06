@@ -23,11 +23,11 @@ from services.analysis.visibility_budgeter_factory import build_visibility_budge
 from services.analysis.project_indexer_factory import build_project_indexer
 from placement.flow_page_placer_factory import build_flow_page_placer
 
+from chrome_locator import ChromeLocator
 from dev_server_screenshotter import DevServerScreenshotter
 
 FIXTURE_PATH = REPO_ROOT / "frontend" / "public" / "fixture" / "rendered_view.json"
 FLOW_URL = "http://localhost:5173/flow-fixture"
-CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 DEV_PORT = 5173
 _CACHE_PATH = REPO_ROOT / ".cache" / "decision_verdicts.json"
 _NAME_CACHE_PATH = REPO_ROOT / ".cache" / "node_names.json"
@@ -44,6 +44,7 @@ def _build_view(target: Path, no_llm: bool):
         build_project_indexer(), build_effect_detector(),
         build_flow_stitcher(), build_visibility_budgeter(),
         judge=judge, namer=namer, reviewer=reviewer,
+        embed_symbol_sources=True,
     )
     graph = pipeline.run(target.name, files)
     view = build_flow_page_placer().place(graph)
@@ -99,7 +100,7 @@ def main(argv: list[str]) -> int:
     screenshotter = DevServerScreenshotter(
         frontend_dir=REPO_ROOT / "frontend",
         port=DEV_PORT,
-        chrome_path=CHROME_PATH,
+        chrome_path=ChromeLocator().find(),
         url=f"{FLOW_URL}?expand={expand}" if expand else FLOW_URL,
         out_png=png_path,
     )

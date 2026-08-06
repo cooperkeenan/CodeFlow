@@ -44,11 +44,12 @@ class FlowNamer:
         )
         for start in range(0, len(representatives), _BATCH_SIZE):
             batch = representatives[start : start + _BATCH_SIZE]
-            batch_namings = self._name_batch(batch, graph)
+            batch_namings, cacheable = self._name_batch(batch, graph)
             for context in batch:
                 fingerprint = fingerprints[context.node.id]
                 naming = batch_namings[context.node.id]
-                self._cache.put(fingerprint, naming)
+                if context.node.id in cacheable:
+                    self._cache.put(fingerprint, naming)
                 for duplicate in groups[fingerprint]:
                     namings[duplicate.node.id] = naming
         self._cache.flush()
@@ -56,17 +57,18 @@ class FlowNamer:
 
     def _name_batch(
         self, batch: list[NodeNameContext], graph: FlowGraph
-    ) -> dict[str, NodeNaming]:
+    ) -> tuple[dict[str, NodeNaming], set[str]]:
         try:
             raw = self._call(batch)
             parsed = self._validator.validate(raw, graph)
         except Exception as exc:
             logger.warning("Flow naming fell back for batch of %d: %s", len(batch), exc)
             parsed = {}
+        cacheable = set(parsed)
         for context in batch:
             if context.node.id not in parsed:
                 parsed[context.node.id] = self._backfill(context.node)
-        return parsed
+        return parsed, cacheable
 
     def _call(self, batch: list[NodeNameContext]) -> dict:
         response = self._llm.messages.create(

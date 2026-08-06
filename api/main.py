@@ -16,6 +16,7 @@ from routers.tokens import router as tokens_router
 from services.progress_tracker import ProgressTracker
 from shared.access_token_store.neon_access_token_store import NeonAccessTokenStore
 from shared.code_store.neon_code_store import NeonCodeStore
+from shared.explanation_store.neon_explanation_store import NeonExplanationStore
 from shared.repo_map_store.neon_repo_map_store import NeonRepoMapStore
 from shared.user_store.neon_user_store import NeonUserStore
 
@@ -36,10 +37,12 @@ async def lifespan(app: FastAPI):
     app.state.user_store = NeonUserStore(database_url)
     app.state.token_store = NeonAccessTokenStore(database_url)
     app.state.repo_map_store = NeonRepoMapStore(database_url)
+    app.state.explanation_store = NeonExplanationStore(database_url)
     app.state.progress_tracker = ProgressTracker()
     await app.state.user_store.ensure_schema()
     await app.state.token_store.ensure_schema()
     await app.state.repo_map_store.ensure_schema()
+    await app.state.explanation_store.ensure_schema()
     yield
     await app.state.http_client.aclose()
     logger.info("API Gateway shut down")

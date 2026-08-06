@@ -1,4 +1,5 @@
 import ExpandToggle from './ExpandToggle'
+import IsolateButton from './IsolateButton'
 import NodeBadges from './NodeBadges'
 import { LABEL_STYLE, CHIP_STYLE, PROVENANCE_STYLE, MONO, TEXT_MUTED, scaleText } from './styles'
 
@@ -46,15 +47,20 @@ export default function NodeChrome({ data, align = 'flex-start', subtitle = null
           <NodeBadges badges={data.badges} guardSource={data.guardSource} scale={scale} />
         </div>
       )}
-      {data.expandable && (
-        <div style={{ marginTop: Math.round(4 * scale) }}>
-          <ExpandToggle
-            expanded={data.expanded}
-            count={data.hiddenCount}
-            onToggle={data.onToggle}
-            nodeId={data.nodeId}
-            scale={scale}
-          />
+      {(data.expandable || (data.depth > 0 && data.onIsolate)) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: Math.round(4 * scale), marginTop: Math.round(4 * scale) }}>
+          {data.expandable && (
+            <ExpandToggle
+              expanded={data.expanded}
+              count={data.hiddenCount}
+              onToggle={data.onToggle}
+              nodeId={data.nodeId}
+              scale={scale}
+            />
+          )}
+          {data.depth > 0 && data.onIsolate && (
+            <IsolateButton onIsolate={data.onIsolate} nodeId={data.nodeId} scale={scale} />
+          )}
         </div>
       )}
     </div>

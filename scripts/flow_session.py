@@ -28,6 +28,34 @@ _READ_STATE = """
 """
 
 
+_READ_PANEL = """
+() => {
+  const root = document.querySelector('[data-testid="isolate-panel"]');
+  if (!root) return { present: false };
+  const rows = (sel, attr) => [...root.querySelectorAll(sel)].map(el => ({
+    key: el.getAttribute(attr),
+    text: (el.innerText || '').trim().replace(/\\s+/g, ' '),
+  }));
+  return {
+    present: true,
+    state: root.getAttribute('data-state'),
+    heading: (root.innerText || '').trim().split('\\n').slice(0, 2),
+    methods: rows('[data-method]', 'data-method'),
+    helpers: rows('[data-helper]', 'data-helper'),
+  };
+}
+"""
+
+_READ_DIMMED = """
+() => {
+  const nodes = [...document.querySelectorAll('.react-flow__node')];
+  const dim = nodes.filter(n => parseFloat(getComputedStyle(n).opacity) < 0.5);
+  return { total: nodes.length, dimmed: dim.length,
+           bright: nodes.filter(n => !dim.includes(n)).map(n => n.getAttribute('data-id')) };
+}
+"""
+
+
 class FlowSession:
     def __init__(self, frontend_dir: Path, port: int, url: str) -> None:
         self._server = DevServer(frontend_dir, port)
@@ -76,6 +104,16 @@ class FlowSession:
     def shot(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._page.screenshot(path=str(path), full_page=False)
+
+    def panel(self) -> dict:
+        return self._page.evaluate(_READ_PANEL)
+
+    def dimmed(self) -> dict:
+        return self._page.evaluate(_READ_DIMMED)
+
+    def press_key(self, key: str) -> None:
+        self._page.keyboard.press(key)
+        self._page.wait_for_timeout(250)
 
     def overlaps(self) -> list[tuple[str, str]]:
         nodes = [

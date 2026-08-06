@@ -42,6 +42,7 @@ def build_pipeline(judge: DecisionJudge, namer: FlowNaming, reviewer: FlowReview
         judge=judge,
         namer=namer,
         reviewer=reviewer,
+        embed_symbol_sources=True,
     )
 
 

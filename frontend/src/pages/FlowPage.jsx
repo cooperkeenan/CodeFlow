@@ -4,7 +4,7 @@ import { useExpansion } from '../hooks/useExpansion'
 import { useGraphTransform } from '../hooks/useGraphTransform'
 import FlowCanvas from '../components/flow/FlowCanvas'
 import Legend from '../components/flow/Legend'
-import ProvenancePopover from '../components/flow/ProvenancePopover'
+import IsolatePanel from '../components/flow/isolate/IsolatePanel'
 
 const MONO = 'IBM Plex Mono, monospace'
 const MUTED = { fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.38)' }
@@ -18,22 +18,22 @@ function initialExpansion() {
 export default function FlowPage({ analysis, onBack, fixture }) {
   const repo = analysis?.repo
   const { payload, loading, error } = useFlowGraph(repo, fixture)
-  const [selected, setSelected] = useState(null)
+  const [isolated, setIsolated] = useState(null)
   const [showSecondary, setShowSecondary] = useState(false)
 
   const view = payload?.view ?? payload
   const repoUrl = payload?.repo_url ?? null
   const pageTitle = payload?.page_title || analysis?.page_title || repo?.split('/').pop() || 'flow'
   const expansion = useExpansion(view, showSecondary, initialExpansion())
-  const { nodes, edges } = useGraphTransform(expansion, expansion.toggle, view?.node_geometry)
+  const onIsolate = useCallback(nodeId => {
+    setIsolated(prev => (prev === nodeId ? null : nodeId))
+  }, [])
+  const { nodes, edges } = useGraphTransform(expansion, expansion.toggle, onIsolate, view?.node_geometry)
   const drawn = nodes.filter(n => n.type !== 'flowGroup').length
   const revealed = drawn - (view?.nodes?.length ?? 0)
+  const selectedNode = isolated ? nodes.find(n => n.id === isolated) ?? null : null
 
-  const onNodeClick = useCallback((_, node) => {
-    if (node.type === 'laneHeader') return
-    setSelected(prev => (prev?.id === node.id ? null : node))
-  }, [])
-  const onPaneClick = useCallback(() => setSelected(null), [])
+  const onPaneClick = useCallback(() => setIsolated(null), [])
 
   return (
     <main style={{ height: '100vh', display: 'flex', flexDirection: 'column', padding: '1.1rem 1.4rem', gap: '0.9rem', boxSizing: 'border-box' }}>
@@ -70,14 +70,14 @@ export default function FlowPage({ analysis, onBack, fixture }) {
             <FlowCanvas
               nodes={nodes}
               edges={edges}
-              selectedId={selected?.id ?? null}
-              onNodeClick={onNodeClick}
+              selectedId={isolated}
+              isolatedId={isolated}
               onPaneClick={onPaneClick}
               revealTrigger={expansion.lastReveal}
             />
             <Legend />
-            {selected && (
-              <ProvenancePopover node={selected} repoUrl={repoUrl} onClose={() => setSelected(null)} />
+            {selectedNode && (
+              <IsolatePanel node={selectedNode} repo={repo} repoUrl={repoUrl} onClose={() => setIsolated(null)} />
             )}
           </>
         )}

@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from dependencies import get_current_user, get_repo_map_service
+from dependencies import get_current_user, get_node_explain_service, get_repo_map_service
 from models.auth_model import AuthUser
+from models.node_explain_model import NodeExplainRequest
 from models.repo_map_model import RepoMapDetail, RepoMapListResponse
+from services.node_explain_service import NodeExplainService
 from services.repo_map_service import RepoMapService
 
 router = APIRouter(prefix="/repomaps", tags=["repomaps"])
@@ -33,6 +35,19 @@ async def get_repo_flow(
         "repo_url": "",
         "view": view,
     }
+
+
+@router.post("/{repo:path}/explain")
+async def explain_repo_node(
+    repo: str,
+    body: NodeExplainRequest,
+    user: AuthUser = Depends(get_current_user),
+    service: NodeExplainService = Depends(get_node_explain_service),
+) -> dict:
+    explanation = await service.explain(user.id, repo, body.node_id)
+    if explanation is None:
+        raise HTTPException(status_code=404, detail="Node not found")
+    return explanation
 
 
 @router.get("/{repo:path}", response_model=RepoMapDetail)

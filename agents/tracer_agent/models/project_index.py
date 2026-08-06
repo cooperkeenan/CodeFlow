@@ -15,7 +15,9 @@ class ProjectIndex:
         *,
         sources: Mapping[str, str] = {},
         source_roots: frozenset[str] = frozenset(),
+        unparsed: tuple[str, ...] = (),
     ) -> None:
+        self.unparsed = unparsed
         self.modules = modules
         self.classes = classes
         self.functions = functions
