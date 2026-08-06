@@ -1,3 +1,4 @@
+import shutil
 import socket
 import subprocess
 import time
@@ -23,8 +24,11 @@ class DevServer:
             print(f"dev server already running on :{self._port}")
             return False
         print(f"starting dev server on :{self._port}...")
+        npm = shutil.which("npm")
+        if npm is None:
+            raise RuntimeError("npm not found on PATH; cannot start the dev server")
         self._process = subprocess.Popen(
-            ["npm", "run", "dev"],
+            [npm, "run", "dev"],
             cwd=str(self._frontend_dir),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

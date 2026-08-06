@@ -3,7 +3,7 @@
 Read this first. It describes what the pipeline does today, how to verify a change, and every
 known open defect — not the history of how it got here.
 
-Branch: `featue/decision-nodes`.
+Branch: `featue/isolate`.
 
 ---
 

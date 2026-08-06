@@ -16,7 +16,10 @@ actions:
   state                dump visible nodes (id, position, label, +N control)
   overlaps             list overlapping node pairs — empty is the goal
   toggle:<node_id>     click that node's +/- control
-  click:<node_id>      select the node (provenance popover)
+  click:<node_id>      select the node (isolates it)
+  panel                dump the isolate panel as text (state, heading, methods, helpers)
+  dimmed               report dimmed/total nodes and which stayed bright
+  key:<name>           press a key, e.g. key:Escape
   press:<text>         click a header button, e.g. press:"collapse all"
   fit                  fit the view
   shot:<path>          screenshot to path
@@ -30,6 +33,18 @@ def _print_state(session: FlowSession) -> None:
     for node in sorted(state["nodes"], key=lambda n: (n["y"] or 0, n["x"] or 0)):
         control = f"  [{node['toggle']}]" if node["toggle"] else ""
         print(f"  ({node['x']:>6},{node['y']:>6})  {node['label'][:44]:<44} {node['id']}{control}")
+
+
+def _print_panel(session: FlowSession) -> None:
+    panel = session.panel()
+    if not panel.get("present"):
+        print("PANEL: absent")
+        return
+    print(f"PANEL: state={panel['state']}  {' / '.join(panel['heading'])}")
+    for row in panel["methods"]:
+        print(f"  method  {row['text']}")
+    for row in panel["helpers"]:
+        print(f"  helper  {row['text']}")
 
 
 def _run_action(session: FlowSession, action: str) -> None:
@@ -47,6 +62,16 @@ def _run_action(session: FlowSession, action: str) -> None:
     elif verb == "click":
         session.click_node(arg)
         print(f"clicked {arg}")
+    elif verb == "panel":
+        _print_panel(session)
+    elif verb == "dimmed":
+        info = session.dimmed()
+        print(f"DIMMED: {info['dimmed']}/{info['total']}")
+        for node_id in info["bright"]:
+            print(f"  bright: {node_id}")
+    elif verb == "key":
+        session.press_key(arg)
+        print(f"pressed key {arg}")
     elif verb == "press":
         session.press_button(arg)
         print(f"pressed {arg!r}")

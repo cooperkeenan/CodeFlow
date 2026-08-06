@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping
 
 from models.pillar_scores import PillarScores
@@ -23,6 +24,10 @@ from services.analysis.route_handler_locator import RouteHandlerLocator
 from services.analysis.service_root_resolver import ServiceRootResolver
 from services.analysis.significance_config import SignificanceConfig
 from services.analysis.significance_filter_factory import build_significance_filter
+from services.analysis.symbol_context_builder import SymbolContextBuilder
+from services.analysis.symbol_source_reader import SymbolSourceReader
+
+logger = logging.getLogger(__name__)
 
 
 class FlowPipeline:
@@ -37,7 +42,9 @@ class FlowPipeline:
         judge: DecisionJudge | None = None,
         namer: FlowNaming | None = None,
         reviewer: FlowReviewing | None = None,
+        embed_symbol_sources: bool = False,
     ) -> None:
+        self._embed_sources = embed_symbol_sources
         self._indexer = indexer
         self._effects = effect_detector
         self._stitcher = stitcher
@@ -89,11 +96,23 @@ class FlowPipeline:
         budgeted = self._budgeter.budget(stitched, pillars, components)
         named = budgeted if self._namer is None else self._namer.name(budgeted)
         self._last_pre_review = named
+        if index.unparsed:
+            logger.warning(
+                "%d file(s) could not be parsed and are missing from the graph: %s",
+                len(index.unparsed),
+                ", ".join(index.unparsed[:5]),
+            )
+        reader = SymbolSourceReader(index.sources) if self._embed_sources else None
+        symbol_context = SymbolContextBuilder(
+            index, callsites, ServiceRootResolver(self._hints, index.source_roots), reader
+        )
         if self._reviewer is None:
+            named.meta["symbol_context"] = symbol_context.build(named)
             return named
         reviewed = self._reviewer.review(named)
         self._last_review = [
             ReviewFinding(node_id=finding["node_id"], issue=finding["issue"])
             for finding in reviewed.meta.get("review_findings", [])
         ]
+        reviewed.meta["symbol_context"] = symbol_context.build(reviewed)
         return reviewed

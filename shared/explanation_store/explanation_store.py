@@ -1,0 +1,9 @@
+from typing import Protocol
+
+
+class ExplanationStore(Protocol):
+    async def ensure_schema(self) -> None: ...
+
+    async def get(self, fingerprint: str) -> dict | None: ...
+
+    async def put(self, fingerprint: str, repo: str, node_id: str, payload: dict) -> None: ...

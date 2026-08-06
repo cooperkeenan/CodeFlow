@@ -11,6 +11,7 @@ _LOCAL_AGENT_URLS = {
     "TRACER_AGENT_URL": "http://localhost:8003",
     "RENDER_AGENT_URL": "http://localhost:8004",
     "LAYOUT_AGENT_URL": "http://localhost:8006",
+    "EXPLAIN_AGENT_URL": "http://localhost:8007",
 }
 
 
@@ -24,6 +25,7 @@ class Settings(BaseSettings):
     TRACER_AGENT_URL: str = "http://localhost:8003"
     RENDER_AGENT_URL: str = "http://localhost:8004"
     LAYOUT_AGENT_URL: str = "http://localhost:8006"
+    EXPLAIN_AGENT_URL: str = "http://localhost:8007"
     LOCAL_REPO: bool = False
     LOCAL_REPO_PATH: str = ""
     DATABASE_URL: str = ""

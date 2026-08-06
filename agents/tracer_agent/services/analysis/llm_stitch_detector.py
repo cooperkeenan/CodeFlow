@@ -44,11 +44,12 @@ class LlmStitchDetector:
         representatives = sorted((group[0] for group in groups.values()), key=lambda c: c.id)
         for start in range(0, len(representatives), _BATCH_SIZE):
             batch = representatives[start : start + _BATCH_SIZE]
-            batch_verdicts = self._judge_batch(batch, entries, entry_ids)
+            batch_verdicts, cacheable = self._judge_batch(batch, entries, entry_ids)
             for candidate in batch:
                 fingerprint = fingerprints[candidate.id]
                 verdict = batch_verdicts.get(candidate.id, StitchVerdict(None, 0.0))
-                self._cache.put(fingerprint, verdict)
+                if candidate.id in cacheable:
+                    self._cache.put(fingerprint, verdict)
                 for duplicate in groups[fingerprint]:
                     results[duplicate.id] = verdict
         self._cache.flush()
@@ -71,12 +72,12 @@ class LlmStitchDetector:
 
     def _judge_batch(
         self, batch: list[EffectSite], entries: tuple[FlowEntry, ...], entry_ids: set[str]
-    ) -> dict[str, StitchVerdict]:
+    ) -> tuple[dict[str, StitchVerdict], set[str]]:
         try:
             payload = self._call(batch, entries)
         except Exception as exc:
             logger.warning("Stitch judging skipped a batch of %d: %s", len(batch), exc)
-            return {}
+            return {}, set()
         by_id = {c.id for c in batch}
         verdicts: dict[str, StitchVerdict] = {}
         for entry in payload:
@@ -85,7 +86,7 @@ class LlmStitchDetector:
             if verdict is None or call_id not in by_id:
                 continue
             verdicts[call_id] = verdict
-        return verdicts
+        return verdicts, set(verdicts)
 
     def _call(self, batch: list[EffectSite], entries: tuple[FlowEntry, ...]) -> list[dict]:
         response = self._llm.messages.create(

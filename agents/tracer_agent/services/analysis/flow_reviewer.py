@@ -34,18 +34,19 @@ class FlowReviewer:
         fingerprint = compute_review_fingerprint(bundle)
         result = self._cache.get(fingerprint)
         if result is None:
-            result = self._review_bundle(bundle, graph)
-            self._cache.put(fingerprint, result)
-            self._cache.flush()
+            result, cacheable = self._review_bundle(bundle, graph)
+            if cacheable:
+                self._cache.put(fingerprint, result)
+                self._cache.flush()
         return self._apply(graph, result)
 
-    def _review_bundle(self, bundle: list[dict], graph: FlowGraph) -> ReviewResult:
+    def _review_bundle(self, bundle: list[dict], graph: FlowGraph) -> tuple[ReviewResult, bool]:
         try:
             raw = self._call(bundle)
-            return self._validate(raw, graph)
+            return self._validate(raw, graph), True
         except Exception as exc:
             logger.warning("Flow review fell back for bundle of %d: %s", len(bundle), exc)
-            return ReviewResult(corrected={}, page_title="", lane_titles={}, findings=[])
+            return ReviewResult(corrected={}, page_title="", lane_titles={}, findings=[]), False
 
     def _call(self, bundle: list[dict]) -> dict:
         response = self._llm.messages.create(

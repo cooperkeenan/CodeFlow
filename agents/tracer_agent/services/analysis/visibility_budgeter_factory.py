@@ -24,7 +24,7 @@ def build_visibility_budgeter(config: BudgetConfig | None = None) -> VisibilityB
     repointer = ContainerRepointer()
     return VisibilityBudgeter(
         BudgetRecondenser(LabelSynthesizer(), repointer),
-        ArmFolder(cfg),
+        ArmFolder(cfg, repointer),
         EffectCapper(repointer),
         LaneApportioner(cfg),
         SkeletonReducer(gateways),

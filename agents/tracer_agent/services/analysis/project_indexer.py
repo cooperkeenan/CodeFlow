@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping
 
 from models.class_record import ClassRecord
@@ -9,6 +10,8 @@ from services.analysis.module_parser import ModuleParser
 from services.analysis.path_fqn import module_fqn
 from services.analysis.protocol_implementation_resolver import ProtocolImplementationResolver
 from services.analysis.subclass_index_builder import SubclassIndexBuilder
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectIndexer:
@@ -29,8 +32,14 @@ class ProjectIndexer:
         functions: dict[str, FunctionRecord] = {}
         all_analyses = []
         source_roots: set[str] = set()
+        unparsed: list[str] = []
         for relpath in sorted(files):
-            result = self._module_parser.parse(relpath, files[relpath], project_modules)
+            try:
+                result = self._module_parser.parse(relpath, files[relpath], project_modules)
+            except SyntaxError as exc:
+                logger.warning("Skipping unparseable %s: %s", relpath, exc)
+                unparsed.append(relpath)
+                continue
             modules[result.module.fqn] = result.module
             source_roots |= result.source_roots
             for analysis in result.classes:
@@ -46,6 +55,7 @@ class ProjectIndexer:
             classes=dict(sorted(classes.items())),
             functions=dict(sorted(functions.items())),
             implementations_index=self._merge(nominal, structural),
+            unparsed=tuple(unparsed),
             sources=files,
             source_roots=frozenset(source_roots),
         )

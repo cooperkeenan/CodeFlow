@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 import httpx
+from clients.explain_client import ExplainClient
 from clients.github_client import GitHubClient
 from clients.layout_client import LayoutClient
 from clients.profiler_client import ProfilerClient
@@ -12,6 +13,7 @@ from core.config import Settings, get_settings
 from fastapi import Depends, Header, HTTPException, Request
 from models.auth_model import AuthUser
 from services.analysis_service import AnalysisService
+from services.node_explain_service import NodeExplainService
 from services.progress_tracker import ProgressTracker
 from services.archive_extractor import ArchiveExtractor
 from services.auth_service import AuthService
@@ -25,11 +27,14 @@ from services.output_persister import OutputPersister
 from services.password_auth_service import PasswordAuthService
 from services.password_hasher import PasswordHasher
 from services.repo_map_service import RepoMapService
+from services.source_slicer import SourceSlicer
 from services.stage_status_service import StageStatusService
+from services.symbol_context_resolver import SymbolContextResolver
 from services.token_hasher import TokenHasher
 from services.token_service import TokenService
 from shared.access_token_store.access_token_store import AccessTokenStore
 from shared.code_store.code_store import CodeStore
+from shared.explanation_store.explanation_store import ExplanationStore
 from shared.repo_map_store.repo_map_store import RepoMapStore
 from shared.user_store.user_store import UserStore
 
@@ -87,6 +92,13 @@ def get_layout_client(
     settings: Settings = Depends(get_settings),
 ) -> LayoutClient:
     return LayoutClient(http_client, settings.LAYOUT_AGENT_URL)
+
+
+def get_explain_client(
+    http_client: httpx.AsyncClient = Depends(get_http_client),
+    settings: Settings = Depends(get_settings),
+) -> ExplainClient:
+    return ExplainClient(http_client, settings.EXPLAIN_AGENT_URL)
 
 
 def get_progress_tracker(request: Request) -> ProgressTracker:
@@ -167,6 +179,25 @@ def get_repo_map_service(
     repo_map_store: RepoMapStore = Depends(get_repo_map_store),
 ) -> RepoMapService:
     return RepoMapService(repo_map_store)
+
+
+def get_explanation_store(request: Request) -> ExplanationStore:
+    return request.app.state.explanation_store
+
+
+def get_symbol_context_resolver(
+    code_store: CodeStore = Depends(get_code_store),
+) -> SymbolContextResolver:
+    return SymbolContextResolver(code_store, SourceSlicer())
+
+
+def get_node_explain_service(
+    repo_map_service: RepoMapService = Depends(get_repo_map_service),
+    resolver: SymbolContextResolver = Depends(get_symbol_context_resolver),
+    explain_client: ExplainClient = Depends(get_explain_client),
+    explanation_store: ExplanationStore = Depends(get_explanation_store),
+) -> NodeExplainService:
+    return NodeExplainService(repo_map_service, resolver, explain_client, explanation_store)
 
 
 def get_ci_ingest_service(
