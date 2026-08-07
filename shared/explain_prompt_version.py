@@ -1,1 +1,1 @@
-PROMPT_VERSION = "explain-v1"
+PROMPT_VERSION = "explain-v2"

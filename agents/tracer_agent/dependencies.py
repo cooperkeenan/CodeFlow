@@ -44,15 +44,17 @@ def get_source_persist_service(
     return SourcePersistService(code_store)
 
 
-def get_flow_pipeline() -> FlowPipeline:
+def get_flow_pipeline(
+    settings: Settings = Depends(get_settings),
+) -> FlowPipeline:
     return FlowPipeline(
         build_project_indexer(),
         build_effect_detector(),
-        build_flow_stitcher(),
+        build_flow_stitcher(settings.ANTHROPIC_API_KEY),
         build_visibility_budgeter(),
-        judge=build_decision_judge(_CACHE_ROOT / "decision_verdicts.json"),
-        namer=build_flow_namer(_CACHE_ROOT / "node_names.json"),
-        reviewer=build_flow_reviewer(_CACHE_ROOT / "review_findings.json"),
+        judge=build_decision_judge(settings.ANTHROPIC_API_KEY, _CACHE_ROOT / "decision_verdicts.json"),
+        namer=build_flow_namer(settings.ANTHROPIC_API_KEY, _CACHE_ROOT / "node_names.json"),
+        reviewer=build_flow_reviewer(settings.ANTHROPIC_API_KEY, _CACHE_ROOT / "review_findings.json"),
     )
 
 

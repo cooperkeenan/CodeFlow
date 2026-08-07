@@ -38,11 +38,25 @@
 - Schemas live next to the tool they describe (same file)
 
 ## What Not To Do
-- Do not modify frontend/ unless the PBI explicitly says so
+- Do not modify frontend/ unless the task explicitly says so
 - Do not create test files unless asked
 - Do not refactor files that are not in scope for the current PBI
 - Do not add logging statements beyond what already exists in the file being modified
 - Do not use global variables or module-level mutable state
+
+## Never Read Configuration From The Ambient Environment
+A service or factory that reads `os.environ` directly will silently do the wrong thing in one
+process and the right thing in another. This has already shipped a fully degraded product:
+
+- `build_decision_judge` / `build_flow_namer` / `build_flow_reviewer` / `build_flow_stitcher` each
+  did `os.environ.get("ANTHROPIC_API_KEY")` and fell back to the offline heuristic when it was
+  missing. The scripts populate `os.environ` via `load_dotenv`; **uvicorn does not** — pydantic
+  settings load `.env` into the `Settings` object, never into the process environment. So every run
+  through the gateway silently produced 22 nodes where the scripts produced 394, with no error
+  anywhere.
+
+Config comes in through `Settings` and is passed as a parameter. If a key is absent, either fail
+loudly or make the fallback a deliberate, visible choice (`--no-llm`) — never a silent one.
 
 ## Never Hardcode This Repo's Own Layout
 CodeFlow analyses arbitrary Python repos, so any assumption about directory names is a bug —
@@ -72,6 +86,13 @@ here have improved several times while the diagram got visibly worse.
 
 `--save cooperkeenan` writes the run to the user's account in the same pass, so they never have to
 re-run it themselves. Always include it.
+
+The same rule governs the **frame** (`PROMPT.md` "Vocabulary"): after any change to it, drive it and
+look at the result. `flow_agent.py <repo> "toggle:<parent>" "isolate:<child>" isolated dimmed` prints
+the frame's box, canvas fill and computed border. Animation work needs more than the settled state —
+sample per frame with `requestAnimationFrame` and assert on the trace, because every frame defect
+found so far (text re-wrapping mid-grow, edges detaching, a white scrollbar flashing, the box growing
+from the wrong corner) was invisible in a settled screenshot and obvious in a per-frame trace.
 
 To check *interaction* rather than the static image, drive the real page yourself instead of asking
 the user to relay what they see:

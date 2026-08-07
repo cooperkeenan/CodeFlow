@@ -6,12 +6,19 @@ import { useAnalysis } from './hooks/useAnalysis'
 import { getSessionToken, saveSession, saveGithubToken } from './api/session'
 import { exchangeCode, linkGithub } from './api/github'
 import { RepoMapsProvider } from './hooks/RepoMapsContext'
+import { ExplanationCacheProvider } from './hooks/ExplanationCacheContext'
 import RequireAuth from './components/RequireAuth'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import FlowPage from './pages/FlowPage'
+
+function fixtureAnalysis() {
+  if (typeof window === 'undefined') return null
+  const repo = new URLSearchParams(window.location.search).get('repo')
+  return repo ? { repo } : null
+}
 
 export default function App() {
   const navigate = useNavigate()
@@ -46,31 +53,36 @@ export default function App() {
 
   return (
     <RepoMapsProvider>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <DashboardPage onOpenMap={openMap} />
-            </RequireAuth>
-          }
-        />
-        <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
-        <Route path="/flow-fixture" element={<FlowPage fixture="/fixture/rendered_view.json" />} />
-        <Route
-          path="/flow"
-          element={
-            <RequireAuth>
-              {analysis
-                ? <FlowPage analysis={analysis} onBack={() => { reset(); navigate('/') }} />
-                : <Navigate to="/" replace />}
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <ExplanationCacheProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <DashboardPage onOpenMap={openMap} />
+              </RequireAuth>
+            }
+          />
+          <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+          <Route
+            path="/flow-fixture"
+            element={<FlowPage fixture="/fixture/rendered_view.json" analysis={fixtureAnalysis()} />}
+          />
+          <Route
+            path="/flow"
+            element={
+              <RequireAuth>
+                {analysis
+                  ? <FlowPage analysis={analysis} onBack={() => { reset(); navigate('/') }} />
+                  : <Navigate to="/" replace />}
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ExplanationCacheProvider>
     </RepoMapsProvider>
   )
 }

@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 from pathlib import Path
@@ -33,11 +34,13 @@ def read_sources() -> dict[str, str]:
     return read_python_sources(ROOT)
 
 
-def build_pipeline(judge: DecisionJudge, namer: FlowNaming, reviewer: FlowReviewing) -> FlowPipeline:
+def build_pipeline(
+    judge: DecisionJudge, namer: FlowNaming, reviewer: FlowReviewing, api_key: str | None
+) -> FlowPipeline:
     return FlowPipeline(
         build_project_indexer(),
         build_effect_detector(),
-        build_flow_stitcher(),
+        build_flow_stitcher(api_key),
         build_visibility_budgeter(),
         judge=judge,
         namer=namer,
@@ -53,13 +56,14 @@ def check(label: str, ok: bool, detail: str = "") -> bool:
 
 def main() -> int:
     load_dotenv(ROOT / ".env")
-    judge = build_decision_judge(_CACHE_PATH)
-    namer = build_flow_namer(_NAME_CACHE_PATH)
-    reviewer = build_flow_reviewer(_REVIEW_CACHE_PATH)
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    judge = build_decision_judge(api_key, _CACHE_PATH)
+    namer = build_flow_namer(api_key, _NAME_CACHE_PATH)
+    reviewer = build_flow_reviewer(api_key, _REVIEW_CACHE_PATH)
     used_llm = not isinstance(judge, HeuristicDecisionJudge)
 
     files = read_sources()
-    pipeline = build_pipeline(judge, namer, reviewer)
+    pipeline = build_pipeline(judge, namer, reviewer, api_key)
     graph = pipeline.run("CodeFlow", files)
     pre_review = pipeline.last_pre_review()
     canonical_first = _canonical(pipeline.run("CodeFlow", files))

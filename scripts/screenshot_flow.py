@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -37,12 +38,13 @@ _REVIEW_CACHE_PATH = REPO_ROOT / ".cache" / "review_findings.json"
 def _build_view(target: Path, no_llm: bool):
     files = read_python_sources(target)
     print(f"Indexed {len(files)} Python files from {target}")
-    judge = HeuristicDecisionJudge(SiteClassifier()) if no_llm else build_decision_judge(_CACHE_PATH)
-    namer = HeuristicFlowNamer() if no_llm else build_flow_namer(_NAME_CACHE_PATH)
-    reviewer = HeuristicFlowReviewer() if no_llm else build_flow_reviewer(_REVIEW_CACHE_PATH)
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    judge = HeuristicDecisionJudge(SiteClassifier()) if no_llm else build_decision_judge(api_key, _CACHE_PATH)
+    namer = HeuristicFlowNamer() if no_llm else build_flow_namer(api_key, _NAME_CACHE_PATH)
+    reviewer = HeuristicFlowReviewer() if no_llm else build_flow_reviewer(api_key, _REVIEW_CACHE_PATH)
     pipeline = FlowPipeline(
         build_project_indexer(), build_effect_detector(),
-        build_flow_stitcher(), build_visibility_budgeter(),
+        build_flow_stitcher(api_key), build_visibility_budgeter(),
         judge=judge, namer=namer, reviewer=reviewer,
         embed_symbol_sources=True,
     )

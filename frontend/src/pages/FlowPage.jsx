@@ -1,13 +1,13 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFlowGraph } from '../hooks/useFlowGraph'
 import { useExpansion } from '../hooks/useExpansion'
 import { useGraphTransform } from '../hooks/useGraphTransform'
 import FlowCanvas from '../components/flow/FlowCanvas'
 import Legend from '../components/flow/Legend'
-import IsolatePanel from '../components/flow/isolate/IsolatePanel'
 
 const MONO = 'IBM Plex Mono, monospace'
 const MUTED = { fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.38)' }
+const PANE_CLICK_GRACE_MS = 300
 
 function initialExpansion() {
   if (typeof window === 'undefined') return []
@@ -22,18 +22,28 @@ export default function FlowPage({ analysis, onBack, fixture }) {
   const [showSecondary, setShowSecondary] = useState(false)
 
   const view = payload?.view ?? payload
-  const repoUrl = payload?.repo_url ?? null
   const pageTitle = payload?.page_title || analysis?.page_title || repo?.split('/').pop() || 'flow'
   const expansion = useExpansion(view, showSecondary, initialExpansion())
+  const lastIsolateAt = useRef(0)
   const onIsolate = useCallback(nodeId => {
+    lastIsolateAt.current = Date.now()
     setIsolated(prev => (prev === nodeId ? null : nodeId))
   }, [])
   const { nodes, edges } = useGraphTransform(expansion, expansion.toggle, onIsolate, view?.node_geometry)
   const drawn = nodes.filter(n => n.type !== 'flowGroup').length
   const revealed = drawn - (view?.nodes?.length ?? 0)
-  const selectedNode = isolated ? nodes.find(n => n.id === isolated) ?? null : null
 
-  const onPaneClick = useCallback(() => setIsolated(null), [])
+  const onPaneClick = useCallback(() => {
+    if (Date.now() - lastIsolateAt.current < PANE_CLICK_GRACE_MS) return
+    setIsolated(null)
+  }, [])
+
+  useEffect(() => {
+    if (!isolated) return undefined
+    const onKey = e => { if (e.key === 'Escape') setIsolated(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isolated])
 
   return (
     <main style={{ height: '100vh', display: 'flex', flexDirection: 'column', padding: '1.1rem 1.4rem', gap: '0.9rem', boxSizing: 'border-box' }}>
@@ -74,11 +84,9 @@ export default function FlowPage({ analysis, onBack, fixture }) {
               isolatedId={isolated}
               onPaneClick={onPaneClick}
               revealTrigger={expansion.lastReveal}
+              repo={repo}
             />
             <Legend />
-            {selectedNode && (
-              <IsolatePanel node={selectedNode} repo={repo} repoUrl={repoUrl} onClose={() => setIsolated(null)} />
-            )}
           </>
         )}
       </div>

@@ -17,9 +17,24 @@ labels.** The LLM may never add, remove, merge or rewire a node or edge.
 Scoped task docs are ephemeral (gitignored, deleted on merge to main). This file, `CLAUDE.md` and
 the code are the source of truth. `HANDOFF.md` holds the current job and gap analysis.
 
+## Vocabulary
+
+- **Frame** — the large rectangle a node becomes when you click its `isolate` control. The node
+  itself grows to ~78% of the canvas, its outline turns dashed halfway through, the rest of the
+  diagram dims and drifts aside. The frame shows the node's title at top-centre and, below it, the
+  symbol that node resolves to: the source file, the class or function, and its methods and helpers
+  each with a plain-English one-line summary. Use "frame" for this; it is not a panel, popover or
+  modal — it is the node. Its right column toggles between a **code view** (the selected method's
+  source) and a **sequence view** (the whole class's calls, in source-line order).
+- Frame content is fetched **on demand** from `POST /repomaps/{repo}/explain` and cached by
+  content-addressed fingerprint in the `ExplanationStore`, so explanations are never generated for
+  every node up front. `flow_graph.meta.symbol_context` (written by `SymbolContextBuilder`) is what
+  makes that possible: it carries each node's owning FQN plus the function/class table, so the
+  explain agent can be handed just the source slices it needs.
+
 ## Architecture
 
-Five services plus a frontend:
+Six services plus a frontend:
 
 - **Gateway** (`api/`, 8000) — orchestrates the pipeline, serves the UI's HTTP API, persists results.
 - **Profiler agent** (`agents/profiler_agent/`, 8002) — repo module/zone skeleton → `RepoBlueprint`.
@@ -27,11 +42,14 @@ Five services plus a frontend:
   graph, extracts forks, judges them, condenses to a `FlowGraph`.
 - **Layout agent** (`agents/layout_agent/`, 8006) — cosmetic labelling of the finished graph.
 - **Render agent** (`agents/render_agent/`, 8004) — deterministic React Flow geometry.
+- **Explain agent** (`agents/explain_agent/`, 8007) — on-demand plain-English summaries of the symbol
+  behind a node; what fills the **frame**. Called by the gateway's `NodeExplainService`, never by the
+  pipeline, so it costs nothing until a user opens a frame.
 - **Frontend** (`frontend/`, Vite + React Flow) — thin renderer over backend-supplied positions.
 
 Each is a FastAPI app run via uvicorn (VS Code task **CodeFlow: All Services**). `.env` at the repo
 root holds `ANTHROPIC_API_KEY`, GitHub OAuth creds, `DATABASE_URL` and `LOCAL_REPO_PATH`. With
-`ENVIRONMENT=local`, `api/core/config.py` points the four agent URLs at localhost instead of Railway.
+`ENVIRONMENT=local`, `api/core/config.py` points the five agent URLs at localhost instead of Railway.
 `.env` is not hot-reloaded — restart the gateway after editing. Gateway→tracer/layout timeouts are
 900s.
 
@@ -86,7 +104,8 @@ plus a `PROMPT_VERSION`. Cold run on django-helpdesk ≈4 min; warm ≈3s.
 
 ## Tech Stack
 - Python 3.10+, FastAPI, Uvicorn, Pydantic v2.
-- Anthropic SDK, `claude-haiku-4-5-20251001`, temperature 0 (decision judge, stitch judge, labeller).
+- Anthropic SDK, `claude-haiku-4-5-20251001`, temperature 0 (decision judge, stitch judge, labeller,
+  symbol explainer). Every LLM call is cached and content-addressed on a `PROMPT_VERSION`.
 - psycopg + Neon Postgres for persistence (`shared/repo_map_store/neon_repo_map_store.py`).
 - React + Vite + React Flow. Positions come from the render agent — no dagre, no Mermaid.
 - Python-only analysis; JS/TS is not traced.
@@ -112,17 +131,26 @@ rendered page **as text**, so state can be asserted rather than eyeballed.
 python scripts/flow_agent.py <repo> --rebuild state overlaps
 python scripts/flow_agent.py <repo> "toggle:<node_id>" fit "shot:scratch_out/x.png"
 python scripts/flow_agent.py <repo> "press:collapse all" state
+python scripts/flow_agent.py <repo> "toggle:<parent>" "isolate:<child>" isolated dimmed
 ```
 
 Actions: `state` (every visible node with position, label and `+N` control), `overlaps` (colliding
 node pairs — **0 is the goal**, and this is the check that catches bad layout), `toggle:<id>`,
-`click:<id>`, `press:<button text>`, `fit`, `shot:<path>`. `--rebuild` re-runs the pipeline first;
-without it the existing fixture is reused. Nested expansion works — toggle a revealed decision or a
-`more:` node to go deeper.
+`isolate:<id>` (opens the frame), `isolated` (the frame's box, canvas fill and computed border),
+`dimmed`, `click:<id>`, `key:<name>`, `press:<button text>`, `fit`, `shot:<path>`. `--rebuild`
+re-runs the pipeline first; without it the existing fixture is reused. Nested expansion works —
+toggle a revealed decision or a `more:` node to go deeper.
 
 `screenshot_flow.py` serves the result to the real `FlowPage` through a dev-only `/flow-fixture`
 route — no API, DB or login. `--save` upserts a `repo_maps` row viewable in the web UI, resolving
 the account by `github_login` or `email`.
+
+**Frame content needs a repo**, so `/flow-fixture` accepts `?repo=<name>` (`App.jsx: fixtureAnalysis`)
+purely so the harness can exercise it; stub the response with Playwright's
+`page.route("**/explain", ...)`. Without a repo the hook short-circuits and the frame correctly reads
+`no explanation available for this node`. Animation assertions must allow for the frame's ~920ms
+open plus a 760ms camera pan — `FlowSession.isolate` waits 1300ms for exactly this reason, and
+reading sooner produces a half-grown box that looks like a regression but is not.
 
 ## Current Status
 
@@ -146,7 +174,7 @@ a gateway-selector scoring gap, a chain-linking gap, a mislabelled single-arm de
 
 ## Ops
 
-`.github/workflows/cd.yml` builds five backend images and runs `railway redeploy` on push to `main`;
+`.github/workflows/cd.yml` builds six backend images (including `explain`) and runs `railway redeploy` on push to `main`;
 it is **not** gated on CI, and the frontend is not in the pipeline (served via `tunnel.sh`).
 `scripts/build-push.sh` builds and pushes the same images manually.
 
@@ -160,5 +188,11 @@ it is **not** gated on CI, and the frontend is not in the pipeline (served via `
   `containment_indexer.py`, `container_repointer.py`, `budget_config.py`
 - Geometry: `agents/render_agent/placement/{flow_page_placer,tree_layout,tree_structure,flow_emit}.py`
 - Frontend flow page: `frontend/src/pages/FlowPage.jsx`, `hooks/useGraphTransform.js`,
-  `components/flow/{FlowCanvas,NodeChrome,ProvenancePopover}.jsx`
+  `hooks/useExpansion.js`, `components/flow/{FlowCanvas,NodeChrome,CameraController}.jsx`
+- The frame (isolate): `frontend/src/hooks/{useIsolatedView,useIsolateAnimation,ExplanationCacheContext,
+  useNodeExplanation}.js`, `components/flow/isolateLayout.js`, `components/flow/isolate/*` —
+  see `HANDOFF.md` §5 for the animation invariants
+- Explain path: `api/services/{node_explain_service,symbol_context_resolver}.py`,
+  `agents/explain_agent/`, `agents/tracer_agent/services/analysis/symbol_context_builder.py`,
+  `shared/explain_prompt_version.py`
 - Persistence: `shared/repo_map_store/neon_repo_map_store.py`, `api/routers/repo_maps.py`

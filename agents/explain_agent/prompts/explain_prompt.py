@@ -11,13 +11,15 @@ symbol, its class (if any), and the methods/helpers belonging to it. Every item 
 qualified name (fqn). You may ONLY describe fqns supplied in the request — never invent a name.
 
 Style rules (obey strictly):
-- Each summary is ONE clause, at most 12 words, in the register of "adds two numbers together".
+- Each method/helper summary is ONE clause, at most 12 words, in the register of "adds two numbers together".
+- The primary_summary is longer: TWO sentences, at most 40 words total. The first says what the
+  symbol is for; the second says how it is used or what it produces.
 - Plain English for a non-programmer. No type jargon, no restating the signature, no "This method...".
 - Base the summary on what the code actually does, using its source if given.
 
 Respond with ONLY valid JSON, no markdown fences, no prose, matching this schema EXACTLY:
 {
-  "primary_summary": "<=12 words summarizing the focus symbol",
+  "primary_summary": "two sentences, <=40 words, describing the focus symbol",
   "methods": {"<fqn>": "<=12 words"},
   "helpers": {"<fqn>": "<=12 words"}
 }"""

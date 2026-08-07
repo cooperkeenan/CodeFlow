@@ -16,8 +16,9 @@ actions:
   state                dump visible nodes (id, position, label, +N control)
   overlaps             list overlapping node pairs — empty is the goal
   toggle:<node_id>     click that node's +/- control
-  click:<node_id>      select the node (isolates it)
-  panel                dump the isolate panel as text (state, heading, methods, helpers)
+  click:<node_id>      click the node body (no-op — FlowCanvas has no onNodeClick)
+  isolate:<node_id>    click that node's isolate button
+  isolated             dump the isolated (rf-iso) node: box size, canvas fill, border
   dimmed               report dimmed/total nodes and which stayed bright
   key:<name>           press a key, e.g. key:Escape
   press:<text>         click a header button, e.g. press:"collapse all"
@@ -35,16 +36,18 @@ def _print_state(session: FlowSession) -> None:
         print(f"  ({node['x']:>6},{node['y']:>6})  {node['label'][:44]:<44} {node['id']}{control}")
 
 
-def _print_panel(session: FlowSession) -> None:
-    panel = session.panel()
-    if not panel.get("present"):
-        print("PANEL: absent")
+def _print_isolated(session: FlowSession) -> None:
+    info = session.isolated()
+    if not info.get("present"):
+        print("ISOLATED: absent")
         return
-    print(f"PANEL: state={panel['state']}  {' / '.join(panel['heading'])}")
-    for row in panel["methods"]:
-        print(f"  method  {row['text']}")
-    for row in panel["helpers"]:
-        print(f"  helper  {row['text']}")
+    fill_w = round((info["fillW"] or 0) * 100)
+    fill_h = round((info["fillH"] or 0) * 100)
+    print(
+        f"ISOLATED: {info['id']}  box={info['w']}x{info['h']}  "
+        f"canvas={info['canvasW']}x{info['canvasH']}  fill={fill_w}%x{fill_h}%  "
+        f"border={info['borderStyle']} {info['borderWidth']} r={info['borderRadius']}"
+    )
 
 
 def _run_action(session: FlowSession, action: str) -> None:
@@ -62,8 +65,11 @@ def _run_action(session: FlowSession, action: str) -> None:
     elif verb == "click":
         session.click_node(arg)
         print(f"clicked {arg}")
-    elif verb == "panel":
-        _print_panel(session)
+    elif verb == "isolate":
+        session.isolate(arg)
+        print(f"isolated {arg}")
+    elif verb == "isolated":
+        _print_isolated(session)
     elif verb == "dimmed":
         info = session.dimmed()
         print(f"DIMMED: {info['dimmed']}/{info['total']}")
