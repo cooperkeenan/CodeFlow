@@ -59,15 +59,18 @@ class NodeExplainService:
             "helpers": helpers,
         }
 
+        sources = {s["fqn"]: s["source"] for s in (*symbols, *helpers)}
+        sequence = self._resolver.sequence_for(primary_kind, primary_fqn, member_fqns, functions)
+
         fingerprint = self._fingerprint(primary_fqn, symbols, helpers)
         cached = await self._store.get(fingerprint)
         if cached is not None:
-            return cached
+            return {"explanation": cached, "sources": sources, "sequence": sequence}
 
         response = await self._explain_client.explain(payload)
         explanation = response["explanation"]
         await self._store.put(fingerprint, repo, node_id, explanation)
-        return explanation
+        return {"explanation": explanation, "sources": sources, "sequence": sequence}
 
     async def _slices(
         self, fqns: list[str], functions: dict, classes: dict, repo: str, file_cache: dict

@@ -19,7 +19,7 @@ export default function EffectNode({ data, selected, sourcePosition, targetPosit
     boxSizing: 'border-box',
   }
   return (
-    <div style={shellStyle(base, KIND_ACCENT.effect, { selected, highlighted: data.highlighted, dashed: data.dashed })}>
+    <div style={shellStyle(base, KIND_ACCENT.effect, { selected, highlighted: data.highlighted, dashed: data.dashed, isolated: data.isolated })}>
       <Handles target={targetPosition} source={sourcePosition} />
       <span title={data.effectKind ?? 'effect'} style={{ fontSize: Math.round(16 * scale), lineHeight: 1, flexShrink: 0 }}>{icon}</span>
       <NodeChrome data={data} subtitle={data.effectTarget || null} />

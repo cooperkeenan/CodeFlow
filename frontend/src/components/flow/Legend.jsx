@@ -23,7 +23,7 @@ const EDGES = [
 const BADGES = [['⟳', 'loop'], ['⟲', 'recursive'], ['⛨', 'guarded'], ['⚡', 'dynamic']]
 
 export default function Legend() {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
   return (
     <div style={{
       position: 'absolute', bottom: 12, left: 12, zIndex: 5,

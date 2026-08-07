@@ -1,0 +1,8 @@
+.isolate-code-pane code[class*='language-'] { padding-left: 0 !important; }
+
+.isolate-code-pane .linenumber {
+  min-width: 1.4em !important;
+  padding-right: 0 !important;
+  margin-right: 8px !important;
+  text-align: right;
+}

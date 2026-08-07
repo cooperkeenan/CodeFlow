@@ -82,6 +82,7 @@ class SymbolContextBuilder:
             "is_async": record.is_async,
             "span": record.span.model_dump(),
             "callees": list(self._callees.callees_of(fqn)),
+            "calls": [{"fqn": callee_fqn, "line": line} for line, callee_fqn in self._callees.calls_of(fqn)],
         }
         if self._sources is not None:
             entry["source"] = self._sources.read_function(record.span)

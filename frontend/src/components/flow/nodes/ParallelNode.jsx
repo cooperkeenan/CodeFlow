@@ -17,9 +17,17 @@ export default function ParallelNode({ data, selected, sourcePosition, targetPos
     gap: Math.round(8 * scale),
     boxSizing: 'border-box',
   }
-  const style = shellStyle(base, KIND_ACCENT.parallel, { selected, highlighted: data.highlighted })
+  const style = shellStyle(base, KIND_ACCENT.parallel, {
+    selected,
+    highlighted: data.highlighted,
+    dashed: data.dashed,
+    isolated: data.isolated,
+  })
+  const shell = data.isolated
+    ? style
+    : { ...style, borderLeft: `${Math.max(2, Math.round(4 * scale))}px solid ${KIND_ACCENT.parallel}` }
   return (
-    <div style={{ ...style, borderLeft: `${Math.max(2, Math.round(4 * scale))}px solid ${KIND_ACCENT.parallel}` }}>
+    <div style={shell}>
       <Handles target={targetPosition} source={sourcePosition} />
       <span title="parallel split" style={{ color: KIND_ACCENT.parallel, fontSize: Math.round(13 * scale), lineHeight: 1, flexShrink: 0 }}>⑃</span>
       <NodeChrome data={data} />

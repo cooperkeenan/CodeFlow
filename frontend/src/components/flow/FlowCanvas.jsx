@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import ReactFlow, { Background, Controls, MiniMap } from 'reactflow'
+import { useState } from 'react'
+import ReactFlow, { Background, Controls, MiniMap, ReactFlowProvider } from 'reactflow'
 import 'reactflow/dist/style.css'
 import './isolate.css'
 import EntryNode from './nodes/EntryNode'
@@ -14,6 +14,7 @@ import GroupBox from './nodes/GroupBox'
 import FlowEdgeComponent from './FlowEdgeComponent'
 import CameraController from './CameraController'
 import { KIND_ACCENT } from './styles'
+import { useIsolatedView } from '../../hooks/useIsolatedView'
 
 const NODE_TYPES = {
   entry: EntryNode,
@@ -30,26 +31,11 @@ const EDGE_TYPES = { flow: FlowEdgeComponent }
 const FIT_OPTIONS = { padding: 0.25 }
 const MINIMAP_THRESHOLD = 20
 
-export default function FlowCanvas({ nodes, edges, selectedId, isolatedId, onPaneClick, revealTrigger }) {
+function FlowCanvasInner({ nodes, edges, selectedId, isolatedId, onPaneClick, revealTrigger, repo }) {
   const [hoveredEdge, setHoveredEdge] = useState(null)
-
-  const highlightNodes = useMemo(() => {
-    const edge = edges.find(e => e.id === hoveredEdge)
-    return edge ? new Set([edge.source, edge.target]) : new Set()
-  }, [hoveredEdge, edges])
-
-  const rfNodes = useMemo(() => nodes.map(n => ({
-    ...n,
-    selected: n.id === selectedId,
-    className: isolatedId && n.id !== isolatedId ? 'rf-dim' : undefined,
-    data: { ...n.data, highlighted: highlightNodes.has(n.id) },
-  })), [nodes, selectedId, isolatedId, highlightNodes])
-
-  const rfEdges = useMemo(() => edges.map(e => ({
-    ...e,
-    className: isolatedId && e.source !== isolatedId && e.target !== isolatedId ? 'rf-dim' : undefined,
-    data: { ...e.data, highlighted: e.id === hoveredEdge },
-  })), [edges, hoveredEdge, isolatedId])
+  const { rfNodes, rfEdges, isolateCenter } = useIsolatedView(
+    nodes, edges, selectedId, isolatedId, hoveredEdge, repo,
+  )
 
   return (
     <ReactFlow
@@ -67,16 +53,25 @@ export default function FlowCanvas({ nodes, edges, selectedId, isolatedId, onPan
       nodesConnectable={false}
       proOptions={{ hideAttribution: true }}
     >
-      <CameraController revealTrigger={revealTrigger} />
+      <CameraController revealTrigger={revealTrigger} isolateCenter={isolateCenter} />
       <Background color="#242424" gap={28} size={1} style={{ background: '#1E1E1E' }} />
       <Controls position="top-left" style={{ background: '#1A1A1A', border: '1px solid #242424', borderRadius: 3 }} />
       {nodes.length > MINIMAP_THRESHOLD && (
         <MiniMap
+          className={isolatedId ? 'rf-minimap-behind' : undefined}
           style={{ background: '#121212', border: '1px solid #242424' }}
           nodeColor={n => KIND_ACCENT[n.data?.kind] ?? '#333333'}
           maskColor="#00000088"
         />
       )}
     </ReactFlow>
+  )
+}
+
+export default function FlowCanvas(props) {
+  return (
+    <ReactFlowProvider>
+      <FlowCanvasInner {...props} />
+    </ReactFlowProvider>
   )
 }

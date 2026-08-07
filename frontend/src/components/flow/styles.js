@@ -81,14 +81,20 @@ export function scalePad(vertical, horizontal, scale = 1) {
   return `${Math.round(vertical * scale)}px ${Math.round(horizontal * scale)}px`
 }
 
-export function shellStyle(base, accent, { selected, highlighted, dashed }) {
+const BASE_TRANSITION = 'border-color 120ms ease, box-shadow 120ms ease'
+const SIZE_TRANSITION =
+  ', width 760ms cubic-bezier(.5,0,.2,1), min-height 760ms cubic-bezier(.5,0,.2,1), border-radius 760ms cubic-bezier(.5,0,.2,1)'
+
+export function shellStyle(base, accent, { selected, highlighted, dashed, isolated }) {
   const ring = highlighted ? accent : selected ? accent : accent + '66'
   return {
     ...base,
+    ...(isolated ? { alignItems: 'stretch', justifyContent: 'center', height: base.minHeight } : {}),
+    ...(isolated === 'open' ? { borderRadius: 4 } : {}),
     border: `${highlighted || selected ? 2 : 1}px ${dashed ? 'dashed' : 'solid'} ${ring}`,
     boxShadow: highlighted ? `0 0 0 3px ${accent}33` : 'none',
     boxSizing: 'border-box',
     cursor: 'pointer',
-    transition: 'border-color 120ms ease, box-shadow 120ms ease',
+    transition: BASE_TRANSITION + SIZE_TRANSITION,
   }
 }

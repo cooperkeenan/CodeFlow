@@ -28,20 +28,25 @@ _READ_STATE = """
 """
 
 
-_READ_PANEL = """
+_READ_ISOLATED = """
 () => {
-  const root = document.querySelector('[data-testid="isolate-panel"]');
-  if (!root) return { present: false };
-  const rows = (sel, attr) => [...root.querySelectorAll(sel)].map(el => ({
-    key: el.getAttribute(attr),
-    text: (el.innerText || '').trim().replace(/\\s+/g, ' '),
-  }));
+  const el = document.querySelector('.react-flow__node.rf-iso');
+  if (!el) return { present: false };
+  const canvas = document.querySelector('.react-flow');
+  const shell = el.firstElementChild;
+  const shellStyle = shell ? getComputedStyle(shell) : null;
+  const box = el.getBoundingClientRect();
+  const canvasBox = canvas ? canvas.getBoundingClientRect() : null;
+  const w = Math.round(box.width), h = Math.round(box.height);
+  const cw = canvasBox ? Math.round(canvasBox.width) : null;
+  const ch = canvasBox ? Math.round(canvasBox.height) : null;
   return {
-    present: true,
-    state: root.getAttribute('data-state'),
-    heading: (root.innerText || '').trim().split('\\n').slice(0, 2),
-    methods: rows('[data-method]', 'data-method'),
-    helpers: rows('[data-helper]', 'data-helper'),
+    present: true, id: el.getAttribute('data-id'), w, h, canvasW: cw, canvasH: ch,
+    fillW: cw ? w / cw : null,
+    fillH: ch ? h / ch : null,
+    borderStyle: shellStyle ? shellStyle.borderStyle : null,
+    borderWidth: shellStyle ? shellStyle.borderWidth : null,
+    borderRadius: shellStyle ? shellStyle.borderRadius : null,
   };
 }
 """
@@ -86,8 +91,13 @@ class FlowSession:
         return self._page.evaluate(_READ_STATE)
 
     def toggle(self, node_id: str) -> None:
-        self._page.click(f'.react-flow__node[data-id="{node_id}"] [role="button"]')
+        selector = f'.react-flow__node[data-id="{node_id}"] [role="button"]:not([data-testid="isolate-button"])'
+        self._page.click(selector)
         self._page.wait_for_timeout(350)
+
+    def isolate(self, node_id: str) -> None:
+        self._page.click(f'.react-flow__node[data-id="{node_id}"] [data-testid="isolate-button"]')
+        self._page.wait_for_timeout(1300)
 
     def click_node(self, node_id: str) -> None:
         self._page.click(f'.react-flow__node[data-id="{node_id}"]')
@@ -105,15 +115,15 @@ class FlowSession:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._page.screenshot(path=str(path), full_page=False)
 
-    def panel(self) -> dict:
-        return self._page.evaluate(_READ_PANEL)
+    def isolated(self) -> dict:
+        return self._page.evaluate(_READ_ISOLATED)
 
     def dimmed(self) -> dict:
         return self._page.evaluate(_READ_DIMMED)
 
     def press_key(self, key: str) -> None:
         self._page.keyboard.press(key)
-        self._page.wait_for_timeout(250)
+        self._page.wait_for_timeout(1300)
 
     def overlaps(self) -> list[tuple[str, str]]:
         nodes = [

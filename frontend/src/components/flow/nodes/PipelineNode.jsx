@@ -21,6 +21,7 @@ export default function PipelineNode({ data, selected, sourcePosition, targetPos
     selected,
     highlighted: data.highlighted,
     dashed: data.dashed,
+    isolated: data.isolated,
   })
   return (
     <div style={style}>

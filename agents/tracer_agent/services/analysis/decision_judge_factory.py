@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import anthropic
@@ -9,9 +8,8 @@ from services.analysis.site_classifier import SiteClassifier
 from services.analysis.verdict_cache import VerdictCache
 
 
-def build_decision_judge(cache_path: Path) -> DecisionJudge:
+def build_decision_judge(api_key: str | None, cache_path: Path) -> DecisionJudge:
     fallback = HeuristicDecisionJudge(SiteClassifier())
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         return fallback
     client = anthropic.Anthropic(api_key=api_key)

@@ -1,6 +1,7 @@
 import ExpandToggle from './ExpandToggle'
 import IsolateButton from './IsolateButton'
 import NodeBadges from './NodeBadges'
+import IsolatedChrome from './isolate/IsolatedChrome'
 import { LABEL_STYLE, CHIP_STYLE, PROVENANCE_STYLE, MONO, TEXT_MUTED, scaleText } from './styles'
 
 const SUBTITLE_STYLE = {
@@ -15,6 +16,7 @@ const SUBTITLE_STYLE = {
 }
 
 export default function NodeChrome({ data, align = 'flex-start', subtitle = null }) {
+  if (data.isolated) return <IsolatedChrome data={data} />
   const scale = data.scale ?? 1
   const foldedTitle = data.foldedArms?.length
     ? data.foldedArms.join(', ')

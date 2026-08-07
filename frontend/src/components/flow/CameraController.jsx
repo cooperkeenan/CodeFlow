@@ -4,6 +4,7 @@ import { scaleOf } from './depthScale'
 import { GEOMETRY_FALLBACK } from './geometryFallback'
 
 const DURATION = 360
+const ISOLATE_DURATION = 760
 const MAX_ZOOM = 2.6
 const FIT_OPTIONS = { padding: 0.25, duration: 360 }
 
@@ -20,11 +21,12 @@ function boundsOf(nodes) {
   return { minX, minY, maxX, maxY }
 }
 
-export default function CameraController({ revealTrigger }) {
+export default function CameraController({ revealTrigger, isolateCenter = null }) {
   const { getNode, getViewport, setViewport, fitView } = useReactFlow()
   const width = useStore(s => s.width)
   const height = useStore(s => s.height)
   const baseZoom = useRef(null)
+  const activeIsolateId = useRef(null)
 
   useEffect(() => {
     if (!revealTrigger) return
@@ -55,6 +57,24 @@ export default function CameraController({ revealTrigger }) {
     })
     return () => cancelAnimationFrame(frame)
   }, [revealTrigger, getNode, getViewport, setViewport, fitView, width, height])
+
+  useEffect(() => {
+    if (!isolateCenter || !width || !height) {
+      activeIsolateId.current = null
+      return
+    }
+    if (activeIsolateId.current === isolateCenter.id) return
+    activeIsolateId.current = isolateCenter.id
+    const { zoom } = getViewport()
+    setViewport(
+      {
+        x: width / 2 - isolateCenter.cx * zoom,
+        y: height / 2 - isolateCenter.cy * zoom,
+        zoom,
+      },
+      { duration: ISOLATE_DURATION },
+    )
+  }, [isolateCenter, getViewport, setViewport, width, height])
 
   return null
 }

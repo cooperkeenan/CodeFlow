@@ -44,10 +44,10 @@ async def explain_repo_node(
     user: AuthUser = Depends(get_current_user),
     service: NodeExplainService = Depends(get_node_explain_service),
 ) -> dict:
-    explanation = await service.explain(user.id, repo, body.node_id)
-    if explanation is None:
+    result = await service.explain(user.id, repo, body.node_id)
+    if result is None:
         raise HTTPException(status_code=404, detail="Node not found")
-    return explanation
+    return result
 
 
 @router.get("/{repo:path}", response_model=RepoMapDetail)

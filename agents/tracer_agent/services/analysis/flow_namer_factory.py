@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import anthropic
@@ -9,9 +8,8 @@ from services.analysis.name_cache import NameCache
 from services.analysis.name_validator import NameValidator
 
 
-def build_flow_namer(cache_path: Path) -> FlowNaming:
+def build_flow_namer(api_key: str | None, cache_path: Path) -> FlowNaming:
     fallback = HeuristicFlowNamer()
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         return fallback
     client = anthropic.Anthropic(api_key=api_key)
