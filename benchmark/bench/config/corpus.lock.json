@@ -1,0 +1,55 @@
+{
+  "pins": {
+    "black": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "74371e2041a3120a049ced8f1cab0e7a6bc8ecd3",
+      "url": "https://github.com/psf/black"
+    },
+    "codeflow-self": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "b9779cfdd74f5f7775f77bbe463d69b14c9aba12",
+      "url": "https://github.com/cooperkeenan/codeflow"
+    },
+    "django-helpdesk": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "1c00f93cb9a8093ff1442bb318fc18392720ee90",
+      "url": "https://github.com/django-helpdesk/django-helpdesk"
+    },
+    "fastapi-fullstack-template": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "c350936d2888ef16ff4f5549684fd8db54935a89",
+      "url": "https://github.com/fastapi/full-stack-fastapi-template"
+    },
+    "flagsmith": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "dc99d654ae6649a44912bf52f2900cdcbb94e7a2",
+      "url": "https://github.com/Flagsmith/flagsmith"
+    },
+    "httpx": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "url": "https://github.com/encode/httpx"
+    },
+    "netflix-dispatch": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "dd2837e82a0bf5565b1b4b4b91ea30b7262d4061",
+      "url": "https://github.com/Netflix/dispatch"
+    },
+    "redash": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "7cf3b517d0adf5018e61a351663bb4f804c21a5a",
+      "url": "https://github.com/getredash/redash"
+    },
+    "requests": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "8068356288978c4f54661ae6f95afe0e0831885e",
+      "url": "https://github.com/psf/requests"
+    },
+    "scrapy": {
+      "resolved_at": "2026-08-13T13:59:50+00:00",
+      "sha": "ca48915dd4f6c388be741a97213df03e7a81ea89",
+      "url": "https://github.com/scrapy/scrapy"
+    }
+  },
+  "version": 1
+}

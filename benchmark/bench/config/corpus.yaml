@@ -1,0 +1,147 @@
+# Benchmark corpus.
+#
+# This file is hand-edited and holds no commit SHAs. `bench corpus pin` resolves
+# each `ref` and writes the frozen SHAs to corpus.lock.json next to this file.
+# Scoring refuses to run against an unpinned repo — a corpus that moves underneath
+# the benchmark is not reproducible.
+#
+# `hypothesis` is documentation for the write-up ONLY. Nothing in the scoring path
+# reads it. It records what we expected before measuring, so a result that
+# contradicts it is visible as a finding rather than quietly rationalised.
+#
+# `entry_point_truth: none` means the repo has no objective register of entry
+# points (a library's public API is a convention, not a fact). Those repos are
+# excluded from the entry-point metric only, and listed in the summary. They are
+# still scored on everything else.
+
+version: 1
+
+repos:
+  - name: django-helpdesk
+    url: https://github.com/django-helpdesk/django-helpdesk
+    ref: main
+    condition: framework-request-driven
+    frameworks: [django]
+    entry_point_truth: objective
+    probe: {kind: django, settings_module: null}
+    control: false
+    hypothesis: >
+      Best case. Django URLconf gives entry points cheaply and CodeFlow has a
+      dedicated DjangoRouteScanner. Also the existing demo target, so comparable
+      to prior manual assessments.
+
+  - name: netflix-dispatch
+    url: https://github.com/Netflix/dispatch
+    ref: main
+    condition: framework-request-driven-at-scale
+    frameworks: [fastapi]
+    entry_point_truth: objective
+    probe: {kind: fastapi, app_path: null}
+    control: false
+    hypothesis: >
+      Best case at scale, several hundred files. The src/dispatch/ layout also
+      exercises CLAUDE.md's "never hardcode this repo's own layout" rule, which
+      has already caused two outages. Heavy service deps, so likely needs the
+      static ground-truth fallback.
+
+  - name: fastapi-fullstack-template
+    url: https://github.com/fastapi/full-stack-fastapi-template
+    ref: master
+    condition: small-auditable
+    frameworks: [fastapi]
+    entry_point_truth: objective
+    probe: {kind: fastapi, app_path: null}
+    control: false
+    hypothesis: >
+      Small enough (~40 files) to hand-audit ground truth completely. This is the
+      sanity floor: if the harness cannot reproduce a hand count here, no larger
+      number it produces is trustworthy.
+
+  - name: redash
+    url: https://github.com/getredash/redash
+    ref: master
+    condition: flask-plus-runtime-config
+    frameworks: [flask]
+    entry_point_truth: objective
+    probe: {kind: flask, app_path: null}
+    control: false
+    hypothesis: >
+      CodeFlow's EntryFinder has NO Flask scanner — only FastAPI and Django. We
+      expect entry-point recall at or near zero. Included to measure that rather
+      than assume it.
+
+  - name: black
+    url: https://github.com/psf/black
+    ref: main
+    condition: cli-no-web-framework
+    frameworks: [click]
+    entry_point_truth: objective
+    probe: {kind: console_scripts, distribution: black}
+    control: false
+    hypothesis: >
+      console_scripts give an objective entry-point register, but CodeFlow detects
+      no CLI entry points at all, so we expect zero. Decision logic is genuinely
+      dense, which makes it a strong Tier 2 case even where Tier 1 scores badly.
+
+  - name: scrapy
+    url: https://github.com/scrapy/scrapy
+    ref: master
+    condition: registry-and-polymorphic-dispatch
+    frameworks: []
+    entry_point_truth: none
+    probe: {kind: console_scripts, distribution: scrapy}
+    control: false
+    hypothesis: >
+      Decisions expressed as registry lookup and middleware component loading from
+      settings strings, not conditionals. Stresses the detector taxonomy directly:
+      the dispatch is real but there is no `if` to find.
+
+  - name: requests
+    url: https://github.com/psf/requests
+    ref: main
+    condition: library-polymorphic
+    frameworks: []
+    entry_point_truth: none
+    probe: {kind: none}
+    control: false
+    hypothesis: >
+      Small library, no objective entry-point register. Decisions live in adapter
+      and auth polymorphism. Expect a tree of seed anchors under root:<repo>.
+
+  - name: httpx
+    url: https://github.com/encode/httpx
+    ref: master
+    condition: library-polymorphic
+    frameworks: []
+    entry_point_truth: none
+    probe: {kind: none}
+    control: false
+    hypothesis: >
+      Second library data point at larger size, transport polymorphism. Included so
+      the library result rests on more than one repo.
+
+  - name: flagsmith
+    url: https://github.com/Flagsmith/flagsmith
+    ref: main
+    condition: runtime-config-heavy
+    frameworks: [django]
+    entry_point_truth: objective
+    probe: {kind: django, settings_module: null}
+    control: false
+    hypothesis: >
+      A feature-flag product: the decisions that matter are made at runtime from
+      flag state, and the source does not contain them. Expect poor Tier 2 results.
+      This is the case the brief explicitly wants measured rather than assumed.
+
+  - name: codeflow-self
+    url: https://github.com/cooperkeenan/codeflow
+    ref: main
+    condition: self-run-control
+    frameworks: [fastapi]
+    entry_point_truth: objective
+    probe: {kind: fastapi, app_path: "api.main:app"}
+    control: true
+    hypothesis: >
+      CONTROL, excluded from headline aggregates. CodeFlow satisfies its own
+      assumptions by construction, so a good score here is evidence of nothing.
+      Present only as a reference point against the team's existing intuitions.
