@@ -1,7 +1,7 @@
 {
   "branch_sites": 423,
   "builder_version": "1",
-  "built_at": "2026-08-13T14:14:57+00:00",
+  "built_at": "2026-08-13T15:01:49+00:00",
   "entry_point_status": "none",
   "notes": [
     "This repository has no objective register of entry points (a library's public API is a convention, not a fact). It is excluded from the entry-point metric rather than scored against an invented ground truth."

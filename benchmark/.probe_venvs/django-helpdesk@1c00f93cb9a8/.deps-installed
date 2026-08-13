@@ -1,0 +1,11 @@
+beautifulsoup4
+django-cleanup
+django-model-utils
+django>=4.2
+djangorestframework
+email-reply-parser
+markdown
+nh3
+oauthlib
+requests
+requests-oauthlib

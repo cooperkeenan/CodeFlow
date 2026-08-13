@@ -23,12 +23,21 @@ repos:
     condition: framework-request-driven
     frameworks: [django]
     entry_point_truth: objective
-    probe: {kind: django, settings_module: null}
+    probe:
+      kind: django
+      # The app lives in src/helpdesk; demodesk/config is a runnable demo project
+      # whose URLconf mounts it. Both roots are needed on sys.path.
+      source_root: "."
+      extra_sys_paths: ["src"]
+      settings_module: demodesk.config.settings
+      env:
+        SECRET_KEY: benchmark-probe-value-not-a-real-secret
     control: false
     hypothesis: >
       Best case. Django URLconf gives entry points cheaply and CodeFlow has a
       dedicated DjangoRouteScanner. Also the existing demo target, so comparable
-      to prior manual assessments.
+      to prior manual assessments. Now also the hand-audit sanity floor, since the
+      FastAPI template turned out to be unbootable upstream.
 
   - name: netflix-dispatch
     url: https://github.com/Netflix/dispatch

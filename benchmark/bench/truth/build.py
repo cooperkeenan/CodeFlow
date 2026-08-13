@@ -81,16 +81,32 @@ class GroundTruthBuilder:
         if self._probe.supports(spec):
             outcome = self._probe.run(pinned.slug, repo_path, spec)
             if outcome.ok:
-                return self._from_probe(outcome, spec.kind), [
+                facts, foreign = self._from_probe(outcome, spec.kind, repo_path)
+                notes = [
                     f"Routes established by runtime introspection ({spec.kind}) using the "
                     f"boot configuration recorded in corpus.yaml: {sorted(spec.env_map)}."
                 ]
+                if foreign:
+                    notes.append(
+                        f"{foreign} route(s) registered by installed third-party packages "
+                        "(e.g. django.contrib.admin, FastAPI's own /docs) were excluded: their "
+                        "handlers are not defined in this repository, so the tool under test "
+                        "cannot see them and scoring against them would be unfair."
+                    )
+                return facts, notes
             return self._fallback(pinned, tree, outcome)
         return self._fallback(pinned, tree, None)
 
-    def _from_probe(self, outcome: ProbeOutcome, kind: str) -> list[RouteFact]:
+    def _from_probe(
+        self, outcome: ProbeOutcome, kind: str, repo_path: Path
+    ) -> tuple[list[RouteFact], int]:
+        root = repo_path.resolve()
         facts: list[RouteFact] = []
+        foreign = 0
         for route in outcome.routes:
+            if not self._defined_in_repo(str(route.get("module_file", "")), root):
+                foreign += 1
+                continue
             methods = tuple(route.get("methods") or ())
             for canonical in self._normalizer.expand(methods, str(route.get("path", ""))):
                 facts.append(
@@ -101,7 +117,15 @@ class GroundTruthBuilder:
                         confidence=RUNTIME_CONFIDENCE,
                     )
                 )
-        return facts
+        return facts, foreign
+
+    def _defined_in_repo(self, module_file: str, root: Path) -> bool:
+        if not module_file:
+            return False
+        try:
+            return Path(module_file).resolve().is_relative_to(root)
+        except (OSError, ValueError):
+            return False
 
     def _fallback(
         self, pinned: PinnedRepo, tree, outcome: ProbeOutcome | None

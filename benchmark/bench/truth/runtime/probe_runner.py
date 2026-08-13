@@ -56,7 +56,7 @@ class RuntimeProbe:
         except VenvBuildError as exc:
             return ProbeOutcome(False, spec.kind, (), str(exc), None)
 
-        payload = self._invoke(venv.python, script, source_root, spec)
+        payload = self._invoke(venv.python, script, source_root, repo_path.resolve(), spec)
         return ProbeOutcome(
             ok=bool(payload.get("ok")),
             framework=spec.kind,
@@ -65,10 +65,15 @@ class RuntimeProbe:
             install_error=venv.install_error,
         )
 
-    def _invoke(self, python: Path, script: Path, source_root: Path, spec: ProbeSpec) -> dict:
+    def _invoke(
+        self, python: Path, script: Path, source_root: Path, repo_path: Path, spec: ProbeSpec
+    ) -> dict:
         env = {k: v for k, v in os.environ.items() if not k.startswith("ANTHROPIC_")}
         env.update(spec.env_map)
         env["PYTHONDONTWRITEBYTECODE"] = "1"
+        env["BENCH_PROBE_SYS_PATHS"] = os.pathsep.join(
+            str((repo_path / extra).resolve()) for extra in spec.extra_sys_paths
+        )
 
         with tempfile.TemporaryDirectory() as work:
             output = Path(work) / "probe.json"

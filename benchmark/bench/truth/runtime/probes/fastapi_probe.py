@@ -26,6 +26,14 @@ def endpoint_name(route: object) -> str:
     return f"{module}.{name}" if module and name else name
 
 
+def module_file(route: object) -> str:
+    """Where the handler is defined, so framework-provided routes (docs, openapi)
+    can be separated from the repository's own."""
+    endpoint = getattr(route, "endpoint", None)
+    module = sys.modules.get(getattr(endpoint, "__module__", "") or "")
+    return getattr(module, "__file__", "") or ""
+
+
 def collect(app: object) -> list[dict]:
     collected: list[dict] = []
     for route in getattr(app, "routes", []):
@@ -38,6 +46,7 @@ def collect(app: object) -> list[dict]:
                 "path": path,
                 "methods": sorted(methods) if methods else [],
                 "endpoint": endpoint_name(route),
+                "module_file": module_file(route),
             }
         )
     return collected

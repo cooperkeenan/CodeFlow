@@ -1,7 +1,7 @@
 {
   "branch_sites": 58,
   "builder_version": "1",
-  "built_at": "2026-08-13T14:14:18+00:00",
+  "built_at": "2026-08-13T15:01:48+00:00",
   "entry_point_status": "objective",
   "notes": [
     "Runtime introspection unavailable (probe dependencies failed to install: ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts); ground truth falls back to independent static extraction. Treat these facts as weaker evidence.",

@@ -15,6 +15,8 @@ _GROUP = re.compile(r"\((?:[^()\\]|\\.)*\)")
 _ANGLE = re.compile(r"<[^>]*>")
 _BRACE = re.compile(r"\{[^}]*\}")
 _SLASHES = re.compile(r"/{2,}")
+# DRF writes an optional trailing slash as `/?`; canonical form has no trailing slash.
+_OPTIONAL_SLASH = re.compile(r"/\?$")
 
 PARAM = "{}"
 
@@ -33,12 +35,16 @@ class RouteNormalizer:
 
     def path(self, path: str) -> str:
         text = (path or "").strip()
-        text = text.lstrip("^").rstrip("$")
         text = _NAMED_GROUP.sub(PARAM, text)
         text = _GROUP.sub(PARAM, text)
         text = _ANGLE.sub(PARAM, text)
         text = _BRACE.sub(PARAM, text)
+        # Anchors are stripped everywhere, not just at the ends: Django include()
+        # concatenates each sub-pattern's own `^`, so a mounted DRF router yields
+        # paths like `api/^tickets` where the anchor sits mid-string.
+        text = text.replace("^", "").replace("$", "")
         text = text.replace("\\", "")
+        text = _OPTIONAL_SLASH.sub("", text)
         text = _SLASHES.sub("/", text)
         if not text.startswith("/"):
             text = "/" + text
@@ -47,7 +53,12 @@ class RouteNormalizer:
         return text or "/"
 
     def expand(self, methods: tuple[str, ...], path: str) -> tuple[str, ...]:
-        """One canonical string per HTTP method, sorted and de-duplicated."""
-        chosen = tuple(m for m in methods if m.strip()) or ("GET",)
+        """One canonical string per HTTP method, sorted and de-duplicated.
+
+        No declared methods yields ``ANY``, not ``GET``. A Django URLconf does not
+        record methods for function-based views, and defaulting to GET would
+        invent a fact the framework never stated.
+        """
+        chosen = tuple(m for m in methods if m.strip()) or ("ANY",)
         canonical_path = self.path(path)
         return tuple(sorted({f"{self.method(m)} {canonical_path}" for m in chosen}))

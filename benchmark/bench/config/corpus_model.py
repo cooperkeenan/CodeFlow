@@ -27,6 +27,7 @@ class ProbeSpec:
     app_path: str | None = None
     distribution: str | None = None
     source_root: str | None = None
+    extra_sys_paths: tuple[str, ...] = ()
     env: tuple[tuple[str, str], ...] = ()
 
     @property
@@ -78,6 +79,7 @@ def _probe_from(raw: dict[str, Any] | None) -> ProbeSpec:
         app_path=data.get("app_path"),
         distribution=data.get("distribution"),
         source_root=data.get("source_root"),
+        extra_sys_paths=tuple(data.get("extra_sys_paths") or ()),
         env=tuple(sorted((str(k), str(v)) for k, v in env.items())),
     )
 

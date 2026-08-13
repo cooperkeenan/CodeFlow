@@ -1,0 +1,569 @@
+{
+  "branch_sites": 678,
+  "builder_version": "1",
+  "built_at": "2026-08-13T15:01:25+00:00",
+  "entry_point_status": "objective",
+  "notes": [
+    "Routes established by runtime introspection (django) using the boot configuration recorded in corpus.yaml: ['SECRET_KEY'].",
+    "110 route(s) registered by installed third-party packages (e.g. django.contrib.admin, FastAPI's own /docs) were excluded: their handlers are not defined in this repository, so the tool under test cannot see them and scoring against them would be unfair."
+  ],
+  "provenance_mix": {
+    "runtime:django": 92
+  },
+  "repo": "django-helpdesk",
+  "routes": [
+    {
+      "canonical": "ANY /api/followups",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.FollowUpViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/followups-attachments",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.FollowUpAttachmentViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/followups-attachments.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.FollowUpAttachmentViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/followups-attachments/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.FollowUpAttachmentViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/followups-attachments/{}.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.FollowUpAttachmentViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/followups.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.FollowUpViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/followups/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.FollowUpViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/followups/{}.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.FollowUpViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/tickets",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.TicketViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/tickets.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.TicketViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/tickets/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.TicketViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/tickets/{}.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.TicketViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/user_tickets",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.UserTicketViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/user_tickets.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.UserTicketViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/user_tickets/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.UserTicketViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/user_tickets/{}.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.UserTicketViewSet",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/users",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.CreateUserView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /api/users.{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.api.CreateUserView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /change_language",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.change_language",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /checklist-templates",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.checklist_templates",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /checklist-templates/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.checklist_templates",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /checklist-templates/{}/delete",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.delete_checklist_template",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /dashboard",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.dashboard",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /delete_query/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.delete_saved_query",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /ignore",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.email_ignore",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /ignore/add",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.email_ignore_add",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /ignore/delete/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.email_ignore_del",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /kanban",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.kanban_board",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /kb",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.kb.index",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /kb/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.kb.category",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /kb/{}/vote/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.kb.vote",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /kb_iframe/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.kb.category_iframe",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /login",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.login.login",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /raw/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.raw_details",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /reports",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.report_index",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /reports/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.run_report",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /rss",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.rss_list",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /rss/queue/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.feeds.user_passes_test.<locals>.decorator.<locals>._view_wrapper",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /rss/recent_activity",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.feeds.user_passes_test.<locals>.decorator.<locals>._view_wrapper",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /rss/unassigned",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.feeds.user_passes_test.<locals>.decorator.<locals>._view_wrapper",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /rss/user/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.feeds.user_passes_test.<locals>.decorator.<locals>._view_wrapper",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /rss/user/{}/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.feeds.user_passes_test.<locals>.decorator.<locals>._view_wrapper",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /save_query",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.save_query",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /saved-searches",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.saved_searches_list",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.ticket_list",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/merge",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.merge_tickets",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/submit",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.create_ticket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/update",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.mass_update",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.view_ticket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/attachment_delete/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.attachment_del",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/attachment_preview/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.attachment_preview",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/cc",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.ticket_cc",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/cc/add",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.ticket_cc_add",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/cc/delete/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.ticket_cc_del",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/checklists/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.edit_ticket_checklist",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/checklists/{}/delete",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.delete_ticket_checklist",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/delete",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.delete_ticket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/dependency/add",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.ticket_dependency_add",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/dependency/delete/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.ticket_dependency_del",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/edit",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.edit_ticket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/followup_delete/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.followup_delete",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/followup_edit/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.followup_edit",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/hold",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.hold_ticket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/kanban-update",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.kanban_update_ticket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/resolves/add",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.ticket_resolves_add",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/resolves/delete/{}",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.ticket_resolves_del",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/unhold",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.unhold_ticket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "ANY /tickets/{}/update",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.update_ticket_view",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.Homepage",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /datatables_ticket_list/(?P{}{}*{}?)",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.WrappedAPIView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /settings",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.EditUserSettingsView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /system_settings",
+      "confidence": 1.0,
+      "handler": "helpdesk.urls.DirectTemplateView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /tickets/my-tickets",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.MyTickets",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /tickets/submit_iframe",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.CreateTicketIframeView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /tickets/success_iframe",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.SuccessIframeView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /timeline_ticket_list/(?P{}{}*{}?)",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.WrappedAPIView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "GET /view",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.ViewTicket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.Homepage",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /datatables_ticket_list/(?P{}{}*{}?)",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.WrappedAPIView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /settings",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.EditUserSettingsView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /system_settings",
+      "confidence": 1.0,
+      "handler": "helpdesk.urls.DirectTemplateView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /tickets/my-tickets",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.MyTickets",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /tickets/submit_iframe",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.CreateTicketIframeView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /tickets/success_iframe",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.SuccessIframeView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /timeline_ticket_list/(?P{}{}*{}?)",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.WrappedAPIView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "OPTIONS /view",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.ViewTicket",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "POST /",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.Homepage",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "POST /settings",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.EditUserSettingsView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "POST /tickets/submit_iframe",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.CreateTicketIframeView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "PUT /",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.Homepage",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "PUT /settings",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.staff.EditUserSettingsView",
+      "provenance": "runtime:django"
+    },
+    {
+      "canonical": "PUT /tickets/submit_iframe",
+      "confidence": 1.0,
+      "handler": "helpdesk.views.public.CreateTicketIframeView",
+      "provenance": "runtime:django"
+    }
+  ],
+  "sha": "1c00f93cb9a8093ff1442bb318fc18392720ee90"
+}
