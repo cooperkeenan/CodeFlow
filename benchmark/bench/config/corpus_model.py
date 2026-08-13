@@ -14,10 +14,24 @@ class UnpinnedCorpus(RuntimeError):
 
 @dataclass(frozen=True)
 class ProbeSpec:
+    """How to boot a repo so its own framework can be asked what it registers.
+
+    `env` is the boot configuration used for the probe. It is committed rather than
+    inferred because routes can depend on it — a router mounted inside
+    `if settings.ENVIRONMENT == "local"` exists under one configuration and not
+    another, so the configuration is part of the ground truth's meaning.
+    """
+
     kind: str
     settings_module: str | None = None
     app_path: str | None = None
     distribution: str | None = None
+    source_root: str | None = None
+    env: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def env_map(self) -> dict[str, str]:
+        return dict(self.env)
 
 
 @dataclass(frozen=True)
@@ -57,11 +71,14 @@ class PinnedRepo:
 
 def _probe_from(raw: dict[str, Any] | None) -> ProbeSpec:
     data = raw or {"kind": "none"}
+    env = data.get("env") or {}
     return ProbeSpec(
         kind=str(data.get("kind", "none")),
         settings_module=data.get("settings_module"),
         app_path=data.get("app_path"),
         distribution=data.get("distribution"),
+        source_root=data.get("source_root"),
+        env=tuple(sorted((str(k), str(v)) for k, v in env.items())),
     )
 
 

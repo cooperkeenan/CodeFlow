@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     RESULTS_DIR: Path = ROOT_DIR / "results"
     TRUTH_DIR: Path = ROOT_DIR / "bench" / "truth" / "data"
     JUDGE_CACHE_DIR: Path = ROOT_DIR / ".bench_cache"
+    PROBE_VENVS_DIR: Path = ROOT_DIR / ".probe_venvs"
 
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),

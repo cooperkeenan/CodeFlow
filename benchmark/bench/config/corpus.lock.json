@@ -16,8 +16,8 @@
       "url": "https://github.com/django-helpdesk/django-helpdesk"
     },
     "fastapi-fullstack-template": {
-      "resolved_at": "2026-08-13T13:59:50+00:00",
-      "sha": "c350936d2888ef16ff4f5549684fd8db54935a89",
+      "resolved_at": "2026-08-13T14:10:46+00:00",
+      "sha": "e4022a9502a6b61c857e3cbdaddc69e7219c9d53",
       "url": "https://github.com/fastapi/full-stack-fastapi-template"
     },
     "flagsmith": {

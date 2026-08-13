@@ -1,0 +1,13 @@
+{
+  "branch_sites": 423,
+  "builder_version": "1",
+  "built_at": "2026-08-13T14:14:57+00:00",
+  "entry_point_status": "none",
+  "notes": [
+    "This repository has no objective register of entry points (a library's public API is a convention, not a fact). It is excluded from the entry-point metric rather than scored against an invented ground truth."
+  ],
+  "provenance_mix": {},
+  "repo": "requests",
+  "routes": [],
+  "sha": "8068356288978c4f54661ae6f95afe0e0831885e"
+}

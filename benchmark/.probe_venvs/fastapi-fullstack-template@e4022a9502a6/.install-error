@@ -1,0 +1,2 @@
+ERROR: Cannot install fastapi-cli, sentry-sdk<2.0.0 and >=1.40.6 and sentry-sdk[fastapi]==1.40.6 because these package versions have conflicting dependencies.
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts

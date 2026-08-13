@@ -6,6 +6,13 @@ from bench.config.corpus_model import CorpusLoader, CorpusRepo
 from bench.config.settings import Settings, get_settings
 from bench.corpus.checkout import RepoCheckout
 from bench.corpus.pin import CommitPinner, utc_now_iso
+from bench.truth.build import GroundTruthBuilder
+from bench.truth.models import TruthStore
+from bench.truth.normalize import RouteNormalizer
+from bench.truth.runtime.probe_runner import RuntimeProbe
+from bench.truth.runtime.venv_builder import ProbeVenvBuilder
+from bench.truth.static.branch_census import BranchCensus
+from bench.truth.static.fastapi_routes import FastApiRouteExtractor
 
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
 
@@ -79,6 +86,48 @@ def cmd_corpus_sync(args: argparse.Namespace, settings: Settings) -> int:
     return 1 if failures else 0
 
 
+def build_truth_builder(settings: Settings) -> "GroundTruthBuilder":
+    normalizer = RouteNormalizer()
+    return GroundTruthBuilder(
+        normalizer=normalizer,
+        fastapi_extractor=FastApiRouteExtractor(normalizer),
+        census=BranchCensus(),
+        probe=RuntimeProbe(ProbeVenvBuilder(settings.PROBE_VENVS_DIR)),
+        codeflow_root=settings.CODEFLOW_PATH,
+    )
+
+
+def cmd_truth_build(args: argparse.Namespace, settings: Settings) -> int:
+    loader = build_loader()
+    checkout = RepoCheckout(settings.CORPUS_CACHE_DIR)
+    store = TruthStore(settings.TRUTH_DIR)
+    builder = build_truth_builder(settings)
+    failures = 0
+
+    for repo in select(loader, args):
+        try:
+            pinned = loader.pinned(repo.name)
+            path = checkout.ensure(pinned)
+            truth = builder.build(pinned, path, utc_now_iso())
+            written = store.write(truth)
+        except Exception as exc:  # noqa: BLE001 - reported, never swallowed
+            print(f"FAIL  {repo.name}: {exc}", file=sys.stderr)
+            failures += 1
+            continue
+
+        mix = truth.provenance_mix() or {"(no routes)": 0}
+        summary = ", ".join(f"{k}={v}" for k, v in mix.items())
+        print(f"ok    {pinned.slug:<44} routes={len(truth.routes):<4} branches={truth.branch_sites}")
+        print(f"      provenance: {summary}")
+        for note in truth.notes:
+            print(f"      note: {note}")
+        print(f"      -> {written.name}")
+
+    if failures:
+        print(f"{failures} repo(s) failed", file=sys.stderr)
+    return 1 if failures else 0
+
+
 def cmd_not_yet(args: argparse.Namespace, settings: Settings) -> int:
     print(f"`{args.command}` is not implemented yet.", file=sys.stderr)
     return 2
@@ -107,8 +156,13 @@ def build_parser() -> argparse.ArgumentParser:
     add_selection(sync)
     sync.set_defaults(handler=cmd_corpus_sync)
 
+    truth = subs.add_parser("truth", help="build or verify Tier 1 ground truth")
+    truth_subs = truth.add_subparsers(dest="subcommand", required=True)
+    truth_build = truth_subs.add_parser("build", help="establish ground truth for a repo")
+    add_selection(truth_build)
+    truth_build.set_defaults(handler=cmd_truth_build)
+
     for name, help_text in (
-        ("truth", "build or verify Tier 1 ground truth"),
         ("run", "score a repo against ground truth and/or the judge"),
         ("report", "render a previous run"),
     ):

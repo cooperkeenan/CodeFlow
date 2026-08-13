@@ -1,0 +1,155 @@
+{
+  "branch_sites": 58,
+  "builder_version": "1",
+  "built_at": "2026-08-13T14:14:18+00:00",
+  "entry_point_status": "objective",
+  "notes": [
+    "Runtime introspection unavailable (probe dependencies failed to install: ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts); ground truth falls back to independent static extraction. Treat these facts as weaker evidence.",
+    "23 route(s) sit behind a non-literal prefix (e.g. prefix=settings.API_V1_STR). Static analysis cannot resolve these; their paths are missing that segment. Runtime introspection resolves them."
+  ],
+  "provenance_mix": {
+    "static:ast-unresolved-prefix": 23
+  },
+  "repo": "fastapi-fullstack-template",
+  "routes": [
+    {
+      "canonical": "DELETE /items/{}",
+      "confidence": 0.5,
+      "handler": "app.api.routes.items.delete_item",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "DELETE /users/me",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.delete_user_me",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "DELETE /users/{}",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.delete_user",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "GET /items",
+      "confidence": 0.5,
+      "handler": "app.api.routes.items.read_items",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "GET /items/{}",
+      "confidence": 0.5,
+      "handler": "app.api.routes.items.read_item",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "GET /users",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.read_users",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "GET /users/me",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.read_user_me",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "GET /users/{}",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.read_user_by_id",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "GET /utils/health-check",
+      "confidence": 0.5,
+      "handler": "app.api.routes.utils.health_check",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "PATCH /users/me",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.update_user_me",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "PATCH /users/me/password",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.update_password_me",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "PATCH /users/{}",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.update_user",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /items",
+      "confidence": 0.5,
+      "handler": "app.api.routes.items.create_item",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /login/access-token",
+      "confidence": 0.5,
+      "handler": "app.api.routes.login.login_access_token",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /login/test-token",
+      "confidence": 0.5,
+      "handler": "app.api.routes.login.test_token",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /password-recovery-html-content/{}",
+      "confidence": 0.5,
+      "handler": "app.api.routes.login.recover_password_html_content",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /password-recovery/{}",
+      "confidence": 0.5,
+      "handler": "app.api.routes.login.recover_password",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /private/users",
+      "confidence": 0.5,
+      "handler": "app.api.routes.private.create_user",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /reset-password",
+      "confidence": 0.5,
+      "handler": "app.api.routes.login.reset_password",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /users",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.create_user",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /users/signup",
+      "confidence": 0.5,
+      "handler": "app.api.routes.users.register_user",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "POST /utils/test-email",
+      "confidence": 0.5,
+      "handler": "app.api.routes.utils.test_email",
+      "provenance": "static:ast-unresolved-prefix"
+    },
+    {
+      "canonical": "PUT /items/{}",
+      "confidence": 0.5,
+      "handler": "app.api.routes.items.update_item",
+      "provenance": "static:ast-unresolved-prefix"
+    }
+  ],
+  "sha": "e4022a9502a6b61c857e3cbdaddc69e7219c9d53"
+}

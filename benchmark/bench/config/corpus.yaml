@@ -46,16 +46,33 @@ repos:
 
   - name: fastapi-fullstack-template
     url: https://github.com/fastapi/full-stack-fastapi-template
-    ref: master
+    # Pinned to a release tag rather than a branch head. Note this repo is
+    # currently broken upstream: backend/app/api/deps.py contains a Python 2
+    # `except A, B:` that no Python 3 interpreter can parse, present across
+    # releases 0.10-0.12 and master. The runtime probe therefore cannot boot it
+    # and ground truth falls back to static extraction, recorded as such.
+    # Discovered by this harness; not a harness defect.
+    ref: "0.12.0"
     condition: small-auditable
     frameworks: [fastapi]
     entry_point_truth: objective
-    probe: {kind: fastapi, app_path: null}
+    probe:
+      kind: fastapi
+      source_root: backend
+      app_path: app.main:app
+      env:
+        SECRET_KEY: benchmark-probe-value-not-a-real-secret
+        PROJECT_NAME: benchmark
+        DATABASE_URL: postgresql://user:pass@localhost:5432/benchmark
+        ENVIRONMENT: local
     control: false
     hypothesis: >
       Small enough (~40 files) to hand-audit ground truth completely. This is the
       sanity floor: if the harness cannot reproduce a hand count here, no larger
-      number it produces is trustworthy.
+      number it produces is trustworthy. Also the clearest demonstration of why
+      runtime introspection is primary: every route sits behind
+      prefix=settings.API_V1_STR, which static analysis cannot resolve, and
+      private.router is mounted inside a conditional on ENVIRONMENT.
 
   - name: redash
     url: https://github.com/getredash/redash
