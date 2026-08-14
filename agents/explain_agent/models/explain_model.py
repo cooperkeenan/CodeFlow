@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from models.step_input import StepInput
 from models.symbol_slice import SymbolSlice
 
 
@@ -14,6 +15,7 @@ class ExplainRequest(BaseModel):
     focus_fqn: str
     symbols: list[SymbolSlice] = []
     helpers: list[SymbolSlice] = []
+    steps: list[StepInput] = []
 
 
 class MethodExplanation(BaseModel):
@@ -37,6 +39,7 @@ class NodeExplanation(BaseModel):
     primary_summary: str
     methods: list[MethodExplanation] = []
     helpers: list[HelperExplanation] = []
+    step_labels: dict[str, str] = {}
     generated: bool = False
 
 

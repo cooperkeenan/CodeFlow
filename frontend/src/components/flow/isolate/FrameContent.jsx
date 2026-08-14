@@ -4,7 +4,7 @@ import PrimarySummary from './PrimarySummary'
 import MethodList from './MethodList'
 import HelperList from './HelperList'
 import CodeView from './CodeView'
-import SequenceView from './SequenceView'
+import FlowchartView from './FlowchartView'
 import ViewToggle from './ViewToggle'
 import { MONO, TEXT_MUTED } from '../styles'
 
@@ -54,7 +54,7 @@ function selectedName(explanation, fqn) {
 }
 
 export default function FrameContent({ repo, nodeId, provenance, collapsed, ready }) {
-  const { explanation, sources, sequence, loading, error } = useNodeExplanation(repo, nodeId)
+  const { explanation, sources, steps, loading, error } = useNodeExplanation(repo, nodeId)
   const status = state(repo, nodeId, loading, error, explanation)
   const [selectedFqn, setSelectedFqn] = useState(null)
   const [mode, setMode] = useState('code')
@@ -104,7 +104,7 @@ export default function FrameContent({ repo, nodeId, provenance, collapsed, read
               {mode === 'code' ? (
                 <CodeView fqn={selectedFqn} name={selectedName(explanation, selectedFqn)} source={sources?.[selectedFqn]} />
               ) : (
-                <SequenceView sequence={sequence} />
+                <FlowchartView steps={steps?.[selectedFqn]} name={selectedName(explanation, selectedFqn)} />
               )}
             </div>
           )}

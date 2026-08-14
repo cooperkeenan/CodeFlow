@@ -1,6 +1,6 @@
 import Handles from '../Handles'
 import NodeChrome from '../NodeChrome'
-import { KIND_ACCENT, SURFACE, shellStyle, scalePad } from '../styles'
+import { KIND_ACCENT, SURFACE, shellStyle, scalePad, revealStyle } from '../styles'
 import { GEOMETRY_FALLBACK } from '../geometryFallback'
 
 export default function EntryNode({ data, selected, sourcePosition, targetPosition }) {
@@ -16,7 +16,13 @@ export default function EntryNode({ data, selected, sourcePosition, targetPositi
     boxSizing: 'border-box',
   }
   return (
-    <div style={shellStyle(base, KIND_ACCENT.entry, { selected, highlighted: data.highlighted, dashed: data.dashed, isolated: data.isolated })}>
+    <div
+      className={data.justRevealed ? 'rf-reveal-node' : undefined}
+      style={{
+        ...shellStyle(base, KIND_ACCENT.entry, { selected, highlighted: data.highlighted, dashed: data.dashed, isolated: data.isolated }),
+        ...revealStyle(data, KIND_ACCENT.entry),
+      }}
+    >
       <Handles target={targetPosition} source={sourcePosition} />
       <NodeChrome data={data} align="center" />
     </div>

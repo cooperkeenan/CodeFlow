@@ -3,68 +3,21 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 from dev_server import DevServer
-
-_READ_STATE = """
-() => {
-  const parse = (el) => {
-    const m = /translate\\(([-0-9.]+)px,\\s*([-0-9.]+)px\\)/.exec(el.style.transform || '');
-    const btn = el.querySelector('[role="button"]');
-    return {
-      id: el.getAttribute('data-id'),
-      x: m ? Math.round(parseFloat(m[1])) : null,
-      y: m ? Math.round(parseFloat(m[2])) : null,
-      w: el.offsetWidth,
-      h: el.offsetHeight,
-      label: (el.innerText || '').trim().split('\\n')[0],
-      toggle: btn ? btn.innerText.trim() : null,
-    };
-  };
-  return {
-    nodes: [...document.querySelectorAll('.react-flow__node')].map(parse),
-    edges: document.querySelectorAll('.react-flow__edge').length,
-    header: (document.querySelector('header')?.innerText || '').replace(/\\n/g, ' | '),
-  };
-}
-"""
-
-
-_READ_ISOLATED = """
-() => {
-  const el = document.querySelector('.react-flow__node.rf-iso');
-  if (!el) return { present: false };
-  const canvas = document.querySelector('.react-flow');
-  const shell = el.firstElementChild;
-  const shellStyle = shell ? getComputedStyle(shell) : null;
-  const box = el.getBoundingClientRect();
-  const canvasBox = canvas ? canvas.getBoundingClientRect() : null;
-  const w = Math.round(box.width), h = Math.round(box.height);
-  const cw = canvasBox ? Math.round(canvasBox.width) : null;
-  const ch = canvasBox ? Math.round(canvasBox.height) : null;
-  return {
-    present: true, id: el.getAttribute('data-id'), w, h, canvasW: cw, canvasH: ch,
-    fillW: cw ? w / cw : null,
-    fillH: ch ? h / ch : null,
-    borderStyle: shellStyle ? shellStyle.borderStyle : null,
-    borderWidth: shellStyle ? shellStyle.borderWidth : null,
-    borderRadius: shellStyle ? shellStyle.borderRadius : null,
-  };
-}
-"""
-
-_READ_DIMMED = """
-() => {
-  const nodes = [...document.querySelectorAll('.react-flow__node')];
-  const dim = nodes.filter(n => parseFloat(getComputedStyle(n).opacity) < 0.5);
-  return { total: nodes.length, dimmed: dim.length,
-           bright: nodes.filter(n => !dim.includes(n)).map(n => n.getAttribute('data-id')) };
-}
-"""
+from flow_probe_js import READ_DIMMED, READ_FLOWCHART, READ_ISOLATED, READ_STATE
 
 
 class FlowSession:
-    def __init__(self, frontend_dir: Path, port: int, url: str) -> None:
+    def __init__(
+        self,
+        frontend_dir: Path,
+        port: int,
+        url: str,
+        explain_payload: dict | None = None,
+        repo: str | None = None,
+    ) -> None:
         self._server = DevServer(frontend_dir, port)
-        self._url = url
+        self._url = f"{url}?repo={repo}" if repo else url
+        self._explain_payload = explain_payload
         self._started = False
         self._playwright = None
         self._browser = None
@@ -75,6 +28,8 @@ class FlowSession:
         self._playwright = sync_playwright().start()
         self._browser = self._playwright.chromium.launch(headless=True, channel="chrome")
         self._page = self._browser.new_page(viewport={"width": 2000, "height": 1400})
+        if self._explain_payload is not None:
+            self._page.route("**/explain", lambda route: route.fulfill(json=self._explain_payload))
         self._page.goto(self._url, wait_until="networkidle")
         self._page.wait_for_selector(".react-flow__node", timeout=30000)
         return self
@@ -88,7 +43,7 @@ class FlowSession:
             self._server.stop()
 
     def state(self) -> dict:
-        return self._page.evaluate(_READ_STATE)
+        return self._page.evaluate(READ_STATE)
 
     def toggle(self, node_id: str) -> None:
         selector = f'.react-flow__node[data-id="{node_id}"] [role="button"]:not([data-testid="isolate-button"])'
@@ -116,10 +71,21 @@ class FlowSession:
         self._page.screenshot(path=str(path), full_page=False)
 
     def isolated(self) -> dict:
-        return self._page.evaluate(_READ_ISOLATED)
+        return self._page.evaluate(READ_ISOLATED)
 
     def dimmed(self) -> dict:
-        return self._page.evaluate(_READ_DIMMED)
+        return self._page.evaluate(READ_DIMMED)
+
+    def flowchart(self) -> dict:
+        return self._page.evaluate(READ_FLOWCHART)
+
+    def tap(self, testid: str) -> None:
+        self._page.click(f'[data-testid="{testid}"]')
+        self._page.wait_for_timeout(250)
+
+    def pick_symbol(self, name: str) -> None:
+        self._page.click(f'[data-method="{name}"], [data-helper="{name}"]')
+        self._page.wait_for_timeout(300)
 
     def press_key(self, key: str) -> None:
         self._page.keyboard.press(key)

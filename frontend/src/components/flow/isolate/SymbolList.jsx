@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MONO, TEXT_MUTED, KIND_ACCENT } from '../styles'
 
-const PAGE_SIZE = 4
+const PAGE_SIZE = 3
 const DEFAULT_MARKER = '▸'
 
 const HEAD_ROW = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '12px 0 5px' }
@@ -14,16 +14,18 @@ const MARKER_STYLE = {
   marginRight: 5,
   flexShrink: 0,
 }
+const ROW_STYLE = {
+  display: 'flex',
+  flexDirection: 'column',
+  padding: '6px 0',
+  cursor: 'pointer',
+}
 const NAME_STYLE = {
+  display: 'flex',
+  alignItems: 'center',
   fontFamily: MONO,
   fontSize: 11,
   color: KIND_ACCENT.entry,
-  flex: '0 0 200px',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  display: 'flex',
-  alignItems: 'center',
 }
 
 const SUMMARY_STYLE = {
@@ -31,8 +33,8 @@ const SUMMARY_STYLE = {
   fontSize: 11,
   color: 'rgba(255,255,255,0.6)',
   lineHeight: 1.5,
-  flex: 1,
-  minWidth: 0,
+  marginTop: 2,
+  paddingLeft: 13,
 }
 
 function rowKey(attr, item) {
@@ -96,11 +98,7 @@ export default function SymbolList({ heading, items, attr, onSelect, selectedFqn
           {...{ [attr]: rowKey(attr, item) }}
           className="nodrag nopan"
           style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 10,
-            padding: '4px 0',
-            cursor: 'pointer',
+            ...ROW_STYLE,
             background: selectedFqn === item.fqn ? 'rgba(255,255,255,0.06)' : 'transparent',
           }}
           onPointerDown={event => {
@@ -113,11 +111,11 @@ export default function SymbolList({ heading, items, attr, onSelect, selectedFqn
             event.preventDefault()
           }}
         >
-          <span title={item.name} style={NAME_STYLE}>
+          <span style={NAME_STYLE}>
             <span style={MARKER_STYLE}>{marker}</span>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+            <span>{item.name}</span>
           </span>
-          <span title={item.summary} style={SUMMARY_STYLE}>{item.summary}</span>
+          <span style={SUMMARY_STYLE}>{item.summary}</span>
         </div>
       ))}
     </>

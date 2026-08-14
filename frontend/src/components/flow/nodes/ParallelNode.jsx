@@ -1,7 +1,9 @@
 import Handles from '../Handles'
 import NodeChrome from '../NodeChrome'
-import { KIND_ACCENT, SURFACE, shellStyle, scalePad } from '../styles'
+import { KIND_ACCENT, SURFACE, shellStyle, scalePad, revealStyle } from '../styles'
 import { GEOMETRY_FALLBACK } from '../geometryFallback'
+
+const GLYPH_ISOLATED = { position: 'absolute', top: 10, left: 12, zIndex: 3 }
 
 export default function ParallelNode({ data, selected, sourcePosition, targetPosition }) {
   const { width, height } = data.geometry ?? GEOMETRY_FALLBACK.split_bar
@@ -27,9 +29,9 @@ export default function ParallelNode({ data, selected, sourcePosition, targetPos
     ? style
     : { ...style, borderLeft: `${Math.max(2, Math.round(4 * scale))}px solid ${KIND_ACCENT.parallel}` }
   return (
-    <div style={shell}>
+    <div className={data.justRevealed ? 'rf-reveal-node' : undefined} style={{ ...shell, ...revealStyle(data, KIND_ACCENT.parallel) }}>
       <Handles target={targetPosition} source={sourcePosition} />
-      <span title="parallel split" style={{ color: KIND_ACCENT.parallel, fontSize: Math.round(13 * scale), lineHeight: 1, flexShrink: 0 }}>⑃</span>
+      <span title="parallel split" style={{ color: KIND_ACCENT.parallel, fontSize: Math.round(13 * scale), lineHeight: 1, flexShrink: 0, ...(data.isolated ? GLYPH_ISOLATED : {}) }}>⑃</span>
       <NodeChrome data={data} />
     </div>
   )

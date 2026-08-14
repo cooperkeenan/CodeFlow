@@ -17,3 +17,9 @@
 .rf-iso ::-webkit-scrollbar-track, .rf-frame-grow ::-webkit-scrollbar-track { background: transparent; }
 .rf-iso ::-webkit-scrollbar-thumb, .rf-frame-grow ::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 5px; }
 .rf-iso ::-webkit-scrollbar-thumb:hover { background: #4d4d4d; }
+
+.rf-flow-edge { stroke-dasharray: 6 5; animation: rf-flow-dash 900ms linear infinite; }
+@keyframes rf-flow-dash { to { stroke-dashoffset: -11; } }
+@media (prefers-reduced-motion: reduce) {
+  .rf-flow-edge { animation: none; }
+}

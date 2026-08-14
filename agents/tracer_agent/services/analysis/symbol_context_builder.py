@@ -2,7 +2,9 @@ from models.call_site import CallSite
 from models.project_index import ProjectIndex
 from shared.models.flow_graph import FlowGraph, FlowNode
 
+from services.analysis.call_fqn_lookup import CallFqnLookup
 from services.analysis.callee_index import CalleeIndex
+from services.analysis.function_step_visitor import FunctionStepVisitor
 from services.analysis.service_root_resolver import ServiceRootResolver
 from services.analysis.symbol_source_reader import SymbolSourceReader
 
@@ -19,6 +21,7 @@ class SymbolContextBuilder:
     ) -> None:
         self._index = index
         self._callees = CalleeIndex(callsites)
+        self._call_fqn_lookup = CallFqnLookup(callsites)
         self._roots = roots
         self._sources = source_reader
         self._by_def: dict[tuple[str, int], str] = {}
@@ -74,6 +77,7 @@ class SymbolContextBuilder:
 
     def _function_entry(self, fqn: str) -> dict:
         record = self._index.functions[fqn]
+        visitor = FunctionStepVisitor(fqn, self._call_fqn_lookup)
         entry = {
             "name": record.name,
             "module": record.module,
@@ -82,7 +86,7 @@ class SymbolContextBuilder:
             "is_async": record.is_async,
             "span": record.span.model_dump(),
             "callees": list(self._callees.callees_of(fqn)),
-            "calls": [{"fqn": callee_fqn, "line": line} for line, callee_fqn in self._callees.calls_of(fqn)],
+            "steps": visitor.build(record.body.body),
         }
         if self._sources is not None:
             entry["source"] = self._sources.read_function(record.span)

@@ -1,7 +1,9 @@
 import hashlib
+import json
 
 from clients.explain_client import ExplainClient
 from services.repo_map_service import RepoMapService
+from services.step_tree_labeler import StepTreeLabeler
 from services.symbol_context_resolver import SymbolContextResolver
 from shared.explain_prompt_version import PROMPT_VERSION
 from shared.explanation_store.explanation_store import ExplanationStore
@@ -16,11 +18,13 @@ class NodeExplainService:
         resolver: SymbolContextResolver,
         explain_client: ExplainClient,
         explanation_store: ExplanationStore,
+        step_labeler: StepTreeLabeler,
     ) -> None:
         self._repo_maps = repo_map_service
         self._resolver = resolver
         self._explain_client = explain_client
         self._store = explanation_store
+        self._step_labeler = step_labeler
 
     async def explain(self, user_id: int, repo: str, node_id: str) -> dict | None:
         detail = await self._repo_maps.get(user_id, repo)
@@ -60,17 +64,20 @@ class NodeExplainService:
         }
 
         sources = {s["fqn"]: s["source"] for s in (*symbols, *helpers)}
-        sequence = self._resolver.sequence_for(primary_kind, primary_fqn, member_fqns, functions)
+        steps = self._resolver.steps_for([*symbol_fqns, *helper_fqns], functions)
+        payload["steps"] = self._step_labeler.flatten(steps)
 
-        fingerprint = self._fingerprint(primary_fqn, symbols, helpers)
+        fingerprint = self._fingerprint(primary_fqn, symbols, helpers, steps)
         cached = await self._store.get(fingerprint)
         if cached is not None:
-            return {"explanation": cached, "sources": sources, "sequence": sequence}
+            labeled_steps = self._step_labeler.apply(steps, cached.get("step_labels", {}))
+            return {"explanation": cached, "sources": sources, "steps": labeled_steps}
 
         response = await self._explain_client.explain(payload)
         explanation = response["explanation"]
         await self._store.put(fingerprint, repo, node_id, explanation)
-        return {"explanation": explanation, "sources": sources, "sequence": sequence}
+        labeled_steps = self._step_labeler.apply(steps, explanation.get("step_labels", {}))
+        return {"explanation": explanation, "sources": sources, "steps": labeled_steps}
 
     async def _slices(
         self, fqns: list[str], functions: dict, classes: dict, repo: str, file_cache: dict
@@ -84,10 +91,13 @@ class NodeExplainService:
                 return node.get("label", "")
         return ""
 
-    def _fingerprint(self, focus_fqn: str, symbols: list[dict], helpers: list[dict]) -> str:
+    def _fingerprint(
+        self, focus_fqn: str, symbols: list[dict], helpers: list[dict], steps: dict[str, list]
+    ) -> str:
         pairs = sorted((s["fqn"], s["source"]) for s in (*symbols, *helpers))
         parts = [PROMPT_VERSION, focus_fqn]
         for fqn, source in pairs:
             parts.append(fqn)
             parts.append(source)
+        parts.append(json.dumps(steps, sort_keys=True))
         return hashlib.sha256(_SEPARATOR.join(parts).encode("utf-8")).hexdigest()

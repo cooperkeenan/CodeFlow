@@ -6,7 +6,7 @@ export function useNodeExplanation(repo, nodeId) {
   const cache = useExplanationCache()
   const [explanation, setExplanation] = useState(null)
   const [sources, setSources] = useState({})
-  const [sequence, setSequence] = useState([])
+  const [steps, setSteps] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -14,7 +14,7 @@ export function useNodeExplanation(repo, nodeId) {
     if (!repo || !nodeId) {
       setExplanation(null)
       setSources({})
-      setSequence([])
+      setSteps({})
       setLoading(false)
       setError(null)
       return
@@ -25,7 +25,7 @@ export function useNodeExplanation(repo, nodeId) {
     if (cached) {
       setExplanation(cached.explanation)
       setSources(cached.sources)
-      setSequence(cached.sequence ?? [])
+      setSteps(cached.steps ?? {})
       setLoading(false)
       setError(null)
       return
@@ -36,22 +36,22 @@ export function useNodeExplanation(repo, nodeId) {
     setError(null)
     setExplanation(null)
     setSources({})
-    setSequence([])
+    setSteps({})
     explainNode(repo, nodeId)
       .then(data => {
         if (!live) return
         const explanationData = data.explanation
         const sourcesData = data.sources ?? {}
-        const sequenceData = data.sequence ?? []
+        const stepsData = data.steps ?? {}
         setExplanation(explanationData)
         setSources(sourcesData)
-        setSequence(sequenceData)
-        cache?.set(key, { explanation: explanationData, sources: sourcesData, sequence: sequenceData })
+        setSteps(stepsData)
+        cache?.set(key, { explanation: explanationData, sources: sourcesData, steps: stepsData })
       })
       .catch(e => { if (live) setError(e.message) })
       .finally(() => { if (live) setLoading(false) })
     return () => { live = false }
   }, [repo, nodeId, cache])
 
-  return { explanation, sources, sequence, loading, error }
+  return { explanation, sources, steps, loading, error }
 }

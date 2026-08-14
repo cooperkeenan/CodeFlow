@@ -13,6 +13,21 @@ export function useExpansion(view, showSecondary, initialIds) {
     return (source?.data?.hiddenChildren ?? []).map(c => c.id)
   }, [view])
 
+  const revealedUnder = useCallback((id, expandedSet) => {
+    const out = []
+    const seen = new Set([id])
+    const walk = rootId => {
+      for (const childId of childIdsOf(rootId)) {
+        if (seen.has(childId)) continue
+        seen.add(childId)
+        out.push(childId)
+        if (expandedSet.has(childId)) walk(childId)
+      }
+    }
+    walk(id)
+    return out
+  }, [childIdsOf])
+
   const toggle = useCallback(id => {
     setExpanded(prev => {
       const next = new Set(prev)
@@ -21,11 +36,11 @@ export function useExpansion(view, showSecondary, initialIds) {
         setLastReveal(null)
       } else {
         next.add(id)
-        setLastReveal({ parentId: id, childIds: childIdsOf(id) })
+        setLastReveal({ parentId: id, childIds: revealedUnder(id, next) })
       }
       return next
     })
-  }, [childIdsOf])
+  }, [revealedUnder])
 
   const collapseAll = useCallback(() => {
     setExpanded(new Set())
