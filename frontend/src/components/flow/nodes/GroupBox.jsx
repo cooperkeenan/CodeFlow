@@ -5,6 +5,7 @@ export default function GroupBox({ data }) {
   const scale = data.scale ?? 1
   return (
     <div
+      className={data.revealBacking ? 'rf-reveal-backing' : undefined}
       style={{
         width: data.width,
         height: data.height,
@@ -13,6 +14,7 @@ export default function GroupBox({ data }) {
         background: `${accent}08`,
         pointerEvents: 'none',
         boxSizing: 'border-box',
+        ...(data.revealBacking ? { '--rf-box-delay': `${data.revealBoxDelayMs ?? 0}ms` } : {}),
       }}
     />
   )

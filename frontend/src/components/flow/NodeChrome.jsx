@@ -24,7 +24,16 @@ export default function NodeChrome({ data, align = 'flex-start', subtitle = null
   const resolvedSubtitle = subtitle ?? data.oneLiner ?? null
   const hasFooter = data.provenance || data.badges?.length > 0
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: align, width: '100%' }}>
+    <div
+      className={data.justRevealed ? 'rf-reveal-text' : undefined}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: align,
+        width: '100%',
+        ...(data.justRevealed ? { '--rf-text-delay': `${data.revealTextDelayMs ?? 0}ms` } : {}),
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: Math.round(5 * scale), width: '100%', justifyContent: align === 'center' ? 'center' : 'space-between' }}>
         <span title={data.label} style={scaleText(LABEL_STYLE, scale)}>{data.label}</span>
         {data.chip && (

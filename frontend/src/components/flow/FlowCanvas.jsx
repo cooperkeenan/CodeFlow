@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ReactFlow, { Background, Controls, MiniMap, ReactFlowProvider } from 'reactflow'
 import 'reactflow/dist/style.css'
 import './isolate.css'
+import './reveal.css'
+import { withRevealedNodes, withRevealedEdges, REVEAL_WINDOW_MS } from './revealTracking'
 import EntryNode from './nodes/EntryNode'
 import StepNode from './nodes/StepNode'
 import DecisionNode from './nodes/DecisionNode'
@@ -31,16 +33,30 @@ const EDGE_TYPES = { flow: FlowEdgeComponent }
 const FIT_OPTIONS = { padding: 0.25 }
 const MINIMAP_THRESHOLD = 20
 
+function useActiveReveal(revealTrigger) {
+  const [expired, setExpired] = useState(null)
+  useEffect(() => {
+    if (!revealTrigger || revealTrigger.fit) return undefined
+    const timer = setTimeout(() => setExpired(revealTrigger), REVEAL_WINDOW_MS)
+    return () => clearTimeout(timer)
+  }, [revealTrigger])
+  if (!revealTrigger || revealTrigger.fit || revealTrigger === expired) return null
+  return revealTrigger
+}
+
 function FlowCanvasInner({ nodes, edges, selectedId, isolatedId, onPaneClick, revealTrigger, repo }) {
   const [hoveredEdge, setHoveredEdge] = useState(null)
   const { rfNodes, rfEdges, isolateCenter } = useIsolatedView(
     nodes, edges, selectedId, isolatedId, hoveredEdge, repo,
   )
+  const activeReveal = useActiveReveal(revealTrigger)
+  const revealedNodes = useMemo(() => withRevealedNodes(rfNodes, activeReveal), [rfNodes, activeReveal])
+  const revealedEdges = useMemo(() => withRevealedEdges(rfEdges, activeReveal), [rfEdges, activeReveal])
 
   return (
     <ReactFlow
-      nodes={rfNodes}
-      edges={rfEdges}
+      nodes={revealedNodes}
+      edges={revealedEdges}
       nodeTypes={NODE_TYPES}
       edgeTypes={EDGE_TYPES}
       onPaneClick={onPaneClick}

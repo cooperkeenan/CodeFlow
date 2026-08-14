@@ -1,6 +1,6 @@
 import Handles from '../Handles'
 import NodeChrome from '../NodeChrome'
-import { KIND_ACCENT, SURFACE, EFFECT_ICON, shellStyle, scalePad } from '../styles'
+import { KIND_ACCENT, SURFACE, EFFECT_ICON, shellStyle, scalePad, revealStyle } from '../styles'
 import { GEOMETRY_FALLBACK } from '../geometryFallback'
 
 export default function EffectNode({ data, selected, sourcePosition, targetPosition }) {
@@ -19,7 +19,13 @@ export default function EffectNode({ data, selected, sourcePosition, targetPosit
     boxSizing: 'border-box',
   }
   return (
-    <div style={shellStyle(base, KIND_ACCENT.effect, { selected, highlighted: data.highlighted, dashed: data.dashed, isolated: data.isolated })}>
+    <div
+      className={data.justRevealed ? 'rf-reveal-node' : undefined}
+      style={{
+        ...shellStyle(base, KIND_ACCENT.effect, { selected, highlighted: data.highlighted, dashed: data.dashed, isolated: data.isolated }),
+        ...revealStyle(data, KIND_ACCENT.effect),
+      }}
+    >
       <Handles target={targetPosition} source={sourcePosition} />
       <span title={data.effectKind ?? 'effect'} style={{ fontSize: Math.round(16 * scale), lineHeight: 1, flexShrink: 0 }}>{icon}</span>
       <NodeChrome data={data} subtitle={data.effectTarget || null} />

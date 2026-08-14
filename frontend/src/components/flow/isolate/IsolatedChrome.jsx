@@ -31,6 +31,8 @@ const CLOSE_STYLE = {
   borderRadius: 3,
 }
 
+const SHELL_BORDER = 4
+
 const BODY_STYLE = {
   flex: 1,
   minHeight: 0,
@@ -89,8 +91,8 @@ export default function IsolatedChrome({ data }) {
           position: 'absolute',
           top: 0,
           left: 0,
-          width: Math.round((data.frameWidth ?? 0) / scale) || `${100 / scale}%`,
-          height: Math.round((data.frameHeight ?? 0) / scale) || `${100 / scale}%`,
+          width: Math.round(Math.max(0, (data.frameWidth ?? 0) - SHELL_BORDER) / scale) || `${100 / scale}%`,
+          height: Math.round(Math.max(0, (data.frameHeight ?? 0) - SHELL_BORDER) / scale) || `${100 / scale}%`,
           transform: `scale(${to})`,
           transformOrigin: 'top left',
           '--rf-from': from,

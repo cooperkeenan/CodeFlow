@@ -2,7 +2,6 @@ from services.source_slicer import SourceSlicer
 from shared.code_store.code_store import CodeStore
 
 _MAX_HELPERS = 12
-_MAX_CALLS_PER_CALLER = 20
 
 
 class SymbolContextResolver:
@@ -65,42 +64,5 @@ class SymbolContextResolver:
         entry = classes.get(fqn) or functions.get(fqn) or {}
         return entry.get(key, "")
 
-    def sequence_for(
-        self, primary_kind: str, primary_fqn: str, member_fqns: list[str], functions: dict
-    ) -> list[dict]:
-        callers = self._ordered_members(member_fqns, functions) if primary_kind == "class" else [primary_fqn]
-        sequence = []
-        for caller_fqn in callers:
-            entry = functions.get(caller_fqn)
-            if entry is None:
-                continue
-            calls = self._filtered_calls(entry.get("calls", []))
-            if primary_kind == "class" and not calls:
-                continue
-            sequence.append({
-                "caller": entry.get("name", caller_fqn.rsplit(".", 1)[-1]),
-                "caller_fqn": caller_fqn,
-                "calls": calls,
-            })
-        return sequence
-
-    def _ordered_members(self, member_fqns: list[str], functions: dict) -> list[str]:
-        def sort_key(fqn: str) -> tuple[bool, int, str]:
-            line = functions.get(fqn, {}).get("span", {}).get("line")
-            return (line is None, line or 0, fqn)
-
-        return sorted(member_fqns, key=sort_key)
-
-    def _filtered_calls(self, calls: list[dict]) -> list[dict]:
-        filtered = []
-        for call in calls:
-            fqn = call.get("fqn", "")
-            if not fqn or fqn.startswith("ext:"):
-                continue
-            name = fqn.rsplit(".", 1)[-1]
-            if not name:
-                continue
-            filtered.append({"name": name, "fqn": fqn, "line": call.get("line")})
-            if len(filtered) >= _MAX_CALLS_PER_CALLER:
-                break
-        return filtered
+    def steps_for(self, fqns: list[str], functions: dict) -> dict[str, list]:
+        return {fqn: functions[fqn]["steps"] for fqn in fqns if "steps" in functions.get(fqn, {})}

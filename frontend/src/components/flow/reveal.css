@@ -1,0 +1,77 @@
+@keyframes rf-reveal-fade { from { opacity: 0 } to { opacity: 1 } }
+
+@keyframes rf-reveal-edge-draw { to { stroke-dashoffset: 0; } }
+.rf-reveal-edge {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: rf-reveal-edge-draw 200ms ease-out forwards;
+}
+
+.rf-reveal-node {
+  position: relative;
+  animation: rf-reveal-border-in 200ms ease-out both;
+  animation-delay: var(--rf-outline-delay, 0ms);
+}
+@keyframes rf-reveal-border-in {
+  0%, 92% { border-color: transparent; }
+  100% {
+    border-color: var(--rf-reveal-accent, #8a8a8a);
+    border-color: color-mix(in srgb, var(--rf-reveal-accent, #8a8a8a) 40%, transparent);
+  }
+}
+
+.rf-reveal-node::before,
+.rf-reveal-node::after {
+  content: '';
+  position: absolute;
+  box-sizing: border-box;
+  border: 0 solid var(--rf-reveal-accent, #8a8a8a);
+  border-radius: inherit;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+  animation-delay: var(--rf-outline-delay, 0ms);
+  animation-fill-mode: both;
+}
+.rf-reveal-node::before {
+  top: 0; right: 0;
+  border-top-width: 2px;
+  border-right-width: 2px;
+  animation-name: rf-reveal-trace-tr;
+}
+.rf-reveal-node::after {
+  bottom: 0; left: 0;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+  animation-name: rf-reveal-trace-bl;
+}
+@keyframes rf-reveal-trace-tr {
+  0%   { width: 0; height: 0; }
+  50%  { width: 100%; height: 0; }
+  100% { width: 100%; height: 100%; }
+}
+@keyframes rf-reveal-trace-bl {
+  0%   { width: 0; height: 0; }
+  50%  { width: 100%; height: 0; }
+  100% { width: 100%; height: 100%; }
+}
+
+.rf-reveal-text {
+  animation: rf-reveal-fade 140ms ease-out both;
+  animation-delay: var(--rf-text-delay, 300ms);
+}
+
+.rf-reveal-backing {
+  animation: rf-reveal-fade 160ms ease-out both;
+  animation-delay: var(--rf-box-delay, 500ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rf-reveal-node::before, .rf-reveal-node::after { content: none; }
+  .rf-reveal-node { animation: rf-reveal-fade 160ms ease both; animation-delay: 0ms !important; }
+  .rf-reveal-text { animation: rf-reveal-fade 120ms ease both; animation-delay: 0ms !important; }
+  .rf-reveal-backing { animation: rf-reveal-fade 160ms ease both; animation-delay: 0ms !important; }
+  .rf-reveal-edge { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; }
+}

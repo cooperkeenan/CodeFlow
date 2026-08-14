@@ -22,6 +22,7 @@ export default function FlowEdgeComponent({
   const opacity = d.secondary ? base * 0.25 : base
   const markerId = `arrowhead-${id}`
   const markerSize = Math.max(5, Math.round(7 * scale))
+  const canDraw = d.justRevealed && !stitch && !d.dashed
 
   return (
     <>
@@ -38,12 +39,27 @@ export default function FlowEdgeComponent({
           <path d={`M0,0 L${markerSize},${markerSize / 2} L0,${markerSize} z`} fill={stroke} opacity={opacity} />
         </marker>
       </defs>
-      <BaseEdge
-        id={id}
-        path={path}
-        markerEnd={`url(#${markerId})`}
-        style={{ stroke, strokeWidth: width, strokeDasharray: dashArray, opacity }}
-      />
+      {canDraw ? (
+        <>
+          <path
+            id={id}
+            d={path}
+            fill="none"
+            className="react-flow__edge-path rf-reveal-edge"
+            markerEnd={`url(#${markerId})`}
+            pathLength={100}
+            style={{ stroke, strokeWidth: width, opacity, animationDelay: `${d.revealEdgeDelayMs ?? 0}ms` }}
+          />
+          <path d={path} fill="none" strokeOpacity={0} strokeWidth={20} className="react-flow__edge-interaction" />
+        </>
+      ) : (
+        <BaseEdge
+          id={id}
+          path={path}
+          markerEnd={`url(#${markerId})`}
+          style={{ stroke, strokeWidth: width, strokeDasharray: dashArray, opacity }}
+        />
+      )}
       {label && (
         <EdgeLabelRenderer>
           <div

@@ -35,6 +35,7 @@ class HeuristicSymbolExplainer:
             primary_summary=primary_summary,
             methods=methods,
             helpers=helpers,
+            step_labels={s.id: s.label for s in request.steps},
             generated=False,
         )
 

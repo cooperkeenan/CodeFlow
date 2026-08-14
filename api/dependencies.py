@@ -29,6 +29,7 @@ from services.password_hasher import PasswordHasher
 from services.repo_map_service import RepoMapService
 from services.source_slicer import SourceSlicer
 from services.stage_status_service import StageStatusService
+from services.step_tree_labeler import StepTreeLabeler
 from services.symbol_context_resolver import SymbolContextResolver
 from services.token_hasher import TokenHasher
 from services.token_service import TokenService
@@ -197,7 +198,9 @@ def get_node_explain_service(
     explain_client: ExplainClient = Depends(get_explain_client),
     explanation_store: ExplanationStore = Depends(get_explanation_store),
 ) -> NodeExplainService:
-    return NodeExplainService(repo_map_service, resolver, explain_client, explanation_store)
+    return NodeExplainService(
+        repo_map_service, resolver, explain_client, explanation_store, StepTreeLabeler()
+    )
 
 
 def get_ci_ingest_service(

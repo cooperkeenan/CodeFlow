@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useReactFlow, useStore } from 'reactflow'
-import { scaleOf } from './depthScale'
 import { GEOMETRY_FALLBACK } from './geometryFallback'
+import { cssFrameProgress } from './cameraEasing'
 
 const DURATION = 360
 const ISOLATE_DURATION = 760
-const MAX_ZOOM = 2.6
 const FIT_OPTIONS = { padding: 0.25, duration: 360 }
 
 function boundsOf(nodes) {
@@ -21,35 +20,54 @@ function boundsOf(nodes) {
   return { minX, minY, maxX, maxY }
 }
 
+function fitOffset(min, max, viewportSize, zoom, current) {
+  const size = (max - min) * zoom
+  if (size <= viewportSize) {
+    const s0 = min * zoom + current
+    const s1 = max * zoom + current
+    if (s0 < 0) return current - s0
+    if (s1 > viewportSize) return current + (viewportSize - s1)
+    return current
+  }
+  return viewportSize / 2 - ((min + max) / 2) * zoom
+}
+
+function makeInterpolate(matchFrame) {
+  return (a, b) => t => {
+    const p = matchFrame.current ? cssFrameProgress(t) : t
+    return [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p, a[2] + (b[2] - a[2]) * p]
+  }
+}
+
 export default function CameraController({ revealTrigger, isolateCenter = null }) {
   const { getNode, getViewport, setViewport, fitView } = useReactFlow()
   const width = useStore(s => s.width)
   const height = useStore(s => s.height)
-  const baseZoom = useRef(null)
+  const d3Zoom = useStore(s => s.d3Zoom)
   const activeIsolateId = useRef(null)
+  const matchFrame = useRef(false)
+
+  useEffect(() => {
+    if (d3Zoom) d3Zoom.interpolate(makeInterpolate(matchFrame))
+  }, [d3Zoom])
 
   useEffect(() => {
     if (!revealTrigger) return
     if (revealTrigger.fit) {
-      baseZoom.current = null
       fitView(FIT_OPTIONS)
       return
     }
     const frame = requestAnimationFrame(() => {
+      matchFrame.current = false
       const children = revealTrigger.childIds.map(getNode).filter(Boolean)
       const nodes = [getNode(revealTrigger.parentId), ...children].filter(Boolean)
       if (!nodes.length || !width || !height) return
-      const childScale = children[0]?.data?.scale ?? 1
-      const current = getViewport().zoom
-      if (childScale >= scaleOf(1) - 1e-6 || baseZoom.current === null) {
-        baseZoom.current = current
-      }
-      const zoom = Math.min(MAX_ZOOM, baseZoom.current / childScale)
+      const { x, y, zoom } = getViewport()
       const b = boundsOf(nodes)
       setViewport(
         {
-          x: width / 2 - ((b.minX + b.maxX) / 2) * zoom,
-          y: height / 2 - ((b.minY + b.maxY) / 2) * zoom,
+          x: fitOffset(b.minX, b.maxX, width, zoom, x),
+          y: fitOffset(b.minY, b.maxY, height, zoom, y),
           zoom,
         },
         { duration: DURATION },
@@ -63,8 +81,10 @@ export default function CameraController({ revealTrigger, isolateCenter = null }
       activeIsolateId.current = null
       return
     }
-    if (activeIsolateId.current === isolateCenter.id) return
-    activeIsolateId.current = isolateCenter.id
+    const key = `${isolateCenter.id}:${isolateCenter.phase}`
+    if (activeIsolateId.current === key) return
+    activeIsolateId.current = key
+    matchFrame.current = true
     const { zoom } = getViewport()
     setViewport(
       {
