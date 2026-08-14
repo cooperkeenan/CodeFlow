@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useStore } from 'reactflow'
 import { isolateRect, spreadNodes } from '../components/flow/isolateLayout'
+import { GEOMETRY_FALLBACK } from '../components/flow/geometryFallback'
 import { useIsolateAnimation } from './useIsolateAnimation'
 
 const DIM_MS = 160
@@ -40,6 +41,14 @@ function frameData(node, highlighted, repo, geometry, frameScale, mode, ready, r
     frameTo: to,
     frameGrowing: Boolean(growing),
   }
+}
+
+function closeCenterOf(nodes, id) {
+  if (!id) return null
+  const node = nodes.find(n => n.id === id)
+  if (!node) return null
+  const geometry = node.data.geometry ?? GEOMETRY_FALLBACK[node.data.shape] ?? GEOMETRY_FALLBACK.rect
+  return { cx: node.position.x + geometry.width / 2, cy: node.position.y + geometry.height / 2 }
 }
 
 function otherNode(node, isolatedId, highlighted, offset, shift) {
@@ -98,23 +107,14 @@ export function useIsolatedView(nodes, edges, selectedId, isolatedId, hoveredEdg
     if (restoringId) {
       return nodes.map(n =>
         n.id === restoringId
-          ? {
-              ...n,
-              selected: false,
-              zIndex: 8,
-              className: 'rf-shift rf-swap-in',
-              data: { ...n.data, highlighted: highlighted.has(n.id) },
-            }
+          ? { ...n, selected: false, zIndex: 8, className: 'rf-shift rf-swap-in', data: { ...n.data, highlighted: highlighted.has(n.id) } }
           : otherNode(n, null, highlighted, null, true),
       )
     }
     if (!isolation || !grown) {
-      return nodes.map(n => ({
-        ...n,
-        selected: n.id === selectedId && n.id !== isolatedId,
-        className: isolatedId && n.id !== isolatedId ? 'rf-dim' : undefined,
-        data: { ...n.data, highlighted: highlighted.has(n.id) },
-      }))
+      return nodes.map(n => (
+        { ...n, selected: n.id === selectedId && n.id !== isolatedId, className: isolatedId && n.id !== isolatedId ? 'rf-dim' : undefined, data: { ...n.data, highlighted: highlighted.has(n.id) } }
+      ))
     }
     const { rect, offsets } = isolation
     return nodes.map(n =>
@@ -134,15 +134,17 @@ export function useIsolatedView(nodes, edges, selectedId, isolatedId, hoveredEdg
     )
   }, [nodes, selectedId, isolatedId, closingId, highlighted, isolation, grown, dashed, animating, repo, frameScale, restoringId])
 
-  const rfEdges = useMemo(() => edges.map(e => ({
-    ...e,
-    className: edgeClass(e, isolatedId),
-    data: { ...e.data, highlighted: e.id === hoveredEdge },
-  })), [edges, hoveredEdge, isolatedId])
+  const rfEdges = useMemo(() => edges.map(e => (
+    { ...e, className: edgeClass(e, isolatedId), data: { ...e.data, highlighted: e.id === hoveredEdge } }
+  )), [edges, hoveredEdge, isolatedId])
 
+  const closeId = closingId ?? restoringId
+  const closeCenter = closeCenterOf(nodes, closeId)
   const isolateCenter = isolation && isolatedId
-    ? { id: isolatedId, cx: isolation.rect.cx, cy: isolation.rect.cy }
-    : null
+    ? { id: isolatedId, cx: isolation.rect.cx, cy: isolation.rect.cy, phase: 'open' }
+    : closeCenter
+      ? { id: closeId, cx: closeCenter.cx, cy: closeCenter.cy, phase: 'closing' }
+      : null
 
   return { rfNodes, rfEdges, isolateCenter }
 }

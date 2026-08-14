@@ -1,6 +1,6 @@
 import { GEOMETRY_FALLBACK } from './geometryFallback'
 
-const FILL = 0.78
+const FILL = 0.92
 const MIN_W = 520
 const MIN_H = 340
 const GROUP_TYPE = 'flowGroup'

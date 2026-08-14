@@ -116,7 +116,7 @@ python scripts/flow_agent.py <repo> "toggle:<parent>" "isolate:<child>" isolated
 python scripts/flow_agent.py <repo> "toggle:<parent>" "isolate:<child>" key:Escape isolated dimmed state
 ```
 
-Expected for the frame: `fill=78%x78%`, `border=dashed 2px r=4px`, exactly one bright node, and after
+Expected for the frame: `fill=92%x92%`, `border=dashed 2px r=4px`, exactly one bright node, and after
 Escape the `state` dump identical to the pre-isolate one — that round trip is what proves the whole
 transform is non-destructive. **Animation defects do not show up here**; sample per frame with
 `requestAnimationFrame` and assert on the trace (see `CLAUDE.md`).
@@ -155,9 +155,11 @@ Any change to `agents/explain_agent/prompts/explain_prompt.py` needs `PROMPT_VER
 every already-explained node keeps serving the old wording from the `ExplanationStore`.
 
 Method and helper rows come from one `isolate/SymbolList.jsx` (`MethodList`/`HelperList` are thin
-wrappers over it), paginated **4** per page with a `‹ 1/2 ›` pager at the right of the heading, shown
-only when the list overflows one page. Four is deliberate: summaries wrap rather than truncate, so
-the page size is what keeps the list short. Do not re-add `nowrap`/ellipsis to the summary — cutting
+wrappers over it), rendered as a single column — name on top, summary wrapped beneath it — and
+paginated **3** per page with a `‹ 1/2 ›` pager at the right of the heading, shown only when the list
+overflows one page. Three (down from four, when rows were a single-line two-column layout) is
+deliberate: each row is now two lines tall since summaries wrap rather than truncate, so the page
+size is what keeps the list short. Do not re-add `nowrap`/ellipsis to the summary — cutting
 descriptions off was the thing being fixed.
 
 While a frame is open the minimap gets `.rf-minimap-behind` (opacity `.22`, `z-index: 0`). React
@@ -168,11 +170,11 @@ to 0 is what actually puts it behind the frame — dimming alone leaves it float
 — keyed `` `${repo}::${nodeId}` ``, so re-opening a frame issues zero requests and skips the loading
 skeleton. Errors are never cached.
 
-The frame's right column has a `‹/›` **code** / `⇄` **sequence** toggle (`isolate/ViewToggle.jsx`).
+The frame's right column has a `</>` **code** / `⛭` **flowchart** toggle (`isolate/ViewToggle.jsx`).
 Code mode shows the selected symbol's source (`isolate/CodeView.jsx`): line-numbered, 10px, filling
-the frame's height and scrolling internally. Sequence mode (`isolate/SequenceView.jsx`) shows the
-**whole class** — every method with calls, in definition order, each listing its outgoing calls in
-source-line order.
+the frame's height and scrolling internally. Flowchart mode (`isolate/FlowchartView.jsx`) draws the
+**selected method's** own step tree left to right — calls, effects, decisions with their arms, loops
+— via `isolate/flowchartLayout.js`.
 
 Both scroll containers need `className="nowheel"` or the wheel zooms the canvas instead of scrolling.
 
@@ -182,17 +184,21 @@ the code pane left the others with the browser default — which flashes white a
 during the expand. The right column is also reserved but **empty until `data.frameReady`**, so the
 code view mounts once at full size instead of laying itself out repeatedly while the frame grows.
 
-**The sequence data needs a re-analysis to appear.** `CalleeIndex` historically stored callees in a
-`set` and returned them alphabetically, discarding call order. It now also exposes
-`calls_of(fqn) -> ((line, fqn), ...)` sorted on the compound `(line, fqn)` key — the compound key is
-what keeps it deterministic when two calls share a line. `SymbolContextBuilder._function_entry` emits
-that as `"calls"` alongside the untouched `"callees"`, and `SymbolContextResolver.sequence_for`
-assembles the per-class sequence (dropping `ext:` callees, capped at `_MAX_CALLS_PER_CALLER`).
-Because `"calls"` lives in the persisted `symbol_context`, **any repo map analysed before this change
-returns `sequence: []`** and the frame says so rather than inventing an order. Re-run the analysis. The source comes from `sources` on the explain response — built in
-`NodeExplainService.explain` from the same deterministic slices it already computes, and
+**The step data needs a re-analysis to appear.** `FunctionStepVisitor` walks each function's body once
+and emits a nested step tree — `call`/`effect`/`decision` (with `arms`)/`loop` (with `body`)/`return`/
+`raise`/`more` nodes, each carrying its source `line` — and `SymbolContextBuilder._function_entry`
+stores it as `functions[<fqn>]["steps"]`. `SymbolContextResolver.steps_for(fqns, functions)` then
+builds the `POST /repomaps/{repo}/explain` response's `steps` object, keyed by fqn — but only for fqns
+whose function entry actually **has** a `"steps"` key: `{fqn: functions[fqn]["steps"] for fqn in fqns
+if "steps" in functions.get(fqn, {})}`. Because `"steps"` lives in the persisted `symbol_context`,
+**any repo map analysed before this change omits the key entirely** for every fqn, which is why
+`FlowchartView` distinguishes `steps === undefined` ("re-run the analysis to capture steps for this
+repo") from `steps.length === 0` ("this method makes no calls") rather than treating both as empty.
+Re-run the analysis to get real step trees. The source comes from `sources` on the explain response —
+built in `NodeExplainService.explain` from the same deterministic slices it already computes, and
 deliberately assembled **before** the `ExplanationStore` cache check so a cache hit still returns
-fresh code instead of dropping it. Explanations are LLM-generated and cached; source never is.
+fresh code instead of dropping it. Explanations are LLM-generated and cached; source and steps never
+are.
 
 **The isolated shell needs a definite `height`, not just `minHeight`.** `IsolatedChrome` scales its
 content with an absolutely-positioned `transform: scale()` wrapper at `height: 100%`; a percentage
@@ -214,7 +220,11 @@ The sequence, driven by `hooks/useIsolatedView.js` + `hooks/useIsolateAnimation.
    the `--rf-k0` custom property = nodeWidth/rectWidth). `shellStyle` therefore drops the
    width/min-height transition while `isolated === 'open'`; only the close path keeps it.
    `isolateLayout.spreadNodes` drifts the other nodes aside, and `CameraController` pans (never
-   zooms) to centre it, and **does not move on close**.
+   zooms) to centre it. **On close it pans back**, over the same `ISOLATE_DURATION` (760ms) as the
+   shrink, to the node's own restored centre (`useIsolatedView`'s `closeCenterOf`, keyed off
+   `closingId ?? restoringId` so the pan fires once for the whole close instead of re-triggering at
+   the chrome swap) — the zoom is read from `getViewport()` and passed through unchanged in both
+   directions, it is never recalculated.
 
    **The box animates its layout size; the content does not re-lay-out.** These pull in opposite
    directions and both matter:
@@ -275,7 +285,7 @@ scaled to ~0.1 and the box is at node size, so it is not noticeable; do not spen
 
 Five things here are load-bearing and easy to break:
 
-- **The rect is frozen at isolate time.** `isolateRect` divides by zoom to turn "78% of the screen"
+- **The rect is frozen at isolate time.** `isolateRect` divides by zoom to turn "92% of the screen"
   into flow units, but `frozenZoom` captures the zoom once and `zoom` is deliberately *not* a
   dependency of the isolation memo. Put it back in and the node resizes as you zoom.
 - **`spreadNodes` cascades; it does not shove uniformly.** Nodes on each side are sorted along the
@@ -294,10 +304,15 @@ top-right aside — was deleted once `FrameContent.jsx` took over its job; `Prim
 `MethodList` and `HelperList` survived from it and are now used inside the frame.
 
 Drive it with `scripts/flow_agent.py`: `isolate:<node_id>` clicks the control and `isolated` reports
-the box, its canvas fill and its computed border. To exercise **frame content** in the harness,
-`/flow-fixture` accepts `?repo=<name>` (`App.jsx: fixtureAnalysis`) so `useNodeExplanation` actually
-fires; stub the response with Playwright's `page.route("**/explain", ...)`. Without a `repo` the hook
-short-circuits and the frame correctly reads `no explanation available for this node`.
+the box, its canvas fill and its computed border. `tap:view-flow` clicks the frame's flowchart toggle
+(`data-testid="view-flow"`) and `flowchart` reports the resulting `[data-testid="flowchart-view"]`'s
+node/edge counts, scroll overflow (horizontal is expected; vertical is a layout bug) and overlapping
+node-box pairs. To exercise **frame content** in the harness, `/flow-fixture` accepts `?repo=<name>`
+(`App.jsx: fixtureAnalysis`) so `useNodeExplanation` actually fires; stub the response with
+Playwright's `page.route("**/explain", ...)`, or build a real payload with `scripts/dump_explain.py`
+and pass it via `flow_agent.py --explain <path.json>`, which wires both the route stub and `?repo=`.
+Without a `repo` the hook short-circuits and the frame correctly reads
+`no explanation available for this node`.
 
 ## 5.5. The editable-diagram slice — built, not wired
 

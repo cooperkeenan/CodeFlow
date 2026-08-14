@@ -84,17 +84,29 @@ export function scalePad(vertical, horizontal, scale = 1) {
 const BASE_TRANSITION = 'border-color 120ms ease, box-shadow 120ms ease'
 const SIZE_TRANSITION =
   ', width 760ms cubic-bezier(.5,0,.2,1), min-height 760ms cubic-bezier(.5,0,.2,1), border-radius 760ms cubic-bezier(.5,0,.2,1)'
+const FRAME_SHADOW = '0 24px 48px -16px rgba(0,0,0,0.55), 0 8px 20px -6px rgba(0,0,0,0.4)'
 
 export function shellStyle(base, accent, { selected, highlighted, dashed, isolated }) {
   const ring = highlighted ? accent : selected ? accent : accent + '66'
+  const shadows = [highlighted ? `0 0 0 3px ${accent}33` : null, isolated ? FRAME_SHADOW : null].filter(Boolean)
   return {
     ...base,
-    ...(isolated ? { alignItems: 'stretch', justifyContent: 'center', height: base.minHeight } : {}),
+    ...(isolated
+      ? { alignItems: 'stretch', justifyContent: 'center', height: base.minHeight, position: 'relative', padding: 0, gap: 0 }
+      : {}),
     ...(isolated === 'open' ? { borderRadius: 4 } : {}),
     border: `${highlighted || selected ? 2 : 1}px ${dashed ? 'dashed' : 'solid'} ${ring}`,
-    boxShadow: highlighted ? `0 0 0 3px ${accent}33` : 'none',
+    boxShadow: shadows.length ? shadows.join(', ') : 'none',
     boxSizing: 'border-box',
     cursor: 'pointer',
     transition: BASE_TRANSITION + SIZE_TRANSITION,
+  }
+}
+
+export function revealStyle(data, accent) {
+  if (!data.justRevealed) return null
+  return {
+    '--rf-reveal-accent': accent,
+    '--rf-outline-delay': `${data.revealOutlineDelayMs ?? 0}ms`,
   }
 }

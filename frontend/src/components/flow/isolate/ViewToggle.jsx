@@ -43,15 +43,15 @@ export default function ViewToggle({ mode, onChange }) {
       </span>
       <span
         role="button"
-        title="sequence diagram"
+        title="flowchart"
         className="nodrag nopan"
-        data-testid="view-sequence"
-        data-active={mode === 'sequence'}
-        style={buttonStyle(mode === 'sequence')}
-        onPointerDown={pick('sequence')}
+        data-testid="view-flow"
+        data-active={mode === 'flow'}
+        style={buttonStyle(mode === 'flow')}
+        onPointerDown={pick('flow')}
         onClick={stop}
       >
-        ⇄
+        ⛭
       </span>
     </div>
   )

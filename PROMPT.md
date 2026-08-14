@@ -20,12 +20,12 @@ the code are the source of truth. `HANDOFF.md` holds the current job and gap ana
 ## Vocabulary
 
 - **Frame** — the large rectangle a node becomes when you click its `isolate` control. The node
-  itself grows to ~78% of the canvas, its outline turns dashed halfway through, the rest of the
+  itself grows to ~92% of the canvas, its outline turns dashed halfway through, the rest of the
   diagram dims and drifts aside. The frame shows the node's title at top-centre and, below it, the
   symbol that node resolves to: the source file, the class or function, and its methods and helpers
   each with a plain-English one-line summary. Use "frame" for this; it is not a panel, popover or
   modal — it is the node. Its right column toggles between a **code view** (the selected method's
-  source) and a **sequence view** (the whole class's calls, in source-line order).
+  source) and a **flowchart view** (the selected method's steps and branches, left to right).
 - Frame content is fetched **on demand** from `POST /repomaps/{repo}/explain` and cached by
   content-addressed fingerprint in the `ExplanationStore`, so explanations are never generated for
   every node up front. `flow_graph.meta.symbol_context` (written by `SymbolContextBuilder`) is what
@@ -119,6 +119,8 @@ python scripts/screenshot_flow.py <repo>          # → scratch_out/flow.png via
 python scripts/screenshot_flow.py --save <handle> <repo>   # also save to a user account
 python scripts/selfrun.py                         # in-process self-analysis, 5 assertions
 python scripts/flow_agent.py <repo> <action>...   # drive the real page in a browser
+python scripts/dump_explain.py <repo_or_out_dir> --list       # candidate node ids with steps
+python scripts/dump_explain.py <repo_or_out_dir> <node_id> [out.json]  # real explain payload, no gateway
 ```
 
 ### `flow_agent.py` — drive the diagram without a human relaying screenshots
@@ -137,9 +139,11 @@ python scripts/flow_agent.py <repo> "toggle:<parent>" "isolate:<child>" isolated
 Actions: `state` (every visible node with position, label and `+N` control), `overlaps` (colliding
 node pairs — **0 is the goal**, and this is the check that catches bad layout), `toggle:<id>`,
 `isolate:<id>` (opens the frame), `isolated` (the frame's box, canvas fill and computed border),
-`dimmed`, `click:<id>`, `key:<name>`, `press:<button text>`, `fit`, `shot:<path>`. `--rebuild`
-re-runs the pipeline first; without it the existing fixture is reused. Nested expansion works —
-toggle a revealed decision or a `more:` node to go deeper.
+`dimmed`, `tap:<testid>` (clicks `[data-testid="<testid>"]`, e.g. `tap:view-flow`), `flowchart`
+(dumps the flowchart view's node/edge counts, scroll overflow and overlapping node-box pairs),
+`click:<id>`, `key:<name>`, `press:<button text>`, `fit`, `shot:<path>`. `--rebuild` re-runs the
+pipeline first; without it the existing fixture is reused. Nested expansion works — toggle a
+revealed decision or a `more:` node to go deeper.
 
 `screenshot_flow.py` serves the result to the real `FlowPage` through a dev-only `/flow-fixture`
 route — no API, DB or login. `--save` upserts a `repo_maps` row viewable in the web UI, resolving
@@ -147,9 +151,11 @@ the account by `github_login` or `email`.
 
 **Frame content needs a repo**, so `/flow-fixture` accepts `?repo=<name>` (`App.jsx: fixtureAnalysis`)
 purely so the harness can exercise it; stub the response with Playwright's
-`page.route("**/explain", ...)`. Without a repo the hook short-circuits and the frame correctly reads
-`no explanation available for this node`. Animation assertions must allow for the frame's ~920ms
-open plus a 760ms camera pan — `FlowSession.isolate` waits 1300ms for exactly this reason, and
+`page.route("**/explain", ...)`, or pass `flow_agent.py --explain <path.json>` (built by
+`dump_explain.py` from a real analysis, never hand-written) to have `FlowSession` register the route
+and append `?repo=<name>` for you. Without a repo the hook short-circuits and the frame correctly
+reads `no explanation available for this node`. Animation assertions must allow for the frame's
+~920ms open plus a 760ms camera pan — `FlowSession.isolate` waits 1300ms for exactly this reason, and
 reading sooner produces a half-grown box that looks like a regression but is not.
 
 ## Current Status
