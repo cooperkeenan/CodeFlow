@@ -8,7 +8,9 @@ from services.analysis.route_matcher import RouteMatcher
 from services.analysis.stitch_detector import StitchDetector
 from services.analysis.stitch_verdict_cache import StitchVerdictCache
 
-_DEFAULT_CACHE_PATH = Path(__file__).resolve().parents[4] / ".cache" / "stitch_verdicts.json"
+_PARENTS = Path(__file__).resolve().parents
+_ROOT = _PARENTS[4] if len(_PARENTS) > 4 else _PARENTS[2]
+_DEFAULT_CACHE_PATH = _ROOT / ".cache" / "stitch_verdicts.json"
 
 
 def build_flow_stitcher(api_key: str | None, cache_path: Path | None = None) -> FlowStitcher:

@@ -19,7 +19,8 @@ from services.tracer_service import TracerService
 from shared.code_store.code_store import CodeStore
 from shared.code_store.neon_code_store import NeonCodeStore
 
-_CACHE_ROOT = Path(__file__).resolve().parents[2] / ".cache"
+_PARENTS = Path(__file__).resolve().parents
+_CACHE_ROOT = (_PARENTS[2] if len(_PARENTS) > 2 else _PARENTS[0]) / ".cache"
 
 
 def get_http_client(request: Request) -> httpx.AsyncClient:
