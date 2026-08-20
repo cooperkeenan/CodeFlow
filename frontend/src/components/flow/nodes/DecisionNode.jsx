@@ -21,6 +21,9 @@ export default function DecisionNode({ data, selected, sourcePosition, targetPos
     selected,
     highlighted: data.highlighted,
     dashed: data.dashed,
+    focused: data.focused,
+    dimmed: data.dimmed,
+    adjacent: data.adjacent,
   })
   return (
     <div style={{ ...style, borderLeft: `${Math.max(2, Math.round(4 * scale))}px solid ${KIND_ACCENT.decision}` }}>

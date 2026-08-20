@@ -12,7 +12,7 @@ import LaneHeaderNode from './nodes/LaneHeaderNode'
 import GroupBox from './nodes/GroupBox'
 import FlowEdgeComponent from './FlowEdgeComponent'
 import CameraController from './CameraController'
-import { KIND_ACCENT } from './styles'
+import { KIND_ACCENT, CANVAS, GRID } from './styles'
 
 const NODE_TYPES = {
   entry: EntryNode,
@@ -29,7 +29,10 @@ const EDGE_TYPES = { flow: FlowEdgeComponent }
 const FIT_OPTIONS = { padding: 0.25 }
 const MINIMAP_THRESHOLD = 20
 
-export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPaneClick, revealTrigger }) {
+export default function FlowCanvas({
+  nodes, edges, selectedId, onNodeClick, onPaneClick, revealTrigger,
+  focusIds = null, adjacentIds = null, packetIds = null, stepKey = 0, children = null,
+}) {
   const [hoveredEdge, setHoveredEdge] = useState(null)
 
   const highlightNodes = useMemo(() => {
@@ -40,13 +43,39 @@ export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPa
   const rfNodes = useMemo(() => nodes.map(n => ({
     ...n,
     selected: n.id === selectedId,
-    data: { ...n.data, highlighted: highlightNodes.has(n.id) },
-  })), [nodes, selectedId, highlightNodes])
+    data: {
+      ...n.data,
+      highlighted: highlightNodes.has(n.id),
+      focused: !!focusIds?.has(n.id),
+      adjacent: !focusIds?.has(n.id) && !!adjacentIds?.has(n.id),
+      dimmed:
+        !!focusIds?.size && !focusIds.has(n.id) && !adjacentIds?.has(n.id)
+        && n.type !== 'flowGroup',
+    },
+  })), [nodes, selectedId, highlightNodes, focusIds, adjacentIds])
 
-  const rfEdges = useMemo(() => edges.map(e => ({
-    ...e,
-    data: { ...e.data, highlighted: e.id === hoveredEdge },
-  })), [edges, hoveredEdge])
+  const rfEdges = useMemo(() => edges.map(e => {
+    const packet = !!packetIds?.size && [...packetIds].some(p => e.id.startsWith(`${p}:`))
+    const inside = !!focusIds?.size && focusIds.has(e.source) && focusIds.has(e.target)
+    const arriving = !!focusIds?.size && focusIds.has(e.target) && !focusIds.has(e.source)
+    const flowing = packet || inside || arriving
+    const near = !!adjacentIds?.size
+      && (adjacentIds.has(e.source) || adjacentIds.has(e.target))
+      && (focusIds?.has(e.source) || focusIds?.has(e.target)
+          || adjacentIds.has(e.source) && adjacentIds.has(e.target))
+    return {
+      ...e,
+      data: {
+        ...e.data,
+        highlighted: e.id === hoveredEdge,
+        packet,
+        flowing,
+        stepKey,
+        dimmed: !flowing && !near && !!focusIds?.size,
+        near,
+      },
+    }
+  }), [edges, hoveredEdge, packetIds, focusIds, adjacentIds, stepKey])
 
   return (
     <ReactFlow
@@ -66,7 +95,8 @@ export default function FlowCanvas({ nodes, edges, selectedId, onNodeClick, onPa
       proOptions={{ hideAttribution: true }}
     >
       <CameraController revealTrigger={revealTrigger} />
-      <Background color="#242424" gap={28} size={1} style={{ background: '#1E1E1E' }} />
+      {children}
+      <Background color={GRID} gap={28} size={1} style={{ background: CANVAS }} />
       <Controls position="top-left" style={{ background: '#1A1A1A', border: '1px solid #242424', borderRadius: 3 }} />
       {nodes.length > MINIMAP_THRESHOLD && (
         <MiniMap

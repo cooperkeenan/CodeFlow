@@ -1,5 +1,8 @@
 export const MONO = 'IBM Plex Mono, monospace'
 
+export const CANVAS = '#2E2E35'
+export const GRID = '#43434E'
+
 export const KIND_ACCENT = {
   entry: '#39FF14',
   step: '#64B5F6',
@@ -10,9 +13,9 @@ export const KIND_ACCENT = {
   outcome: '#9E9E9E',
 }
 
-export const SURFACE = '#1A1A1A'
-export const SURFACE_2 = '#121212'
-export const BORDER = '#242424'
+export const SURFACE = '#3A3A44'
+export const SURFACE_2 = '#24242A'
+export const BORDER = '#4C4C58'
 export const TEXT = 'rgba(255,255,255,0.87)'
 export const TEXT_MUTED = 'rgba(255,255,255,0.5)'
 
@@ -81,14 +84,26 @@ export function scalePad(vertical, horizontal, scale = 1) {
   return `${Math.round(vertical * scale)}px ${Math.round(horizontal * scale)}px`
 }
 
-export function shellStyle(base, accent, { selected, highlighted, dashed }) {
-  const ring = highlighted ? accent : selected ? accent : accent + '66'
+export function shellStyle(
+  base, accent, { selected, highlighted, dashed, focused, dimmed, adjacent },
+) {
+  const lit = highlighted || focused
+  const ring = lit ? accent : adjacent ? accent + 'AA' : selected ? accent : accent + '66'
   return {
     ...base,
-    border: `${highlighted || selected ? 2 : 1}px ${dashed ? 'dashed' : 'solid'} ${ring}`,
-    boxShadow: highlighted ? `0 0 0 3px ${accent}33` : 'none',
+    border: `${lit || selected ? 2 : 1}px ${dashed ? 'dashed' : 'solid'} ${ring}`,
+    boxShadow: focused
+      ? `0 0 0 4px ${accent}44, 0 0 28px 3px ${accent}55`
+      : adjacent ? `0 0 0 2px ${accent}22` : highlighted ? `0 0 0 3px ${accent}33` : 'none',
+    opacity: dimmed ? 0.3 : adjacent ? 0.72 : 1,
+    filter: dimmed ? 'saturate(0.4)' : 'none',
     boxSizing: 'border-box',
     cursor: 'pointer',
-    transition: 'border-color 120ms ease, box-shadow 120ms ease',
+    willChange: focused ? 'transform' : 'auto',
+    animation: focused
+      ? 'nodeSettle 420ms cubic-bezier(.22,.9,.28,1) both, nodeBreathe 2800ms 420ms ease-in-out infinite'
+      : 'none',
+    transition:
+      'border-color 240ms ease, box-shadow 240ms ease, opacity 420ms cubic-bezier(.4,0,.2,1), filter 420ms ease',
   }
 }

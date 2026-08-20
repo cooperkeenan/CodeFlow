@@ -12,6 +12,7 @@ import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import FlowPage from './pages/FlowPage'
+import TourPage from './pages/TourPage'
 
 export default function App() {
   const navigate = useNavigate()
@@ -59,6 +60,7 @@ export default function App() {
         />
         <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
         <Route path="/flow-fixture" element={<FlowPage fixture="/fixture/rendered_view.json" />} />
+        <Route path="/tour" element={<TourPage />} />
         <Route
           path="/flow"
           element={

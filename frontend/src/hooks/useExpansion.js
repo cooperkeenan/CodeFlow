@@ -27,6 +27,11 @@ export function useExpansion(view, showSecondary, initialIds) {
     })
   }, [childIdsOf])
 
+  const setExpansion = useCallback((ids, reveal = null) => {
+    setExpanded(new Set(ids))
+    setLastReveal(reveal)
+  }, [])
+
   const collapseAll = useCallback(() => {
     setExpanded(new Set())
     setLastReveal({ fit: true })
@@ -97,5 +102,5 @@ export function useExpansion(view, showSecondary, initialIds) {
     return { nodes, edges, expandableCount }
   }, [view, expanded, showSecondary])
 
-  return { ...result, expanded, toggle, collapseAll, lastReveal }
+  return { ...result, expanded, toggle, setExpansion, collapseAll, lastReveal }
 }

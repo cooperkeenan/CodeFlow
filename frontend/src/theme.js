@@ -12,7 +12,7 @@ const theme = createTheme({
     warning: { main: '#FFB84D' },
     info: { main: '#64B5F6' },
     success: { main: '#39FF14' },
-    background: { default: '#121212', paper: '#1A1A1A' },
+    background: { default: '#24242A', paper: '#3A3A44' },
     divider: '#242424',
     text: {
       primary: 'rgba(255,255,255,0.87)',
@@ -36,7 +36,7 @@ const theme = createTheme({
   components: {
     MuiPaper: {
       styleOverrides: {
-        root: { backgroundImage: 'none', border: '1px solid #242424' },
+        root: { backgroundImage: 'none', border: '1px solid #4C4C58' },
       },
     },
     MuiButton: { defaultProps: { disableElevation: true } },

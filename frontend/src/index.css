@@ -3,14 +3,14 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:                      #121212;
-  --surface:                 #1A1A1A;
-  --surface-2:               #1E1E1E;
-  --surface-3:               #242424;
-  --surface-4:               #2C2C2C;
-  --surface-5:               #333333;
-  --border:                  #242424;
-  --border-hi:               #333333;
+  --bg:                      #24242A;
+  --surface:                 #3A3A44;
+  --surface-2:               #2E2E35;
+  --surface-3:               #33333A;
+  --surface-4:               #3C3C45;
+  --surface-5:               #464650;
+  --border:                  #4C4C58;
+  --border-hi:               #4A4A55;
   --accent:                  #39FF14;
   --accent2:                 #64B5F6;
   --text:                    rgba(255,255,255,0.87);
@@ -363,3 +363,42 @@ html, body, #root {
 }
 
 .token-row .card-title { flex: 1; }
+
+@keyframes tourBubbleIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes edgeFlow { to { stroke-dashoffset: -18; } }
+
+@keyframes nodeSettle {
+  from { transform: scale(0.94); }
+  60%  { transform: scale(1.02); }
+  to   { transform: scale(1); }
+}
+
+@keyframes nodeBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.022); }
+}
+
+@keyframes ringSweep { to { stroke-dashoffset: 0; } }
+
+@keyframes wordIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.tour-word {
+  display: inline-block;
+  animation: wordIn 380ms ease both;
+  animation-delay: calc(var(--i) * 22ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

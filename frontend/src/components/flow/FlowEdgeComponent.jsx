@@ -1,8 +1,10 @@
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, getSmoothStepPath } from 'reactflow'
 import { MONO, SURFACE_2, TEXT_MUTED } from './styles'
+import EdgePacket from './EdgePacket'
 
-const NORMAL = '#4a4a4a'
-const STITCH = '#6a6a6a'
+const NORMAL = '#5c5c66'
+const STITCH = '#7a7a86'
+const FLOW = '#39FF14'
 
 export default function FlowEdgeComponent({
   id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, label,
@@ -15,11 +17,12 @@ export default function FlowEdgeComponent({
     : getBezierPath({ ...geom, curvature: 0.18 })
 
   const scale = d.scale ?? 1
-  const stroke = d.highlighted ? '#ffffff' : stitch ? STITCH : NORMAL
+  const lit = d.highlighted || d.packet || d.flowing
+  const stroke = lit ? '#ffffff' : stitch ? STITCH : NORMAL
   const dashArray = stitch ? '2 5' : d.dashed ? '6 4' : undefined
-  const width = (d.highlighted ? 2.4 : d.secondary ? 1 : 1.6) * scale
+  const width = (lit ? 2.4 : d.secondary ? 1 : 1.6) * scale
   const base = d.confidence === 'inferred' ? 0.6 : 1
-  const opacity = d.secondary ? base * 0.25 : base
+  const opacity = d.dimmed ? 0.12 : lit ? 1 : d.near ? 0.55 : d.secondary ? base * 0.25 : base
   const markerId = `arrowhead-${id}`
   const markerSize = Math.max(5, Math.round(7 * scale))
 
@@ -44,6 +47,18 @@ export default function FlowEdgeComponent({
         markerEnd={`url(#${markerId})`}
         style={{ stroke, strokeWidth: width, strokeDasharray: dashArray, opacity }}
       />
+      {d.flowing && (
+        <path
+          d={path}
+          fill="none"
+          stroke={FLOW}
+          strokeWidth={width * 1.15}
+          strokeLinecap="round"
+          strokeDasharray="8 10"
+          style={{ animation: 'edgeFlow 900ms linear infinite', pointerEvents: 'none' }}
+        />
+      )}
+      {d.packet && <EdgePacket key={`${id}-${d.stepKey}`} path={path} scale={scale} />}
       {label && (
         <EdgeLabelRenderer>
           <div
@@ -56,7 +71,7 @@ export default function FlowEdgeComponent({
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              color: d.highlighted ? '#ffffff' : TEXT_MUTED,
+              color: lit ? '#ffffff' : TEXT_MUTED,
               background: SURFACE_2,
               padding: `${Math.round(1 * scale)}px ${Math.round(4 * scale)}px`,
               borderRadius: 2,

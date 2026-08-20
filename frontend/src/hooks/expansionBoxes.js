@@ -63,18 +63,20 @@ export function pushBelow(order, pivotY, amount) {
 }
 
 export function spaceSiblings(groups, geometry) {
-  let prevMaxX = -Infinity
+  const rowMaxX = new Map()
   for (const group of groups) {
     const [minX, maxX] = measureExtentX(group.members, geometry)
-    if (Number.isFinite(prevMaxX)) {
+    const row = Math.round(Math.min(...group.members.map(node => node.position.y)))
+    const prevMaxX = rowMaxX.get(row)
+    if (prevMaxX !== undefined) {
       const overflow = prevMaxX + SIBLING_GUTTER - minX
       if (overflow > 0) {
         shiftX(group.members, overflow)
-        prevMaxX = maxX + overflow
+        rowMaxX.set(row, maxX + overflow)
         continue
       }
     }
-    prevMaxX = maxX
+    rowMaxX.set(row, maxX)
   }
 }
 

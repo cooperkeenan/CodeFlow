@@ -1,0 +1,4321 @@
+{
+  "page_title": "CodeFlow - how it maps a codebase",
+  "repo": "CodeFlow",
+  "repo_url": "https://github.com/cooperkeenan/CodeFlow/blob/main",
+  "steps": [
+    {
+      "anchor": "gw:entry",
+      "body": "This diagram is CodeFlow's own pipeline, drawn by the renderer it describes. Follow the line down the middle - that is one request being turned into a map.",
+      "branches": [],
+      "detail": "The gateway owns no analysis logic. It authenticates the request, then orchestrates four other FastAPI services and persists what comes back.",
+      "facts": [
+        {
+          "label": "services",
+          "value": "5"
+        },
+        {
+          "label": "cold run",
+          "value": "~4 min"
+        },
+        {
+          "label": "warm run",
+          "value": "~3 s"
+        }
+      ],
+      "focus": [
+        "gw:entry"
+      ],
+      "id": "gw:entry",
+      "node": {
+        "backing": [
+          "analyse"
+        ],
+        "kind": "entry",
+        "label": "POST /analyse",
+        "oneLiner": "A user asks CodeFlow to map a repository.",
+        "refs": [
+          {
+            "file": "api/routers/analysis.py",
+            "line": 25
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Gateway",
+      "phaseTitle": "Gateway - orchestration, 8000",
+      "position": 1,
+      "title": "CodeFlow, mapping itself"
+    },
+    {
+      "anchor": "gw:cached",
+      "body": "The first real branch. One arm ends the story immediately; the other commits to four minutes of analysis. Notice the branch that stops, and the one that rejoins.",
+      "branches": [
+        {
+          "label": "already mapped",
+          "note": "Returns in about three seconds.",
+          "target": "Serve the stored map",
+          "terminal": true
+        },
+        {
+          "label": "cold",
+          "note": "Every stage below has to run.",
+          "target": "Run the full pipeline",
+          "terminal": false
+        }
+      ],
+      "detail": "Maps are keyed on (user_id, repo) and upserted, so re-running a repo replaces its map rather than accumulating rows.",
+      "facts": [],
+      "focus": [
+        "gw:cached",
+        "gw:cached:hit",
+        "gw:cached:miss"
+      ],
+      "id": "gw:cached",
+      "node": {
+        "backing": [
+          "RepoMapService.get"
+        ],
+        "kind": "decision",
+        "label": "Repo already mapped?",
+        "oneLiner": "Neon is checked for a stored map before anything is re-analysed.",
+        "refs": [
+          {
+            "file": "api/services/repo_map_service.py",
+            "line": 26
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Gateway",
+      "phaseTitle": "Gateway - orchestration, 8000",
+      "position": 2,
+      "title": "Decision - is this repo already mapped?"
+    },
+    {
+      "anchor": "gw:dispatch",
+      "body": "The gateway hands the repo to the profiler, tracer, layout and render agents, one HTTP hop each, and stitches their JSON back together.",
+      "branches": [],
+      "detail": "Gateway to tracer and layout timeouts are 900s, because a cold trace of a large repo genuinely takes minutes.",
+      "facts": [
+        {
+          "label": "timeout",
+          "value": "900 s"
+        },
+        {
+          "label": "tracer port",
+          "value": "8003"
+        }
+      ],
+      "focus": [
+        "gw:dispatch"
+      ],
+      "id": "gw:dispatch",
+      "node": {
+        "backing": [],
+        "kind": "step",
+        "label": "Fan out to the agents",
+        "oneLiner": "Profiler, tracer, layout and render - one HTTP hop each.",
+        "refs": [
+          {
+            "file": "api/core/config.py",
+            "line": 39
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Gateway",
+      "phaseTitle": "Gateway - orchestration, 8000",
+      "position": 3,
+      "title": "Five services, one orchestrator"
+    },
+    {
+      "anchor": "gw:env",
+      "body": "One environment variable decides whether the same code talks to four processes on this laptop or to four containers on Railway. Both arms rejoin the main line.",
+      "branches": [
+        {
+          "label": "local",
+          "note": "Four uvicorn processes.",
+          "target": "localhost:8002-8006",
+          "terminal": false
+        },
+        {
+          "label": "production",
+          "note": "Four deployed containers.",
+          "target": "Railway service URLs",
+          "terminal": false
+        }
+      ],
+      "detail": "`.env` is not hot-reloaded, so the gateway has to be restarted after changing it - a small thing that has cost real debugging time.",
+      "facts": [],
+      "focus": [
+        "gw:env",
+        "gw:env:local",
+        "gw:env:prod"
+      ],
+      "id": "gw:env",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "ENVIRONMENT = local?",
+        "oneLiner": "The same code targets localhost or Railway.",
+        "refs": [
+          {
+            "file": "api/core/config.py",
+            "line": 40
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Gateway",
+      "phaseTitle": "Gateway - orchestration, 8000",
+      "position": 4,
+      "title": "Decision - localhost or Railway?"
+    },
+    {
+      "anchor": "tr:index",
+      "body": "Every function in the repo becomes a symbol, and every import is resolved to a real file. This is the foundation the whole call graph stands on.",
+      "branches": [],
+      "detail": "Source roots are derived from where imports actually bind, never from directory names. Assuming a folder was called 'agents' once resolved almost every internal call to 'ext:' and shredded the entire call graph.",
+      "facts": [],
+      "focus": [
+        "tr:index"
+      ],
+      "id": "tr:index",
+      "node": {
+        "backing": [
+          "ProjectIndexer.index"
+        ],
+        "kind": "step",
+        "label": "1 - Index the repo",
+        "oneLiner": "Function-level symbol table for the whole repo.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/project_indexer.py",
+            "line": 25
+          }
+        ]
+      },
+      "packets": [
+        "gw:env:local->tr:index",
+        "gw:env:prod->tr:index"
+      ],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 5,
+      "title": "Stage 1 - index every symbol"
+    },
+    {
+      "anchor": "tr:import",
+      "body": "Ancestor prefixes are walked longest-first, so any directory layout works. Only the project arm rejoins the line; the other two genuinely stop here.",
+      "branches": [
+        {
+          "label": "project",
+          "note": "Becomes a call-graph edge.",
+          "target": "Project module",
+          "terminal": false
+        },
+        {
+          "label": "stdlib",
+          "note": "Short-circuits the walk.",
+          "target": "Standard library",
+          "terminal": true
+        },
+        {
+          "label": "third party",
+          "note": "Not traced any further.",
+          "target": "Third party -> ext:",
+          "terminal": true
+        }
+      ],
+      "detail": "This exact function has been the site of two outages. Both were the same bug: hardcoding this repo's own folder names into the resolver.",
+      "facts": [],
+      "focus": [
+        "tr:import",
+        "tr:import:internal",
+        "tr:import:stdlib",
+        "tr:import:ext"
+      ],
+      "id": "tr:import",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Where does this import resolve?",
+        "oneLiner": "Longest-prefix ancestor walk, stdlib short-circuited.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+            "line": 29
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 6,
+      "title": "Decision - project, stdlib, or third party?"
+    },
+    {
+      "anchor": "tr:resolve",
+      "body": "Each call site is bound to a target, carrying the control context it sits inside - which if, which except, which loop.",
+      "branches": [],
+      "detail": "The control context is what later lets a fork be described as a decision rather than just a branch instruction.",
+      "facts": [],
+      "focus": [
+        "tr:resolve"
+      ],
+      "id": "tr:resolve",
+      "node": {
+        "backing": [
+          "CallResolver.resolve_project"
+        ],
+        "kind": "step",
+        "label": "2 - Resolve the call graph",
+        "oneLiner": "Call graph with per-call-site control context.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/call_resolver.py",
+            "line": 41
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 7,
+      "title": "Stage 2 - resolve the call graph"
+    },
+    {
+      "anchor": "tr:target",
+      "body": "Confidence is recorded, never guessed away. An inferred edge is drawn faded on the final diagram rather than being quietly promoted to a fact.",
+      "branches": [
+        {
+          "label": "static",
+          "note": "Exact function known.",
+          "target": "resolved",
+          "terminal": false
+        },
+        {
+          "label": "ambiguous",
+          "note": "Drawn faded.",
+          "target": "inferred",
+          "terminal": false
+        }
+      ],
+      "detail": "Both arms rejoin the line - an uncertain edge is still an edge.",
+      "facts": [],
+      "focus": [
+        "tr:target",
+        "tr:target:resolved",
+        "tr:target:inferred"
+      ],
+      "id": "tr:target",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Can the target be resolved statically?",
+        "oneLiner": "Confidence is carried through to the picture.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/models/resolved_target.py",
+            "line": 8
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 8,
+      "title": "Decision - resolved or inferred?"
+    },
+    {
+      "anchor": "tr:forks",
+      "body": "The heart of it. Static analysis finds every branch point in the repo and sorts it into one of seven shapes. Watch all seven arms converge back into the main line.",
+      "branches": [
+        {
+          "label": "branch",
+          "note": "if / elif / else",
+          "target": "branch",
+          "terminal": false
+        },
+        {
+          "label": "match",
+          "note": "match statement",
+          "target": "match",
+          "terminal": false
+        },
+        {
+          "label": "except",
+          "note": "try / except handler",
+          "target": "except",
+          "terminal": false
+        },
+        {
+          "label": "route",
+          "note": "HTTP route table",
+          "target": "route",
+          "terminal": false
+        },
+        {
+          "label": "table",
+          "note": "dict or registry lookup",
+          "target": "table",
+          "terminal": false
+        },
+        {
+          "label": "polymorphic",
+          "note": "subclass override",
+          "target": "polymorphic",
+          "terminal": false
+        },
+        {
+          "label": "dynamic",
+          "note": "getattr / runtime name",
+          "target": "dynamic",
+          "terminal": false
+        }
+      ],
+      "detail": "Static analysis owns structure. The LLM that runs two stages later may judge these forks and label them, but it may never add, remove, merge or rewire a single one.",
+      "facts": [
+        {
+          "label": "fork kinds",
+          "value": "7"
+        },
+        {
+          "label": "on django-helpdesk",
+          "value": "222 decisions"
+        }
+      ],
+      "focus": [
+        "tr:forks",
+        "tr:fork:branch",
+        "tr:fork:match",
+        "tr:fork:except",
+        "tr:fork:route",
+        "tr:fork:table",
+        "tr:fork:polymorphic",
+        "tr:fork:dynamic"
+      ],
+      "id": "tr:forks",
+      "node": {
+        "backing": [
+          "DispatchExtractor.extract"
+        ],
+        "kind": "decision",
+        "label": "3 - What kind of fork is this?",
+        "oneLiner": "Seven kinds of branch point, no exceptions.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/models/dispatch_site.py",
+            "line": 7
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 9,
+      "title": "Stage 3 - extract every fork"
+    },
+    {
+      "anchor": "tr:effects",
+      "body": "Seven effect kinds hang off the line as annotations. These become the icons on the diagram, and they are what makes cross-service stitching possible later.",
+      "branches": [
+        {
+          "label": "http_out",
+          "note": "httpx / requests",
+          "target": "Outbound HTTP",
+          "terminal": true
+        },
+        {
+          "label": "database",
+          "note": "session.query",
+          "target": "Database",
+          "terminal": true
+        },
+        {
+          "label": "llm",
+          "note": "messages.create",
+          "target": "LLM",
+          "terminal": true
+        },
+        {
+          "label": "file",
+          "note": "Path.read_text",
+          "target": "Filesystem",
+          "terminal": true
+        },
+        {
+          "label": "queue",
+          "note": "publish / enqueue",
+          "target": "Queue",
+          "terminal": true
+        },
+        {
+          "label": "email",
+          "note": "send_mail",
+          "target": "Email",
+          "terminal": true
+        },
+        {
+          "label": "response",
+          "note": "returns to caller",
+          "target": "Response",
+          "terminal": true
+        }
+      ],
+      "detail": "Effects are annotations, not control flow, so these branches stop rather than rejoining. A call made inside a third-party SDK produces no effect - a known and deliberate blind spot.",
+      "facts": [],
+      "focus": [
+        "tr:effects",
+        "tr:eff:http_out",
+        "tr:eff:database",
+        "tr:eff:llm",
+        "tr:eff:file",
+        "tr:eff:queue",
+        "tr:eff:email",
+        "tr:eff:response"
+      ],
+      "id": "tr:effects",
+      "node": {
+        "backing": [
+          "EffectDetector.detect"
+        ],
+        "kind": "step",
+        "label": "4 - Detect side effects",
+        "oneLiner": "http, db, llm, file, queue, email, response.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+            "line": 25
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 10,
+      "title": "Stage 4 - what touches the outside world?"
+    },
+    {
+      "anchor": "tr:judge",
+      "body": "Structure is already fixed. The model's entire job is to decide which of those forks a human would actually reason about, and to write the question each asks.",
+      "branches": [],
+      "detail": "Three decisions in a row follow: which judge runs, whether the answer is already cached, and what the verdict is.",
+      "facts": [
+        {
+          "label": "model",
+          "value": "haiku-4-5"
+        },
+        {
+          "label": "temperature",
+          "value": "0"
+        },
+        {
+          "label": "batch",
+          "value": "~20 forks"
+        }
+      ],
+      "focus": [
+        "tr:judge"
+      ],
+      "id": "tr:judge",
+      "node": {
+        "backing": [
+          "SignificanceFilter.run"
+        ],
+        "kind": "step",
+        "label": "5 - Judge significance",
+        "oneLiner": "Which forks are decisions a human would care about?",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/significance_filter.py",
+            "line": 43
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 11,
+      "title": "Stage 5 - the only place an LLM is allowed"
+    },
+    {
+      "anchor": "tr:judge:key",
+      "body": "With no API key the system does not fail - it degrades to a deterministic reach heuristic. Both arms rejoin the line, so the pipeline always completes.",
+      "branches": [
+        {
+          "label": "key set",
+          "note": "Batches ~20 forks per call at temperature 0.",
+          "target": "LlmDecisionJudge",
+          "terminal": false
+        },
+        {
+          "label": "no key",
+          "note": "Pure reach heuristic, fully offline.",
+          "target": "HeuristicDecisionJudge",
+          "terminal": false
+        }
+      ],
+      "detail": "This is why the whole pipeline can be run and tested with --no-llm, and why a missing key is a downgrade rather than an outage.",
+      "facts": [],
+      "focus": [
+        "tr:judge:key",
+        "tr:judge:llm",
+        "tr:judge:heur"
+      ],
+      "id": "tr:judge:key",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Is an API key present?",
+        "oneLiner": "No key means a deterministic offline judge.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/decision_judge_factory.py",
+            "line": 15
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 12,
+      "title": "Decision - LLM or heuristic?"
+    },
+    {
+      "anchor": "tr:judge:cache",
+      "body": "Verdicts are content-addressed on the fork's source, its arm labels and its reach sizes. This one branch is the difference between four minutes and three seconds.",
+      "branches": [
+        {
+          "label": "cached",
+          "note": "Warm run, no API call.",
+          "target": "Cache hit",
+          "terminal": false
+        },
+        {
+          "label": "cold",
+          "note": "Temperature 0, so repeatable.",
+          "target": "Ask the model",
+          "terminal": false
+        }
+      ],
+      "detail": "The fingerprint includes a PROMPT_VERSION. Change the prompt without bumping it and stale verdicts are silently served - so the cache is only safe because that version is part of the key.",
+      "facts": [],
+      "focus": [
+        "tr:judge:cache",
+        "tr:judge:hit",
+        "tr:judge:miss"
+      ],
+      "id": "tr:judge:cache",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Has this fork been judged before?",
+        "oneLiner": "Content-addressed verdict cache.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/verdict_cache.py",
+            "line": 12
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 13,
+      "title": "Decision - is the verdict already cached?"
+    },
+    {
+      "anchor": "tr:judge:verdict",
+      "body": "The verdict that matters. A decision becomes a diamond with a human question on it. Noise takes the branch that stops - demoted to a deeper level, never deleted.",
+      "branches": [
+        {
+          "label": "decision",
+          "note": "A diamond, labelled with a question.",
+          "target": "decision",
+          "terminal": false
+        },
+        {
+          "label": "guard",
+          "note": "Real, but not a choice - a validation gate.",
+          "target": "guarded_step",
+          "terminal": false
+        },
+        {
+          "label": "noise",
+          "note": "Demoted to a deeper level, never deleted.",
+          "target": "noise",
+          "terminal": true
+        }
+      ],
+      "detail": "Labels like 'User can access ticket?' come from this stage. Nothing is ever deleted to make the page fit; it is only ever pushed further down.",
+      "facts": [],
+      "focus": [
+        "tr:judge:verdict",
+        "tr:judge:real",
+        "tr:judge:guard",
+        "tr:judge:noise"
+      ],
+      "id": "tr:judge:verdict",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Decision, guard, or noise?",
+        "oneLiner": "The verdict that decides what reaches the diagram.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/models/site_verdict.py",
+            "line": 4
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 14,
+      "title": "Decision - decision, guard, or noise?"
+    },
+    {
+      "anchor": "tr:condense",
+      "body": "Judged forks are projected onto the node kinds you have been looking at all along: entry, step, decision, parallel, effect and outcome.",
+      "branches": [],
+      "detail": "This is where the diagram's vocabulary is fixed. Straight-line step chains are merged here so the picture is not padded with pass-through boxes.",
+      "facts": [],
+      "focus": [
+        "tr:condense"
+      ],
+      "id": "tr:condense",
+      "node": {
+        "backing": [
+          "FlowCondenser.condense"
+        ],
+        "kind": "step",
+        "label": "6 - Condense to a FlowGraph",
+        "oneLiner": "Projection onto entry/step/decision/effect/outcome.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+            "line": 34
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 15,
+      "title": "Stage 6 - condense to a graph"
+    },
+    {
+      "anchor": "tr:cond:arm",
+      "body": "An arm that stops has to be given an honest ending rather than trailing off the page. Fittingly, one of these two branches stops and the other carries on.",
+      "branches": [
+        {
+          "label": "reaches code",
+          "note": "Points at the next real node.",
+          "target": "Continue the flow",
+          "terminal": false
+        },
+        {
+          "label": "terminates",
+          "note": "An honest ending, not a loose edge.",
+          "target": "Returns / Raises / Continues",
+          "terminal": true
+        }
+      ],
+      "detail": "OutcomeLabeler names the dead end Returns, Raises or Continues - or uses a label the judge supplied.",
+      "facts": [],
+      "focus": [
+        "tr:cond:arm",
+        "tr:cond:more",
+        "tr:cond:end"
+      ],
+      "id": "tr:cond:arm",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Does this arm reach further code?",
+        "oneLiner": "Arms that terminate get a named outcome.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+            "line": 34
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 16,
+      "title": "Decision - does this arm go anywhere?"
+    },
+    {
+      "anchor": "tr:stitch",
+      "body": "An outbound HTTP call in one service and a route in another are the same edge. This is the stage that turns four separate graphs into one system.",
+      "branches": [],
+      "detail": "Without this, a microservice repo renders as several disconnected islands.",
+      "facts": [],
+      "focus": [
+        "tr:stitch"
+      ],
+      "id": "tr:stitch",
+      "node": {
+        "backing": [
+          "FlowStitcher.stitch"
+        ],
+        "kind": "step",
+        "label": "7 - Stitch the services together",
+        "oneLiner": "Outbound calls matched to route entries.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/flow_stitcher.py",
+            "line": 11
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 17,
+      "title": "Stage 7 - join the services up"
+    },
+    {
+      "anchor": "tr:stitch:url",
+      "body": "Deterministic URL matching goes first. Only what is left over is put to the model, and those edges are drawn faded because they are inferred, not proven.",
+      "branches": [
+        {
+          "label": "matched",
+          "note": "Deterministic URL match.",
+          "target": "HttpStitchDetector",
+          "terminal": false
+        },
+        {
+          "label": "unresolved",
+          "note": "Judged, and drawn as an inferred edge.",
+          "target": "LlmStitchDetector",
+          "terminal": false
+        }
+      ],
+      "detail": "The same discipline as everywhere else: the cheap deterministic path runs first, and the LLM is the fallback rather than the default.",
+      "facts": [],
+      "focus": [
+        "tr:stitch:url",
+        "tr:stitch:http",
+        "tr:stitch:llm"
+      ],
+      "id": "tr:stitch:url",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Does the URL match a known route?",
+        "oneLiner": "URL matching first, the model only for leftovers.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/http_stitch_detector.py",
+            "line": 1
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 18,
+      "title": "Decision - matched, or judged?"
+    },
+    {
+      "anchor": "tr:budget",
+      "body": "The rule that shapes every CodeFlow diagram: the first view of a codebase is at most 15 nodes. Nothing is deleted to achieve that.",
+      "branches": [],
+      "detail": "A node's hidden_children is exactly what its + reveals. A + that opens 50 nodes at once is treated as a bug, not as disclosure.",
+      "facts": [
+        {
+          "label": "top-level budget",
+          "value": "15 nodes"
+        },
+        {
+          "label": "deleted",
+          "value": "nothing"
+        }
+      ],
+      "focus": [
+        "tr:budget"
+      ],
+      "id": "tr:budget",
+      "node": {
+        "backing": [
+          "VisibilityBudgeter.budget"
+        ],
+        "kind": "step",
+        "label": "8 - Budget the page",
+        "oneLiner": "Nothing is deleted - detail is demoted.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+            "line": 55
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 19,
+      "title": "Stage 8 - fit the page without losing anything"
+    },
+    {
+      "anchor": "tr:budget:over",
+      "body": "When the page is over budget the low-ranked nodes move behind a + on their parent. Both arms rejoin: whichever way it goes, the node still exists.",
+      "branches": [
+        {
+          "label": "over budget",
+          "note": "Moves behind a + on its parent.",
+          "target": "Demote, never delete",
+          "terminal": false
+        },
+        {
+          "label": "fits",
+          "note": "High-ranked nodes stay visible.",
+          "target": "Keep on the skeleton",
+          "terminal": false
+        }
+      ],
+      "detail": "This is the difference between a summary and a lie. Every node in the original graph is still reachable from the rendered page.",
+      "facts": [],
+      "focus": [
+        "tr:budget:over",
+        "tr:budget:demote",
+        "tr:budget:keep"
+      ],
+      "id": "tr:budget:over",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "More than 15 nodes on top?",
+        "oneLiner": "Over budget means demoted, not dropped.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+            "line": 55
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 20,
+      "title": "Decision - demote, or keep?"
+    },
+    {
+      "anchor": "tr:budget:body",
+      "body": "A sequence chains; a decision's arms are mutually exclusive alternatives. This is derived from the body's actual shape - it is not asserted.",
+      "branches": [
+        {
+          "label": "single entry",
+          "note": "One entry, sequential members.",
+          "target": "flow - chain them",
+          "terminal": false
+        },
+        {
+          "label": "alternatives",
+          "note": "Mutually exclusive arms.",
+          "target": "list - alternatives",
+          "terminal": false
+        }
+      ],
+      "detail": "Asserting single-entry as an invariant crashed the pipeline on CodeFlow's own repo: a shared memoized node can legitimately be both a predecessor of a body member and a containment ancestor of it.",
+      "facts": [],
+      "focus": [
+        "tr:budget:body",
+        "tr:budget:flow",
+        "tr:budget:list"
+      ],
+      "id": "tr:budget:body",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Is this body a flow or a list?",
+        "oneLiner": "Derived from shape, never asserted.",
+        "refs": [
+          {
+            "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+            "line": 1
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Tracer agent",
+      "phaseTitle": "Tracer agent - the decision engine, 8003",
+      "position": 21,
+      "title": "Decision - flow or list?"
+    },
+    {
+      "anchor": "rd:place",
+      "body": "Every x and y on this page was computed in Python and shipped as JSON. The browser is a thin renderer - no dagre, no Mermaid, no layout in the client.",
+      "branches": [],
+      "detail": "That is what makes the picture reproducible: the same repo in gives a byte-identical graph out, so a diff between two runs is meaningful.",
+      "facts": [
+        {
+          "label": "layout",
+          "value": "server-side"
+        },
+        {
+          "label": "output",
+          "value": "byte-identical"
+        }
+      ],
+      "focus": [
+        "rd:place"
+      ],
+      "id": "rd:place",
+      "node": {
+        "backing": [
+          "FlowPagePlacer.place"
+        ],
+        "kind": "step",
+        "label": "Place the geometry",
+        "oneLiner": "Deterministic React Flow geometry.",
+        "refs": [
+          {
+            "file": "agents/render_agent/placement/flow_page_placer.py",
+            "line": 28
+          }
+        ]
+      },
+      "packets": [
+        "tr:budget:flow->rd:place",
+        "tr:budget:list->rd:place"
+      ],
+      "phase": "Render agent",
+      "phaseTitle": "Render agent - geometry, 8004",
+      "position": 22,
+      "title": "Geometry is a server concern"
+    },
+    {
+      "anchor": "rd:spine",
+      "body": "The spine is the longest reachable path through a lane, and it gets the straight line. Everything else is offset into a column beside it - exactly like this page.",
+      "branches": [
+        {
+          "label": "spine",
+          "note": "Drawn as the primary path.",
+          "target": "Straight down the lane",
+          "terminal": false
+        },
+        {
+          "label": "branch",
+          "note": "Siblings spaced so nothing overlaps.",
+          "target": "Offset into a column",
+          "terminal": false
+        }
+      ],
+      "detail": "The layout you are looking at right now is the same idea applied by hand: a main line down the middle, branches to either side, converging back.",
+      "facts": [],
+      "focus": [
+        "rd:spine",
+        "rd:spine:main",
+        "rd:spine:branch"
+      ],
+      "id": "rd:spine",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Is this node on the spine?",
+        "oneLiner": "The longest path gets the straight line.",
+        "refs": [
+          {
+            "file": "agents/render_agent/placement/spine_router.py",
+            "line": 25
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Render agent",
+      "phaseTitle": "Render agent - geometry, 8004",
+      "position": 23,
+      "title": "Decision - spine, or branch?"
+    },
+    {
+      "anchor": "fe:page",
+      "body": "A skeleton of at most 15 nodes, with every other decision one + away. On django-helpdesk that is 222 decisions sitting behind this same surface.",
+      "branches": [],
+      "detail": "Positions come from the render agent, so the frontend only decides what is revealed - never where anything goes.",
+      "facts": [
+        {
+          "label": "django-helpdesk",
+          "value": "222 decisions"
+        },
+        {
+          "label": "visible at once",
+          "value": "15"
+        }
+      ],
+      "focus": [
+        "fe:page"
+      ],
+      "id": "fe:page",
+      "node": {
+        "backing": [],
+        "kind": "step",
+        "label": "The diagram you are looking at",
+        "oneLiner": "15 visible nodes, everything else one + away.",
+        "refs": [
+          {
+            "file": "frontend/src/pages/FlowPage.jsx",
+            "line": 18
+          }
+        ]
+      },
+      "packets": [
+        "rd:spine:main->fe:page",
+        "rd:spine:branch->fe:page"
+      ],
+      "phase": "Frontend",
+      "phaseTitle": "Frontend - progressive disclosure",
+      "position": 24,
+      "title": "And this is the output"
+    },
+    {
+      "anchor": "fe:expand",
+      "body": "Progressive disclosure is the last decision in the system, and it belongs to the reader. This tour is itself a CodeFlow diagram - click any node to open its source.",
+      "branches": [
+        {
+          "label": "expand",
+          "note": "The camera flies to what was revealed.",
+          "target": "Reveal the nested decisions",
+          "terminal": true
+        },
+        {
+          "label": "collapsed",
+          "note": "The skeleton never grows past 15.",
+          "target": "Stay at this level",
+          "terminal": true
+        }
+      ],
+      "detail": "Both arms stop here, because this is where the pipeline hands over. Everything you have seen was hand-authored as a FlowGraph and run through the real placer - the same code path a real repo takes.",
+      "facts": [],
+      "focus": [
+        "fe:expand",
+        "fe:expand:open",
+        "fe:expand:shut"
+      ],
+      "id": "fe:expand",
+      "node": {
+        "backing": [],
+        "kind": "decision",
+        "label": "Did the reader press + ?",
+        "oneLiner": "A node's hidden_children is exactly what its + reveals.",
+        "refs": [
+          {
+            "file": "frontend/src/hooks/useExpansion.js",
+            "line": 16
+          }
+        ]
+      },
+      "packets": [],
+      "phase": "Frontend",
+      "phaseTitle": "Frontend - progressive disclosure",
+      "position": 25,
+      "title": "Which is what you have been reading"
+    }
+  ],
+  "view": {
+    "edges": [
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "fe:expand->fe:expand:open:expand",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "expand",
+        "routed": "lane",
+        "secondary": false,
+        "source": "fe:expand",
+        "target": "fe:expand:open"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "fe:expand->fe:expand:shut:collapsed",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "collapsed",
+        "routed": "lane",
+        "secondary": false,
+        "source": "fe:expand",
+        "target": "fe:expand:shut"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "fe:page->fe:expand:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "fe:page",
+        "target": "fe:expand"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:cached->gw:cached:hit:already mapped",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "already mapped",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:cached",
+        "target": "gw:cached:hit"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:cached->gw:cached:miss:cold",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "cold",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:cached",
+        "target": "gw:cached:miss"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:cached:miss->gw:dispatch:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:cached:miss",
+        "target": "gw:dispatch"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:dispatch->gw:env:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:dispatch",
+        "target": "gw:env"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:entry->gw:cached:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:entry",
+        "target": "gw:cached"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:env->gw:env:local:local",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "local",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:env",
+        "target": "gw:env:local"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:env->gw:env:prod:production",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "production",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:env",
+        "target": "gw:env:prod"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:env:local->tr:index:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:env:local",
+        "target": "tr:index"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "gw:env:prod->tr:index:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "gw:env:prod",
+        "target": "tr:index"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "rd:place->rd:spine:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "rd:place",
+        "target": "rd:spine"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "rd:spine->rd:spine:branch:branch",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "branch",
+        "routed": "lane",
+        "secondary": false,
+        "source": "rd:spine",
+        "target": "rd:spine:branch"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "rd:spine->rd:spine:main:spine",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "spine",
+        "routed": "lane",
+        "secondary": false,
+        "source": "rd:spine",
+        "target": "rd:spine:main"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "rd:spine:branch->fe:page:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "rd:spine:branch",
+        "target": "fe:page"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "rd:spine:main->fe:page:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "rd:spine:main",
+        "target": "fe:page"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget->tr:budget:over:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget",
+        "target": "tr:budget:over"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget:body->tr:budget:flow:single entry",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "single entry",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget:body",
+        "target": "tr:budget:flow"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget:body->tr:budget:list:alternatives",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "alternatives",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget:body",
+        "target": "tr:budget:list"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget:demote->tr:budget:body:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget:demote",
+        "target": "tr:budget:body"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget:flow->rd:place:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget:flow",
+        "target": "rd:place"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget:keep->tr:budget:body:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget:keep",
+        "target": "tr:budget:body"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget:list->rd:place:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget:list",
+        "target": "rd:place"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget:over->tr:budget:demote:over budget",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "over budget",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget:over",
+        "target": "tr:budget:demote"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:budget:over->tr:budget:keep:fits",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "fits",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:budget:over",
+        "target": "tr:budget:keep"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:cond:arm->tr:cond:end:terminates",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "terminates",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:cond:arm",
+        "target": "tr:cond:end"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:cond:arm->tr:cond:more:reaches code",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "reaches code",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:cond:arm",
+        "target": "tr:cond:more"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:cond:more->tr:stitch:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:cond:more",
+        "target": "tr:stitch"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:condense->tr:cond:arm:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:condense",
+        "target": "tr:cond:arm"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:effects->tr:eff:database:database",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "database",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:effects",
+        "target": "tr:eff:database"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:effects->tr:eff:email:email",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "email",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:effects",
+        "target": "tr:eff:email"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:effects->tr:eff:file:file",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "file",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:effects",
+        "target": "tr:eff:file"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:effects->tr:eff:http_out:http_out",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "http_out",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:effects",
+        "target": "tr:eff:http_out"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:effects->tr:eff:llm:llm",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "llm",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:effects",
+        "target": "tr:eff:llm"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:effects->tr:eff:queue:queue",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "queue",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:effects",
+        "target": "tr:eff:queue"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:effects->tr:eff:response:response",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "response",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:effects",
+        "target": "tr:eff:response"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:effects->tr:judge:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:effects",
+        "target": "tr:judge"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:fork:branch->tr:effects:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:fork:branch",
+        "target": "tr:effects"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:fork:dynamic->tr:effects:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:fork:dynamic",
+        "target": "tr:effects"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:fork:except->tr:effects:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:fork:except",
+        "target": "tr:effects"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:fork:match->tr:effects:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:fork:match",
+        "target": "tr:effects"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:fork:polymorphic->tr:effects:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:fork:polymorphic",
+        "target": "tr:effects"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:fork:route->tr:effects:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:fork:route",
+        "target": "tr:effects"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:fork:table->tr:effects:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:fork:table",
+        "target": "tr:effects"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:forks->tr:fork:branch:branch",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "branch",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:forks",
+        "target": "tr:fork:branch"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:forks->tr:fork:dynamic:dynamic",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "dynamic",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:forks",
+        "target": "tr:fork:dynamic"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:forks->tr:fork:except:except",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "except",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:forks",
+        "target": "tr:fork:except"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:forks->tr:fork:match:match",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "match",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:forks",
+        "target": "tr:fork:match"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:forks->tr:fork:polymorphic:polymorphic",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "polymorphic",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:forks",
+        "target": "tr:fork:polymorphic"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:forks->tr:fork:route:route",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "route",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:forks",
+        "target": "tr:fork:route"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:forks->tr:fork:table:table",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "table",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:forks",
+        "target": "tr:fork:table"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:import->tr:import:ext:third party",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "third party",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:import",
+        "target": "tr:import:ext"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:import->tr:import:internal:project",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "project",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:import",
+        "target": "tr:import:internal"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:import->tr:import:stdlib:stdlib",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "stdlib",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:import",
+        "target": "tr:import:stdlib"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:import:internal->tr:resolve:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:import:internal",
+        "target": "tr:resolve"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:index->tr:import:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:index",
+        "target": "tr:import"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge->tr:judge:key:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge",
+        "target": "tr:judge:key"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:cache->tr:judge:hit:cached",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "cached",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:cache",
+        "target": "tr:judge:hit"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:cache->tr:judge:miss:cold",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "cold",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:cache",
+        "target": "tr:judge:miss"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:guard->tr:condense:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:guard",
+        "target": "tr:condense"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:heur->tr:judge:cache:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:heur",
+        "target": "tr:judge:cache"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:hit->tr:judge:verdict:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:hit",
+        "target": "tr:judge:verdict"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:key->tr:judge:heur:no key",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "no key",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:key",
+        "target": "tr:judge:heur"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:key->tr:judge:llm:key set",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "key set",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:key",
+        "target": "tr:judge:llm"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:llm->tr:judge:cache:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:llm",
+        "target": "tr:judge:cache"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:miss->tr:judge:verdict:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:miss",
+        "target": "tr:judge:verdict"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:real->tr:condense:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:real",
+        "target": "tr:condense"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:verdict->tr:judge:guard:guard",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "guard",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:verdict",
+        "target": "tr:judge:guard"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:verdict->tr:judge:noise:noise",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "noise",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:verdict",
+        "target": "tr:judge:noise"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:judge:verdict->tr:judge:real:decision",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "decision",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:judge:verdict",
+        "target": "tr:judge:real"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:resolve->tr:target:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:resolve",
+        "target": "tr:target"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:stitch->tr:stitch:url:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:stitch",
+        "target": "tr:stitch:url"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:stitch:http->tr:budget:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:stitch:http",
+        "target": "tr:budget"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:stitch:llm->tr:budget:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:stitch:llm",
+        "target": "tr:budget"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:stitch:url->tr:stitch:http:matched",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "matched",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:stitch:url",
+        "target": "tr:stitch:http"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:stitch:url->tr:stitch:llm:unresolved",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "unresolved",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:stitch:url",
+        "target": "tr:stitch:llm"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:target->tr:target:inferred:ambiguous",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "ambiguous",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:target",
+        "target": "tr:target:inferred"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:target->tr:target:resolved:static",
+        "isSpine": false,
+        "kind": "arm",
+        "label": "static",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:target",
+        "target": "tr:target:resolved"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:target:inferred->tr:forks:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:target:inferred",
+        "target": "tr:forks"
+      },
+      {
+        "confidence": "resolved",
+        "dashed": false,
+        "hiddenPath": [],
+        "id": "tr:target:resolved->tr:forks:",
+        "isSpine": true,
+        "kind": "sequence",
+        "label": "",
+        "routed": "lane",
+        "secondary": false,
+        "source": "tr:target:resolved",
+        "target": "tr:forks"
+      }
+    ],
+    "hidden": [],
+    "hidden_edges": [],
+    "node_geometry": {
+      "decision": {
+        "height": 138,
+        "width": 280
+      },
+      "effect": {
+        "height": 130,
+        "width": 280
+      },
+      "lane_header": {
+        "height": 44,
+        "width": 220
+      },
+      "outcome": {
+        "height": 88,
+        "width": 200
+      },
+      "pill": {
+        "height": 130,
+        "width": 280
+      },
+      "pipeline": {
+        "height": 108,
+        "width": 280
+      },
+      "rect": {
+        "height": 130,
+        "width": 280
+      },
+      "split_bar": {
+        "height": 56,
+        "width": 240
+      }
+    },
+    "nodes": [
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Did the reader press + ?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "frontend",
+          "oneLiner": "A node's hidden_children is exactly what its + reveals.",
+          "provenance": "useExpansion.js:16",
+          "refs": [
+            {
+              "file": "frontend/src/hooks/useExpansion.js",
+              "line": 16
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "fe:expand",
+        "kind": "decision",
+        "label": "Did the reader press + ?",
+        "position": {
+          "x": 861,
+          "y": 9320
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Reveal the nested decisions",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "frontend",
+          "oneLiner": "The camera flies to what was revealed.",
+          "provenance": "CameraController.jsx:29",
+          "refs": [
+            {
+              "file": "frontend/src/components/flow/CameraController.jsx",
+              "line": 29
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "fe:expand:open",
+        "kind": "outcome",
+        "label": "Reveal the nested decisions",
+        "position": {
+          "x": 381,
+          "y": 9520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Stay at this level",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "frontend",
+          "oneLiner": "The skeleton never grows past 15.",
+          "provenance": "useExpansion.js:30",
+          "refs": [
+            {
+              "file": "frontend/src/hooks/useExpansion.js",
+              "line": 30
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "fe:expand:shut",
+        "kind": "outcome",
+        "label": "Stay at this level",
+        "position": {
+          "x": 1421,
+          "y": 9520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "The diagram you are looking at",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "frontend",
+          "oneLiner": "15 visible nodes, everything else one + away.",
+          "provenance": "FlowPage.jsx:18",
+          "refs": [
+            {
+              "file": "frontend/src/pages/FlowPage.jsx",
+              "line": 18
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "fe:page",
+        "kind": "step",
+        "label": "The diagram you are looking at",
+        "position": {
+          "x": 981,
+          "y": 9120
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "RepoMapService.get"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Repo already mapped?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "gateway",
+          "oneLiner": "Neon is checked for a stored map before anything is re-analysed.",
+          "provenance": "repo_map_service.py:26",
+          "refs": [
+            {
+              "file": "api/services/repo_map_service.py",
+              "line": 26
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "gw:cached",
+        "kind": "decision",
+        "label": "Repo already mapped?",
+        "position": {
+          "x": 1208,
+          "y": 320
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Serve the stored map",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "gateway",
+          "oneLiner": "Returns in about three seconds.",
+          "provenance": "repo_maps.py:19",
+          "refs": [
+            {
+              "file": "api/routers/repo_maps.py",
+              "line": 19
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "gw:cached:hit",
+        "kind": "outcome",
+        "label": "Serve the stored map",
+        "position": {
+          "x": 728,
+          "y": 520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Run the full pipeline",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "gateway",
+          "oneLiner": "Every stage below has to run.",
+          "provenance": "analysis_service.py:1",
+          "refs": [
+            {
+              "file": "api/services/analysis_service.py",
+              "line": 1
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "gw:cached:miss",
+        "kind": "outcome",
+        "label": "Run the full pipeline",
+        "position": {
+          "x": 1768,
+          "y": 520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Fan out to the agents",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "gateway",
+          "oneLiner": "Profiler, tracer, layout and render - one HTTP hop each.",
+          "provenance": "config.py:39",
+          "refs": [
+            {
+              "file": "api/core/config.py",
+              "line": 39
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "gw:dispatch",
+        "kind": "step",
+        "label": "Fan out to the agents",
+        "position": {
+          "x": 1287,
+          "y": 720
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "analyse"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "POST /analyse",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "gateway",
+          "oneLiner": "A user asks CodeFlow to map a repository.",
+          "provenance": "analysis.py:25",
+          "refs": [
+            {
+              "file": "api/routers/analysis.py",
+              "line": 25
+            }
+          ],
+          "shape": "pill"
+        },
+        "id": "gw:entry",
+        "kind": "entry",
+        "label": "POST /analyse",
+        "position": {
+          "x": 1060,
+          "y": 120
+        },
+        "shape": "pill",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "ENVIRONMENT = local?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "gateway",
+          "oneLiner": "The same code targets localhost or Railway.",
+          "provenance": "config.py:40",
+          "refs": [
+            {
+              "file": "api/core/config.py",
+              "line": 40
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "gw:env",
+        "kind": "decision",
+        "label": "ENVIRONMENT = local?",
+        "position": {
+          "x": 1259,
+          "y": 920
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "localhost:8002-8006",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "gateway",
+          "oneLiner": "Four uvicorn processes.",
+          "provenance": "config.py:10",
+          "refs": [
+            {
+              "file": "api/core/config.py",
+              "line": 10
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "gw:env:local",
+        "kind": "outcome",
+        "label": "localhost:8002-8006",
+        "position": {
+          "x": 779,
+          "y": 1120
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Railway service URLs",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "gateway",
+          "oneLiner": "Four deployed containers.",
+          "provenance": "config.py:21",
+          "refs": [
+            {
+              "file": "api/core/config.py",
+              "line": 21
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "gw:env:prod",
+        "kind": "outcome",
+        "label": "Railway service URLs",
+        "position": {
+          "x": 1819,
+          "y": 1120
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "laneId": "frontend",
+          "mass": 1.0
+        },
+        "id": "lane:frontend",
+        "kind": "lane_header",
+        "label": "Frontend - progressive disclosure",
+        "position": {
+          "x": 120,
+          "y": 9120
+        },
+        "shape": "lane_header",
+        "type": "laneHeader"
+      },
+      {
+        "data": {
+          "laneId": "gateway",
+          "mass": 4.0
+        },
+        "id": "lane:gateway",
+        "kind": "lane_header",
+        "label": "Gateway - orchestration, 8000",
+        "position": {
+          "x": 120,
+          "y": 120
+        },
+        "shape": "lane_header",
+        "type": "laneHeader"
+      },
+      {
+        "data": {
+          "laneId": "render",
+          "mass": 2.0
+        },
+        "id": "lane:render",
+        "kind": "lane_header",
+        "label": "Render agent - geometry, 8004",
+        "position": {
+          "x": 120,
+          "y": 8520
+        },
+        "shape": "lane_header",
+        "type": "laneHeader"
+      },
+      {
+        "data": {
+          "laneId": "tracer",
+          "mass": 3.0
+        },
+        "id": "lane:tracer",
+        "kind": "lane_header",
+        "label": "Tracer agent - the decision engine, 8003",
+        "position": {
+          "x": 120,
+          "y": 1320
+        },
+        "shape": "lane_header",
+        "type": "laneHeader"
+      },
+      {
+        "data": {
+          "backing": [
+            "FlowPagePlacer.place"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Place the geometry",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "render",
+          "oneLiner": "Deterministic React Flow geometry.",
+          "provenance": "flow_page_placer.py:28",
+          "refs": [
+            {
+              "file": "agents/render_agent/placement/flow_page_placer.py",
+              "line": 28
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "rd:place",
+        "kind": "step",
+        "label": "Place the geometry",
+        "position": {
+          "x": 1259,
+          "y": 8520
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Is this node on the spine?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "render",
+          "oneLiner": "The longest path gets the straight line.",
+          "provenance": "spine_router.py:25",
+          "refs": [
+            {
+              "file": "agents/render_agent/placement/spine_router.py",
+              "line": 25
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "rd:spine",
+        "kind": "decision",
+        "label": "Is this node on the spine?",
+        "position": {
+          "x": 1139,
+          "y": 8720
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Offset into a column",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "render",
+          "oneLiner": "Siblings spaced so nothing overlaps.",
+          "provenance": "tree_layout.py:33",
+          "refs": [
+            {
+              "file": "agents/render_agent/placement/tree_layout.py",
+              "line": 33
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "rd:spine:branch",
+        "kind": "outcome",
+        "label": "Offset into a column",
+        "position": {
+          "x": 1699,
+          "y": 8920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Straight down the lane",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "render",
+          "oneLiner": "Drawn as the primary path.",
+          "provenance": "tree_layout.py:33",
+          "refs": [
+            {
+              "file": "agents/render_agent/placement/tree_layout.py",
+              "line": 33
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "rd:spine:main",
+        "kind": "outcome",
+        "label": "Straight down the lane",
+        "position": {
+          "x": 659,
+          "y": 8920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "VisibilityBudgeter.budget"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "8 - Budget the page",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Nothing is deleted - detail is demoted.",
+          "provenance": "visibility_budgeter.py:55",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+              "line": 55
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "tr:budget",
+        "kind": "step",
+        "label": "8 - Budget the page",
+        "position": {
+          "x": 1060,
+          "y": 7520
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Is this body a flow or a list?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Derived from shape, never asserted.",
+          "provenance": "containment_indexer.py:1",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+              "line": 1
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:budget:body",
+        "kind": "decision",
+        "label": "Is this body a flow or a list?",
+        "position": {
+          "x": 1287,
+          "y": 8120
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Demote, never delete",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Moves behind a + on its parent.",
+          "provenance": "containment_indexer.py:1",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+              "line": 1
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:budget:demote",
+        "kind": "outcome",
+        "label": "Demote, never delete",
+        "position": {
+          "x": 728,
+          "y": 7920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "flow - chain them",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "One entry, sequential members.",
+          "provenance": "containment_indexer.py:1",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+              "line": 1
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:budget:flow",
+        "kind": "outcome",
+        "label": "flow - chain them",
+        "position": {
+          "x": 807,
+          "y": 8320
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Keep on the skeleton",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "High-ranked nodes stay visible.",
+          "provenance": "visibility_budgeter.py:55",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+              "line": 55
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:budget:keep",
+        "kind": "outcome",
+        "label": "Keep on the skeleton",
+        "position": {
+          "x": 1768,
+          "y": 7920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "list - alternatives",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Mutually exclusive arms.",
+          "provenance": "containment_indexer.py:1",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+              "line": 1
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:budget:list",
+        "kind": "outcome",
+        "label": "list - alternatives",
+        "position": {
+          "x": 1847,
+          "y": 8320
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "More than 15 nodes on top?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Over budget means demoted, not dropped.",
+          "provenance": "visibility_budgeter.py:55",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+              "line": 55
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:budget:over",
+        "kind": "decision",
+        "label": "More than 15 nodes on top?",
+        "position": {
+          "x": 1208,
+          "y": 7720
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Does this arm reach further code?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Arms that terminate get a named outcome.",
+          "provenance": "flow_condenser.py:34",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+              "line": 34
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:cond:arm",
+        "kind": "decision",
+        "label": "Does this arm reach further code?",
+        "position": {
+          "x": 861,
+          "y": 6520
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Returns / Raises / Continues",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "An honest ending, not a loose edge.",
+          "provenance": "arm.py:6",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/arm.py",
+              "line": 6
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:cond:end",
+        "kind": "outcome",
+        "label": "Returns / Raises / Continues",
+        "position": {
+          "x": 1421,
+          "y": 6720
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Continue the flow",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Points at the next real node.",
+          "provenance": "flow_condenser.py:34",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+              "line": 34
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:cond:more",
+        "kind": "outcome",
+        "label": "Continue the flow",
+        "position": {
+          "x": 381,
+          "y": 6720
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "FlowCondenser.condense"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "6 - Condense to a FlowGraph",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Projection onto entry/step/decision/effect/outcome.",
+          "provenance": "flow_condenser.py:34",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+              "line": 34
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "tr:condense",
+        "kind": "step",
+        "label": "6 - Condense to a FlowGraph",
+        "position": {
+          "x": 981,
+          "y": 6320
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "effectKind": "database",
+          "effectTarget": "session.query",
+          "fullLabel": "Database",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "session.query",
+          "provenance": "effect_detector.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+              "line": 25
+            }
+          ],
+          "shape": "effect"
+        },
+        "id": "tr:eff:database",
+        "kind": "effect",
+        "label": "Database",
+        "position": {
+          "x": 1580,
+          "y": 3920
+        },
+        "shape": "effect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "effectKind": "email",
+          "effectTarget": "send_mail",
+          "fullLabel": "Email",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "send_mail",
+          "provenance": "effect_detector.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+              "line": 25
+            }
+          ],
+          "shape": "effect"
+        },
+        "id": "tr:eff:email",
+        "kind": "effect",
+        "label": "Email",
+        "position": {
+          "x": 1580,
+          "y": 4320
+        },
+        "shape": "effect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "effectKind": "file",
+          "effectTarget": "Path.read_text",
+          "fullLabel": "Filesystem",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Path.read_text",
+          "provenance": "effect_detector.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+              "line": 25
+            }
+          ],
+          "shape": "effect"
+        },
+        "id": "tr:eff:file",
+        "kind": "effect",
+        "label": "Filesystem",
+        "position": {
+          "x": 1580,
+          "y": 4120
+        },
+        "shape": "effect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "effectKind": "http_out",
+          "effectTarget": "httpx / requests",
+          "fullLabel": "Outbound HTTP",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "httpx / requests",
+          "provenance": "effect_detector.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+              "line": 25
+            }
+          ],
+          "shape": "effect"
+        },
+        "id": "tr:eff:http_out",
+        "kind": "effect",
+        "label": "Outbound HTTP",
+        "position": {
+          "x": 540,
+          "y": 3920
+        },
+        "shape": "effect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "effectKind": "llm",
+          "effectTarget": "messages.create",
+          "fullLabel": "LLM",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "messages.create",
+          "provenance": "effect_detector.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+              "line": 25
+            }
+          ],
+          "shape": "effect"
+        },
+        "id": "tr:eff:llm",
+        "kind": "effect",
+        "label": "LLM",
+        "position": {
+          "x": 540,
+          "y": 4120
+        },
+        "shape": "effect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "effectKind": "queue",
+          "effectTarget": "publish / enqueue",
+          "fullLabel": "Queue",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "publish / enqueue",
+          "provenance": "effect_detector.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+              "line": 25
+            }
+          ],
+          "shape": "effect"
+        },
+        "id": "tr:eff:queue",
+        "kind": "effect",
+        "label": "Queue",
+        "position": {
+          "x": 540,
+          "y": 4320
+        },
+        "shape": "effect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "effectKind": "response",
+          "effectTarget": "returns to caller",
+          "fullLabel": "Response",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "returns to caller",
+          "provenance": "effect_detector.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+              "line": 25
+            }
+          ],
+          "shape": "effect"
+        },
+        "id": "tr:eff:response",
+        "kind": "effect",
+        "label": "Response",
+        "position": {
+          "x": 540,
+          "y": 4520
+        },
+        "shape": "effect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "EffectDetector.detect"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "4 - Detect side effects",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "http, db, llm, file, queue, email, response.",
+          "provenance": "effect_detector.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
+              "line": 25
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "tr:effects",
+        "kind": "step",
+        "label": "4 - Detect side effects",
+        "position": {
+          "x": 1060,
+          "y": 3720
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "branch",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "if / elif / else",
+          "provenance": "dispatch_extractor.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
+              "line": 12
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:fork:branch",
+        "kind": "outcome",
+        "label": "branch",
+        "position": {
+          "x": 432,
+          "y": 2920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "dynamic",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "getattr / runtime name",
+          "provenance": "dispatch_extractor.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
+              "line": 12
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:fork:dynamic",
+        "kind": "outcome",
+        "label": "dynamic",
+        "position": {
+          "x": 432,
+          "y": 3520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "except",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "try / except handler",
+          "provenance": "dispatch_extractor.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
+              "line": 12
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:fork:except",
+        "kind": "outcome",
+        "label": "except",
+        "position": {
+          "x": 432,
+          "y": 3120
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "match",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "match statement",
+          "provenance": "dispatch_extractor.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
+              "line": 12
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:fork:match",
+        "kind": "outcome",
+        "label": "match",
+        "position": {
+          "x": 1472,
+          "y": 2920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "polymorphic",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "subclass override",
+          "provenance": "dispatch_extractor.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
+              "line": 12
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:fork:polymorphic",
+        "kind": "outcome",
+        "label": "polymorphic",
+        "position": {
+          "x": 1472,
+          "y": 3320
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "route",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "HTTP route table",
+          "provenance": "dispatch_extractor.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
+              "line": 12
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:fork:route",
+        "kind": "outcome",
+        "label": "route",
+        "position": {
+          "x": 1472,
+          "y": 3120
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "table",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "dict or registry lookup",
+          "provenance": "dispatch_extractor.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
+              "line": 12
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:fork:table",
+        "kind": "outcome",
+        "label": "table",
+        "position": {
+          "x": 432,
+          "y": 3320
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "DispatchExtractor.extract"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "3 - What kind of fork is this?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Seven kinds of branch point, no exceptions.",
+          "provenance": "dispatch_site.py:7",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/dispatch_site.py",
+              "line": 7
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:forks",
+        "kind": "decision",
+        "label": "3 - What kind of fork is this?",
+        "position": {
+          "x": 912,
+          "y": 2720
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Where does this import resolve?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Longest-prefix ancestor walk, stdlib short-circuited.",
+          "provenance": "path_fqn.py:29",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+              "line": 29
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:import",
+        "kind": "decision",
+        "label": "Where does this import resolve?",
+        "position": {
+          "x": 981,
+          "y": 1520
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Third party -> ext:",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Not traced any further.",
+          "provenance": "path_fqn.py:33",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+              "line": 33
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:import:ext",
+        "kind": "outcome",
+        "label": "Third party -> ext:",
+        "position": {
+          "x": 501,
+          "y": 1920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Project module",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Becomes a call-graph edge.",
+          "provenance": "path_fqn.py:24",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+              "line": 24
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:import:internal",
+        "kind": "outcome",
+        "label": "Project module",
+        "position": {
+          "x": 501,
+          "y": 1720
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Standard library",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Short-circuits the walk.",
+          "provenance": "path_fqn.py:4",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+              "line": 4
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:import:stdlib",
+        "kind": "outcome",
+        "label": "Standard library",
+        "position": {
+          "x": 1541,
+          "y": 1720
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "ProjectIndexer.index"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "1 - Index the repo",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Function-level symbol table for the whole repo.",
+          "provenance": "project_indexer.py:25",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/project_indexer.py",
+              "line": 25
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "tr:index",
+        "kind": "step",
+        "label": "1 - Index the repo",
+        "position": {
+          "x": 1139,
+          "y": 1320
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "SignificanceFilter.run"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "5 - Judge significance",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Which forks are decisions a human would care about?",
+          "provenance": "significance_filter.py:43",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/significance_filter.py",
+              "line": 43
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "tr:judge",
+        "kind": "step",
+        "label": "5 - Judge significance",
+        "position": {
+          "x": 1208,
+          "y": 4720
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Has this fork been judged before?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Content-addressed verdict cache.",
+          "provenance": "verdict_cache.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/verdict_cache.py",
+              "line": 12
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:judge:cache",
+        "kind": "decision",
+        "label": "Has this fork been judged before?",
+        "position": {
+          "x": 1259,
+          "y": 5320
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "guarded_step",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Real, but not a choice - a validation gate.",
+          "provenance": "site_verdict.py:4",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/site_verdict.py",
+              "line": 4
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:judge:guard",
+        "kind": "outcome",
+        "label": "guarded_step",
+        "position": {
+          "x": 1699,
+          "y": 5920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "HeuristicDecisionJudge",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Pure reach heuristic, fully offline.",
+          "provenance": "heuristic_decision_judge.py:10",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/heuristic_decision_judge.py",
+              "line": 10
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:judge:heur",
+        "kind": "outcome",
+        "label": "HeuristicDecisionJudge",
+        "position": {
+          "x": 1847,
+          "y": 5120
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Cache hit",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Warm run, no API call.",
+          "provenance": "verdict_cache.py:12",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/verdict_cache.py",
+              "line": 12
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:judge:hit",
+        "kind": "outcome",
+        "label": "Cache hit",
+        "position": {
+          "x": 779,
+          "y": 5520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Is an API key present?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "No key means a deterministic offline judge.",
+          "provenance": "decision_judge_factory.py:15",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/decision_judge_factory.py",
+              "line": 15
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:judge:key",
+        "kind": "decision",
+        "label": "Is an API key present?",
+        "position": {
+          "x": 1287,
+          "y": 4920
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "LlmDecisionJudge",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Batches ~20 forks per call at temperature 0.",
+          "provenance": "llm_decision_judge.py:30",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/llm_decision_judge.py",
+              "line": 30
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:judge:llm",
+        "kind": "outcome",
+        "label": "LlmDecisionJudge",
+        "position": {
+          "x": 807,
+          "y": 5120
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Ask the model",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Temperature 0, so repeatable.",
+          "provenance": "llm_decision_judge.py:30",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/llm_decision_judge.py",
+              "line": 30
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:judge:miss",
+        "kind": "outcome",
+        "label": "Ask the model",
+        "position": {
+          "x": 1819,
+          "y": 5520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "noise",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Demoted to a deeper level, never deleted.",
+          "provenance": "site_verdict.py:4",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/site_verdict.py",
+              "line": 4
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:judge:noise",
+        "kind": "outcome",
+        "label": "noise",
+        "position": {
+          "x": 659,
+          "y": 6120
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "decision",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "A diamond, labelled with a question.",
+          "provenance": "site_verdict.py:4",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/site_verdict.py",
+              "line": 4
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:judge:real",
+        "kind": "outcome",
+        "label": "decision",
+        "position": {
+          "x": 659,
+          "y": 5920
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Decision, guard, or noise?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "The verdict that decides what reaches the diagram.",
+          "provenance": "site_verdict.py:4",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/site_verdict.py",
+              "line": 4
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:judge:verdict",
+        "kind": "decision",
+        "label": "Decision, guard, or noise?",
+        "position": {
+          "x": 1139,
+          "y": 5720
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "CallResolver.resolve_project"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "2 - Resolve the call graph",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Call graph with per-call-site control context.",
+          "provenance": "call_resolver.py:41",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/call_resolver.py",
+              "line": 41
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "tr:resolve",
+        "kind": "step",
+        "label": "2 - Resolve the call graph",
+        "position": {
+          "x": 861,
+          "y": 2120
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [
+            "FlowStitcher.stitch"
+          ],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "7 - Stitch the services together",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Outbound calls matched to route entries.",
+          "provenance": "flow_stitcher.py:11",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/flow_stitcher.py",
+              "line": 11
+            }
+          ],
+          "shape": "rect"
+        },
+        "id": "tr:stitch",
+        "kind": "step",
+        "label": "7 - Stitch the services together",
+        "position": {
+          "x": 833,
+          "y": 6920
+        },
+        "shape": "rect",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "HttpStitchDetector",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Deterministic URL match.",
+          "provenance": "http_stitch_detector.py:1",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/http_stitch_detector.py",
+              "line": 1
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:stitch:http",
+        "kind": "outcome",
+        "label": "HttpStitchDetector",
+        "position": {
+          "x": 432,
+          "y": 7320
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "LlmStitchDetector",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Judged, and drawn as an inferred edge.",
+          "provenance": "llm_stitch_detector.py:1",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/llm_stitch_detector.py",
+              "line": 1
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:stitch:llm",
+        "kind": "outcome",
+        "label": "LlmStitchDetector",
+        "position": {
+          "x": 1472,
+          "y": 7320
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Does the URL match a known route?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "URL matching first, the model only for leftovers.",
+          "provenance": "http_stitch_detector.py:1",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/services/analysis/http_stitch_detector.py",
+              "line": 1
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:stitch:url",
+        "kind": "decision",
+        "label": "Does the URL match a known route?",
+        "position": {
+          "x": 912,
+          "y": 7120
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "Can the target be resolved statically?",
+          "hiddenChildren": [],
+          "isSpine": true,
+          "laneId": "tracer",
+          "oneLiner": "Confidence is carried through to the picture.",
+          "provenance": "resolved_target.py:8",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/resolved_target.py",
+              "line": 8
+            }
+          ],
+          "shape": "decision"
+        },
+        "id": "tr:target",
+        "kind": "decision",
+        "label": "Can the target be resolved statically?",
+        "position": {
+          "x": 833,
+          "y": 2320
+        },
+        "shape": "decision",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "inferred",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Drawn faded.",
+          "provenance": "resolved_target.py:8",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/resolved_target.py",
+              "line": 8
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:target:inferred",
+        "kind": "outcome",
+        "label": "inferred",
+        "position": {
+          "x": 1393,
+          "y": 2520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      },
+      {
+        "data": {
+          "backing": [],
+          "badges": [],
+          "column": 0,
+          "dashed": false,
+          "fullLabel": "resolved",
+          "hiddenChildren": [],
+          "isSpine": false,
+          "laneId": "tracer",
+          "oneLiner": "Exact function known.",
+          "provenance": "resolved_target.py:8",
+          "refs": [
+            {
+              "file": "agents/tracer_agent/models/resolved_target.py",
+              "line": 8
+            }
+          ],
+          "shape": "outcome"
+        },
+        "id": "tr:target:resolved",
+        "kind": "outcome",
+        "label": "resolved",
+        "position": {
+          "x": 353,
+          "y": 2520
+        },
+        "shape": "outcome",
+        "type": "flow"
+      }
+    ],
+    "page_title": "CodeFlow - how it maps a codebase",
+    "type": "flow"
+  }
+}

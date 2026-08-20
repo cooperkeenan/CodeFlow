@@ -16,7 +16,7 @@ export default function EntryNode({ data, selected, sourcePosition, targetPositi
     boxSizing: 'border-box',
   }
   return (
-    <div style={shellStyle(base, KIND_ACCENT.entry, { selected, highlighted: data.highlighted })}>
+    <div style={shellStyle(base, KIND_ACCENT.entry, { selected, highlighted: data.highlighted, focused: data.focused, dimmed: data.dimmed, adjacent: data.adjacent })}>
       <Handles target={targetPosition} source={sourcePosition} />
       <NodeChrome data={data} align="center" />
     </div>

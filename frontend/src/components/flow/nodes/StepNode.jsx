@@ -16,7 +16,7 @@ export default function StepNode({ data, selected, sourcePosition, targetPositio
     boxSizing: 'border-box',
   }
   return (
-    <div style={shellStyle(base, KIND_ACCENT.step, { selected, highlighted: data.highlighted, dashed: data.dashed })}>
+    <div style={shellStyle(base, KIND_ACCENT.step, { selected, highlighted: data.highlighted, dashed: data.dashed, focused: data.focused, dimmed: data.dimmed, adjacent: data.adjacent })}>
       <Handles target={targetPosition} source={sourcePosition} />
       <NodeChrome data={data} />
     </div>

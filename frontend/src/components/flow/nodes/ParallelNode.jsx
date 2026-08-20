@@ -17,7 +17,7 @@ export default function ParallelNode({ data, selected, sourcePosition, targetPos
     gap: Math.round(8 * scale),
     boxSizing: 'border-box',
   }
-  const style = shellStyle(base, KIND_ACCENT.parallel, { selected, highlighted: data.highlighted })
+  const style = shellStyle(base, KIND_ACCENT.parallel, { selected, highlighted: data.highlighted, focused: data.focused, dimmed: data.dimmed, adjacent: data.adjacent })
   return (
     <div style={{ ...style, borderLeft: `${Math.max(2, Math.round(4 * scale))}px solid ${KIND_ACCENT.parallel}` }}>
       <Handles target={targetPosition} source={sourcePosition} />
