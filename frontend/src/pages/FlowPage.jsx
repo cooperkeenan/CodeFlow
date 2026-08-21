@@ -71,7 +71,7 @@ export default function FlowPage({ analysis, onBack, fixture }) {
         </span>
       </header>
 
-      <div style={{ position: 'relative', flex: 1, minHeight: 0, border: '1px solid #242424', borderRadius: 3, overflow: 'hidden', background: '#1E1E1E' }}>
+      <div style={{ position: 'relative', flex: 1, minHeight: 0, border: '1px solid #232A36', borderRadius: 3, overflow: 'hidden', background: '#0F1218' }}>
         {error && <div style={{ ...MUTED, padding: '1rem' }}>failed to load flow: {error}</div>}
         {!error && loading && <div style={{ ...MUTED, padding: '1rem' }}>loading flow…</div>}
         {!error && !loading && !nodes.length && <div style={{ ...MUTED, padding: '1rem' }}>no flow data.</div>}

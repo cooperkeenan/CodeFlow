@@ -19,7 +19,7 @@ export default function StepNode({ data, selected, sourcePosition, targetPositio
     <div
       className={data.justRevealed ? 'rf-reveal-node' : undefined}
       style={{
-        ...shellStyle(base, KIND_ACCENT.step, { selected, highlighted: data.highlighted, dashed: data.dashed, isolated: data.isolated }),
+        ...shellStyle(base, KIND_ACCENT.step, { selected, highlighted: data.highlighted, dashed: data.dashed, isolated: data.isolated, focused: data.focused, dimmed: data.dimmed, adjacent: data.adjacent, entering: data.entering, enterDelay: data.enterDelay }),
         ...revealStyle(data, KIND_ACCENT.step),
       }}
     >

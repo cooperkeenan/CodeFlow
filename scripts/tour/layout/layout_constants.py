@@ -1,0 +1,3 @@
+ARM_GAP_X = 56
+ARM_GAP_Y = 56
+BEAT_GAP_Y = 130

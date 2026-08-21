@@ -22,11 +22,11 @@ export default function ExpandToggle({ expanded, count, onToggle, nodeId, scale 
       className="nodrag nopan"
       style={{
         ...BASE,
-        fontSize: Math.round(10 * s * 10) / 10,
-        lineHeight: `${Math.round(13 * s)}px`,
-        minWidth: Math.round(15 * s),
-        height: Math.round(15 * s),
-        padding: `0 ${Math.round(3 * s)}px`,
+        fontSize: Math.round(12 * s * 10) / 10,
+        lineHeight: `${Math.round(16 * s)}px`,
+        minWidth: Math.round(19 * s),
+        height: Math.round(19 * s),
+        padding: `0 ${Math.round(5 * s)}px`,
       }}
       onPointerDown={event => {
         event.stopPropagation()

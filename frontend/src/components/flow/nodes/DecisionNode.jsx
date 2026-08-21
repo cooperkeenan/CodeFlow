@@ -24,6 +24,11 @@ export default function DecisionNode({ data, selected, sourcePosition, targetPos
     highlighted: data.highlighted,
     dashed: data.dashed,
     isolated: data.isolated,
+    focused: data.focused,
+    dimmed: data.dimmed,
+    adjacent: data.adjacent,
+    entering: data.entering,
+    enterDelay: data.enterDelay,
   })
   const shell = data.isolated
     ? style

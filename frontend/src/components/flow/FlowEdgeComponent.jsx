@@ -1,8 +1,9 @@
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, getSmoothStepPath } from 'reactflow'
 import { MONO, SURFACE_2, TEXT_MUTED } from './styles'
 
-const NORMAL = '#4a4a4a'
-const STITCH = '#6a6a6a'
+const NORMAL = '#6C7689'
+const STITCH = '#8A93A6'
+const FLOW = '#39FF14'
 
 export default function FlowEdgeComponent({
   id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, label,
@@ -52,12 +53,33 @@ export default function FlowEdgeComponent({
           />
           <path d={path} fill="none" strokeOpacity={0} strokeWidth={20} className="react-flow__edge-interaction" />
         </>
+      ) : d.entering ? (
+        <path
+          d={path}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={width}
+          markerEnd={`url(#${markerId})`}
+          pathLength="1"
+          style={{ opacity, strokeDasharray: 1, strokeDashoffset: 1, animation: 'drawIn 700ms ease forwards' }}
+        />
       ) : (
         <BaseEdge
           id={id}
           path={path}
           markerEnd={`url(#${markerId})`}
           style={{ stroke, strokeWidth: width, strokeDasharray: dashArray, opacity }}
+        />
+      )}
+      {d.flowing && (
+        <path
+          d={path}
+          fill="none"
+          stroke={FLOW}
+          strokeWidth={width * 1.15}
+          strokeLinecap="round"
+          strokeDasharray="8 10"
+          style={{ animation: 'edgeFlow 900ms linear infinite', pointerEvents: 'none' }}
         />
       )}
       {label && (

@@ -3,12 +3,13 @@ import { scaleGeometry } from '../components/flow/depthScale'
 
 const HEADER_TYPE = 'laneHeader'
 const GROUP_TYPE = 'flowGroup'
+const SHAPE_TYPE = { pipeline: 'pipeline', card: 'card', snippet: 'snippet' }
 
 function toNode(node, onToggle, onIsolate, geometry) {
   const type =
     node.type === HEADER_TYPE || node.type === GROUP_TYPE
       ? node.type
-      : node.shape === 'pipeline' ? 'pipeline' : node.kind
+      : SHAPE_TYPE[node.shape] ?? node.kind
   const scale = node.scale ?? 1
   return {
     id: node.id,

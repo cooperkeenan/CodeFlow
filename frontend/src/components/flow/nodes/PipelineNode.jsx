@@ -24,6 +24,11 @@ export default function PipelineNode({ data, selected, sourcePosition, targetPos
     highlighted: data.highlighted,
     dashed: data.dashed,
     isolated: data.isolated,
+    focused: data.focused,
+    dimmed: data.dimmed,
+    adjacent: data.adjacent,
+    entering: data.entering,
+    enterDelay: data.enterDelay,
   })
   return (
     <div className={data.justRevealed ? 'rf-reveal-node' : undefined} style={{ ...style, ...revealStyle(data, KIND_ACCENT.pipeline) }}>

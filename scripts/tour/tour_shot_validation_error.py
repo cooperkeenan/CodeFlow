@@ -1,0 +1,2 @@
+class ShotValidationError(Exception):
+    pass

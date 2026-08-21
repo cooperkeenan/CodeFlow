@@ -13,6 +13,7 @@ import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import FlowPage from './pages/FlowPage'
+import TourPage from './pages/TourPage'
 
 function fixtureAnalysis() {
   if (typeof window === 'undefined') return null
@@ -66,6 +67,7 @@ export default function App() {
             }
           />
           <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+          <Route path="/tour" element={<TourPage />} />
           <Route
             path="/flow-fixture"
             element={<FlowPage fixture="/fixture/rendered_view.json" analysis={fixtureAnalysis()} />}
