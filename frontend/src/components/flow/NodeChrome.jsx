@@ -4,7 +4,7 @@ import { LABEL_STYLE, CHIP_STYLE, PROVENANCE_STYLE, MONO, TEXT_MUTED, scaleText 
 
 const SUBTITLE_STYLE = {
   fontFamily: MONO,
-  fontSize: 8,
+  fontSize: 11,
   color: TEXT_MUTED,
   wordBreak: 'break-word',
   display: '-webkit-box',

@@ -16,7 +16,7 @@ export default function OutcomeNode({ data, selected, sourcePosition, targetPosi
     boxSizing: 'border-box',
   }
   return (
-    <div style={shellStyle(base, KIND_ACCENT.outcome, { selected, highlighted: data.highlighted, dashed: data.dashed, focused: data.focused, dimmed: data.dimmed, adjacent: data.adjacent })}>
+    <div style={shellStyle(base, KIND_ACCENT.outcome, { selected, highlighted: data.highlighted, dashed: data.dashed, focused: data.focused, dimmed: data.dimmed, adjacent: data.adjacent, entering: data.entering, enterDelay: data.enterDelay })}>
       <Handles target={targetPosition} source={sourcePosition} />
       <NodeChrome data={data} align="center" />
     </div>

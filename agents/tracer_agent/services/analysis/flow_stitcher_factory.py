@@ -1,7 +1,7 @@
-import os
 from pathlib import Path
 
 import anthropic
+from services.analysis.anthropic_key import anthropic_api_key
 from services.analysis.flow_stitcher import FlowStitcher
 from services.analysis.http_stitch_detector import HttpStitchDetector
 from services.analysis.llm_stitch_detector import LlmStitchDetector
@@ -14,7 +14,7 @@ _DEFAULT_CACHE_PATH = Path(__file__).resolve().parents[4] / ".cache" / "stitch_v
 
 def build_flow_stitcher(cache_path: Path | None = None) -> FlowStitcher:
     detectors: tuple[StitchDetector, ...] = (HttpStitchDetector(RouteMatcher()),)
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = anthropic_api_key()
     if not api_key:
         return FlowStitcher(detectors)
     client = anthropic.Anthropic(api_key=api_key)

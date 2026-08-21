@@ -17,7 +17,7 @@ def beats() -> list[Beat]:
             detail="That is what makes the picture reproducible: the same repo in gives a "
                    "byte-identical graph out, so a diff between two runs is meaningful.",
             refs=(ref(f"{_PLACE}/flow_page_placer.py", 28),), backing=("FlowPagePlacer.place",),
-            packets=("tr:budget:flow->rd:place", "tr:budget:list->rd:place"),
+            packets=("tr:budget:flow->act:delivery", "tr:budget:list->act:delivery"),
             facts=(("layout", "server-side"), ("output", "byte-identical")),
         ),
         Beat(

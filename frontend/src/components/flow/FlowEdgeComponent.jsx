@@ -2,8 +2,8 @@ import { BaseEdge, EdgeLabelRenderer, getBezierPath, getSmoothStepPath } from 'r
 import { MONO, SURFACE_2, TEXT_MUTED } from './styles'
 import EdgePacket from './EdgePacket'
 
-const NORMAL = '#5c5c66'
-const STITCH = '#7a7a86'
+const NORMAL = '#6C7689'
+const STITCH = '#8A93A6'
 const FLOW = '#39FF14'
 
 export default function FlowEdgeComponent({
@@ -41,12 +41,24 @@ export default function FlowEdgeComponent({
           <path d={`M0,0 L${markerSize},${markerSize / 2} L0,${markerSize} z`} fill={stroke} opacity={opacity} />
         </marker>
       </defs>
-      <BaseEdge
-        id={id}
-        path={path}
-        markerEnd={`url(#${markerId})`}
-        style={{ stroke, strokeWidth: width, strokeDasharray: dashArray, opacity }}
-      />
+      {d.entering ? (
+        <path
+          d={path}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={width}
+          markerEnd={`url(#${markerId})`}
+          pathLength="1"
+          style={{ opacity, strokeDasharray: 1, strokeDashoffset: 1, animation: 'drawIn 700ms ease forwards' }}
+        />
+      ) : (
+        <BaseEdge
+          id={id}
+          path={path}
+          markerEnd={`url(#${markerId})`}
+          style={{ stroke, strokeWidth: width, strokeDasharray: dashArray, opacity }}
+        />
+      )}
       {d.flowing && (
         <path
           d={path}

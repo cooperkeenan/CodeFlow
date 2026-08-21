@@ -16,15 +16,15 @@ class TourSession(FlowSession):
         return self._page.evaluate(
             r"""() => {
               const aside = document.querySelector('aside');
-              if (!aside) return { counter: '', title: '', body: '' };
+              if (!aside) return { phase: '', title: '', body: '' };
               const lines = (aside.innerText || '').trim().split('\n').filter(Boolean);
-              return { counter: lines[0] || '', title: lines[1] || '', body: lines[2] || '' };
+              return { phase: lines[0] || '', title: lines[2] || '', body: lines[3] || '' };
             }"""
         )
 
     def focused(self) -> list[str]:
         return self._page.evaluate(
             r"""() => [...document.querySelectorAll('.react-flow__node')]
-                 .filter(el => (el.firstElementChild?.style.boxShadow || '').includes('22px'))
+                 .filter(el => (el.firstElementChild?.style.boxShadow || '').includes('0px 0px 0px 4px'))
                  .map(el => el.getAttribute('data-id'))"""
         )

@@ -6,9 +6,9 @@ const HEAD = {
   color: 'rgba(255,255,255,0.34)', margin: '0 0 8px',
 }
 
-export function Section({ title, children }) {
+export function Section({ title, children, compact = false }) {
   return (
-    <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+    <div style={{ marginTop: compact ? 10 : 22, paddingTop: compact ? 8 : 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
       <div style={HEAD}>{title}</div>
       {children}
     </div>

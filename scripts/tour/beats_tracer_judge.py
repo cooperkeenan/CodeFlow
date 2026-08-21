@@ -1,3 +1,4 @@
+from tour import tour_code_snippets
 from tour.tour_beat import Arm, Beat
 from tour.tour_builders import ref
 
@@ -19,6 +20,13 @@ def beats() -> list[Beat]:
             refs=(ref(f"{BASE}/significance_filter.py", 43),),
             backing=("SignificanceFilter.run",),
             facts=(("model", "haiku-4-5"), ("temperature", "0"), ("batch", "~20 forks")),
+            arms=(
+                Arm("tr:judge:snippet", "LlmDecisionJudge.judge", "code",
+                    "Batches representatives, then fans the verdict back out to every "
+                    "duplicate fork sharing that fingerprint.", kind="outcome", terminal=True,
+                    refs=(ref(f"{BASE}/llm_decision_judge.py", 44, 54),),
+                    code=tour_code_snippets.JUDGE_CODE, code_lang="python"),
+            ),
         ),
         Beat(
             "tr:judge:key", "decision", LANE, "Is an API key present?",

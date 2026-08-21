@@ -16,7 +16,7 @@ actions:
   state           dump visible nodes (id, position, label)
   overlaps        list overlapping node pairs - 0 is the goal
   step:<n>        jump to step n (1-based) and pause
-  narration       print the current bubble's counter, title and first body line
+  narration       print the current bubble's phase, title and body
   focused         print the node ids currently lit by the tour
   shot:<path>     screenshot to path
 """
@@ -39,7 +39,7 @@ def _run_action(session: TourSession, action: str) -> None:
             print(f"  {a}  <->  {b}")
     elif action == "narration":
         text = session.narration()
-        print(f"  {text['counter']}  {text['title']}")
+        print(f"  {text['phase']}  {text['title']}")
         print(f"  {text['body'][:120]}")
     elif action == "focused":
         print(f"focused: {session.focused()}")

@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+ width="100%"
+ viewBox="0 0 810 640">
+<defs>
+<pattern id="minorGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+<path d="M 10 0 L 0 0 L 0 10" fill="none" stroke="#e8e8e8" stroke-width="1"/>
+</pattern>
+<pattern id="majorGrid" width="100" height="100" patternUnits="userSpaceOnUse">
+<rect width="100" height="100" fill="url(#minorGrid)"/>
+<path d="M 100 0 L 0 0 L 0 100" fill="none" stroke="#d5d5d5" stroke-width="1.4"/>
+</pattern>
+<marker id="arrowhead" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="8"
+ refX="10.5" refY="4" orient="auto">
+<path d="M 0 0 L 10.5 4 L 0 8 z" fill="#4d4d4d"/>
+</marker>
+</defs>
+<rect class="grid" x="0" y="0" width="810" height="640" fill="#ffffff"/>
+<text class="label" x="30.0" y="44.0" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#000000" text-anchor="start" xml:space="preserve">Services</text>
+<rect class="box" x="30.0" y="124.0" width="232.0" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="146.0" y="154.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">React frontend</text>
+<path class="edge" d="M 146.0,176.0 L 146.0,238.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<text class="label" x="155.0" y="211.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="start" xml:space="preserve">HTTP / JSON</text>
+<rect class="box" x="30.0" y="238.0" width="232.0" height="52.0" rx="4" ry="4" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.6"/>
+<text class="label" x="146.0" y="268.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Gateway (FastAPI)</text>
+<path class="edge" d="M 84.0,290.0 L 84.0,344.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<rect class="box" x="30.0" y="344.0" width="108.0" height="52.0" rx="4" ry="4" fill="#f5f5f5" stroke="#999999" stroke-width="1.6"/>
+<text class="label" x="84.0" y="374.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Neon Postgres</text>
+<path class="edge" d="M 208.0,290.0 L 208.0,344.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<rect class="box" x="154.0" y="344.0" width="108.0" height="52.0" rx="4" ry="4" fill="#f5f5f5" stroke="#999999" stroke-width="1.6"/>
+<text class="label" x="208.0" y="374.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">GitHub API</text>
+<path class="edge" d="M 262.0,264.0 L 284.0,264.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round"/>
+<path class="edge" d="M 284.0,100.0 L 284.0,428.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round"/>
+<rect class="box" x="402.0" y="74.0" width="168.0" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="486.0" y="96.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Profiler</text>
+<text class="label" x="486.0" y="112.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">POST /profile</text>
+<path class="edge" d="M 284.0,100.0 L 402.0,100.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<text class="label" x="343.0" y="90.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">RepoBlueprint</text>
+<rect class="box" x="402.0" y="156.0" width="168.0" height="52.0" rx="4" ry="4" fill="#d5e8d4" stroke="#82b366" stroke-width="1.6"/>
+<text class="label" x="486.0" y="178.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Tracer</text>
+<text class="label" x="486.0" y="194.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">POST /trace</text>
+<path class="edge" d="M 284.0,182.0 L 402.0,182.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<text class="label" x="343.0" y="172.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">FlowGraph</text>
+<rect class="box" x="402.0" y="238.0" width="168.0" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="486.0" y="260.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Layout</text>
+<text class="label" x="486.0" y="276.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">POST /layout</text>
+<path class="edge" d="M 284.0,264.0 L 402.0,264.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<text class="label" x="343.0" y="254.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">FlowGraph</text>
+<rect class="box" x="402.0" y="320.0" width="168.0" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="486.0" y="342.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Render</text>
+<text class="label" x="486.0" y="358.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">POST /render</text>
+<path class="edge" d="M 284.0,346.0 L 402.0,346.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<text class="label" x="343.0" y="336.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">RenderedView</text>
+<rect class="box" x="402.0" y="402.0" width="168.0" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="486.0" y="424.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Explain</text>
+<text class="label" x="486.0" y="440.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">POST /explain</text>
+<path class="edge" d="M 284.0,428.0 L 402.0,428.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<text class="label" x="343.0" y="418.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">ExplainResponse</text>
+<path class="edge" d="M 570.0,182.0 L 612.0,182.0 L 612.0,289.0 L 660.0,289.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="5 4" marker-end="url(#arrowhead)"/>
+<path class="edge" d="M 570.0,264.0 L 590.0,264.0 L 590.0,305.0 L 660.0,305.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="5 4" marker-end="url(#arrowhead)"/>
+<path class="edge" d="M 570.0,428.0 L 634.0,428.0 L 634.0,321.0 L 660.0,321.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="5 4" marker-end="url(#arrowhead)"/>
+<text class="label" x="720.0" y="267.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">model calls</text>
+<rect class="box" x="660.0" y="279.0" width="120.0" height="52.0" rx="4" ry="4" fill="#f5f5f5" stroke="#999999" stroke-width="1.6"/>
+<text class="label" x="720.0" y="301.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Anthropic</text>
+<text class="label" x="720.0" y="317.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">API</text>
+<text class="label" x="30.0" y="500.0" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#000000" text-anchor="start" xml:space="preserve">Tracer stages</text>
+<rect class="box" x="30.0" y="516.0" width="76.2" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="68.1" y="546.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Index</text>
+<rect class="box" x="126.2" y="516.0" width="76.2" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="164.4" y="546.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Resolve</text>
+<path class="edge" d="M 106.2,542.0 L 126.2,542.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<rect class="box" x="222.5" y="516.0" width="76.2" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="260.6" y="546.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Extract</text>
+<path class="edge" d="M 202.5,542.0 L 222.5,542.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<rect class="box" x="318.8" y="516.0" width="76.2" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="356.9" y="546.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Score</text>
+<path class="edge" d="M 298.8,542.0 L 318.8,542.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<rect class="box" x="415.0" y="516.0" width="76.2" height="52.0" rx="4" ry="4" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.6"/>
+<text class="label" x="453.1" y="546.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Judge</text>
+<path class="edge" d="M 395.0,542.0 L 415.0,542.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<rect class="box" x="511.2" y="516.0" width="76.2" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="549.4" y="546.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Condense</text>
+<path class="edge" d="M 491.2,542.0 L 511.2,542.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<rect class="box" x="607.5" y="516.0" width="76.2" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="645.6" y="546.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Budget</text>
+<path class="edge" d="M 587.5,542.0 L 607.5,542.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<rect class="box" x="703.8" y="516.0" width="76.2" height="52.0" rx="4" ry="4" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.6"/>
+<text class="label" x="741.9" y="546.7" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#000000" text-anchor="middle" xml:space="preserve">Render</text>
+<path class="edge" d="M 683.8,542.0 L 703.8,542.0" fill="none" stroke="#4d4d4d" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrowhead)"/>
+<text class="label" x="405.0" y="598.0" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#4d4d4d" text-anchor="middle" xml:space="preserve">Stages 1 to 4 and 6 to 8 are pure functions of the source tree. Stage 5 is the only model-driven step.</text>
+</svg>

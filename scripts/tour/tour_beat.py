@@ -14,6 +14,8 @@ class Arm:
     refs: tuple[SourceRef, ...] = ()
     effect_kind: str | None = None
     effect_target: str = ""
+    code: str = ""
+    code_lang: str = "python"
 
 
 @dataclass(frozen=True)
@@ -31,6 +33,8 @@ class Beat:
     arms: tuple[Arm, ...] = ()
     packets: tuple[str, ...] = ()
     facts: tuple[tuple[str, str], ...] = field(default_factory=tuple)
+    shot: str = ""
+    arrangement: str = ""
 
     def converging(self) -> list[Arm]:
         return [arm for arm in self.arms if not arm.terminal]

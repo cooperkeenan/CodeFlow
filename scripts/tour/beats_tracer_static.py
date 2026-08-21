@@ -1,3 +1,4 @@
+from tour import tour_code_snippets
 from tour.tour_beat import Arm, Beat
 from tour.tour_builders import ref
 
@@ -49,7 +50,14 @@ def beats() -> list[Beat]:
                    "directory names. Assuming a folder was called 'agents' once resolved almost "
                    "every internal call to 'ext:' and shredded the entire call graph.",
             refs=(ref(f"{BASE}/project_indexer.py", 25),), backing=("ProjectIndexer.index",),
-            packets=("gw:env:local->tr:index", "gw:env:prod->tr:index"),
+            packets=("gw:env:local->act:static", "gw:env:prod->act:static"),
+            arms=(
+                Arm("tr:index:snippet", "ProjectIndexer.index", "code",
+                    "One file at a time: parse, then bucket classes and functions.",
+                    kind="outcome", terminal=True,
+                    refs=(ref(f"{BASE}/project_indexer.py", 32, 40),),
+                    code=tour_code_snippets.INDEX_CODE, code_lang="python"),
+            ),
         ),
         Beat(
             "tr:import", "decision", LANE, "Where does this import resolve?",
@@ -81,6 +89,13 @@ def beats() -> list[Beat]:
             detail="The control context is what later lets a fork be described as a decision "
                    "rather than just a branch instruction.",
             refs=(ref(f"{BASE}/call_resolver.py", 41),), backing=("CallResolver.resolve_project",),
+            arms=(
+                Arm("tr:resolve:snippet", "CallResolver.resolve_project", "code",
+                    "Control context - scope, local bindings, self types - travels with "
+                    "the call site.", kind="outcome", terminal=True,
+                    refs=(ref(f"{BASE}/call_resolver.py", 49, 56),),
+                    code=tour_code_snippets.RESOLVE_CODE, code_lang="python"),
+            ),
         ),
         Beat(
             "tr:target", "decision", LANE, "Can the target be resolved statically?",

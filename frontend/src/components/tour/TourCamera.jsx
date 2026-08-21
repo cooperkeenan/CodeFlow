@@ -1,24 +1,23 @@
 import { useEffect } from 'react'
 import { useReactFlow, useStore } from 'reactflow'
 import { boundsOf } from '../flow/nodeBounds'
+import { shotFor, zoomFor, SOLO_SPAN } from './shotTypes'
 
-const DURATION = 1100
 const SETTLE_MS = 40
-const MAX_ZOOM = 0.95
-const MIN_ZOOM = 0.34
-const PADDING = 260
-const MIN_SPAN_X = 1500
-const MIN_SPAN_Y = 780
 
-function padded(bounds) {
-  const cx = (bounds.minX + bounds.maxX) / 2
-  const cy = (bounds.minY + bounds.maxY) / 2
-  const halfX = Math.max((bounds.maxX - bounds.minX) / 2, MIN_SPAN_X / 2)
-  const halfY = Math.max((bounds.maxY - bounds.minY) / 2, MIN_SPAN_Y / 2)
-  return { cx, cy, spanX: halfX * 2, spanY: halfY * 2 }
+function spanOf(bounds, shot) {
+  const spanX = bounds.maxX - bounds.minX
+  const spanY = bounds.maxY - bounds.minY
+  if (shot !== 'detail') return { cx: (bounds.minX + bounds.maxX) / 2, cy: (bounds.minY + bounds.maxY) / 2, x: spanX, y: spanY }
+  return {
+    cx: (bounds.minX + bounds.maxX) / 2,
+    cy: (bounds.minY + bounds.maxY) / 2,
+    x: Math.max(spanX, SOLO_SPAN.x),
+    y: Math.max(spanY, SOLO_SPAN.y),
+  }
 }
 
-export default function TourCamera({ focusIds, tick, rightInset = 0 }) {
+export default function TourCamera({ focusIds, tick, bottomInset = 0, shot }) {
   const { getNode, setViewport } = useReactFlow()
   const width = useStore(s => s.width)
   const height = useStore(s => s.height)
@@ -28,19 +27,18 @@ export default function TourCamera({ focusIds, tick, rightInset = 0 }) {
     const frame = setTimeout(() => {
       const nodes = (focusIds ?? []).map(getNode).filter(Boolean)
       if (!nodes.length) return
-      const usable = Math.max(240, width - rightInset)
-      const { cx, cy, spanX, spanY } = padded(boundsOf(nodes))
-      const zoom = Math.max(MIN_ZOOM, Math.min(
-        MAX_ZOOM,
-        Math.min(usable / (spanX + PADDING), height / (spanY + PADDING)),
-      ))
+      const usableW = Math.max(240, width)
+      const usableH = Math.max(240, height - bottomInset)
+      const resolved = shotFor(shot)
+      const { cx, cy, x: spanX, y: spanY } = spanOf(boundsOf(nodes), shot)
+      const zoom = zoomFor(resolved, { x: spanX, y: spanY }, { width: usableW, height: usableH })
       setViewport(
-        { x: usable / 2 - cx * zoom, y: height / 2 - cy * zoom, zoom },
-        { duration: DURATION },
+        { x: usableW / 2 - cx * zoom, y: usableH / 2 - cy * zoom, zoom },
+        { duration: resolved.duration },
       )
     }, SETTLE_MS)
     return () => clearTimeout(frame)
-  }, [tick, focusIds, rightInset, getNode, setViewport, width, height])
+  }, [tick, focusIds, bottomInset, shot, getNode, setViewport, width, height])
 
   return null
 }

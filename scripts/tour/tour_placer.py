@@ -1,75 +1,72 @@
-import math
-
 from shared.models.diagram_template import RenderedView
 from shared.models.flow_graph import FlowGraph
-from shared.models.node_geometry import geometry_for, geometry_payload
 
 from placement.flow_node_treatment import node_data, shape_for
 
+from tour.layout.arrangement_picker import ArrangementPicker
+from tour.layout.cluster_box import ClusterBox
+from tour.layout.cluster_stacker import ClusterStacker
 from tour.tour_beat import Beat
+from tour.tour_card_beats import CARD_ID_PREFIX
+from tour.tour_geometry import tour_geometry_for, tour_geometry_payload
 
-CENTER_X = 1200
-SIDE_OFFSET = 520
-ROW_STEP = 200
-TOP_MARGIN = 120
 HEADER_X = 120
-WAVE_AMPLITUDE = 230
-WAVE_BEATS = 9.0
+CARD_SHAPE = "card"
+SNIPPET_SHAPE = "snippet"
 
 
 class TourPlacer:
-    def __init__(self, center_x: int = CENTER_X, row_step: int = ROW_STEP) -> None:
-        self._center_x = center_x
-        self._row_step = row_step
+    def __init__(self, picker: ArrangementPicker, stacker: ClusterStacker) -> None:
+        self._picker = picker
+        self._stacker = stacker
+        self.clusters: dict[str, ClusterBox] = {}
 
-    def place(self, graph: FlowGraph, beats: list[Beat]) -> RenderedView:
-        rows = self._rows(beats)
+    def place(
+        self, graph: FlowGraph, beats: list[Beat], groups: list[tuple[str, list[Beat]]],
+    ) -> RenderedView:
         arm_counts = self._arm_counts(graph)
+        arm_code = self._arm_code(beats)
         nodes_by_id = {node.id: node for node in graph.nodes}
-        centres = self._centres(beats)
+        shapes = {
+            node_id: self._shape_for(nodes_by_id[node_id], node_id, arm_counts, arm_code)
+            for beat in beats
+            for node_id in [beat.id, *(arm.id for arm in beat.arms)]
+        }
+        geometry = {node_id: tour_geometry_for(shape) for node_id, shape in shapes.items()}
+        self.clusters = {
+            beat.id: self._picker.pick(beat).arrange(beat, geometry) for beat in beats
+        }
+        positions = self._stacker.place(self.clusters, groups)
         spine_ids = {beat.id for beat in beats}
+        act_of = {
+            beat.id: group_index
+            for group_index, (_, group_beats) in enumerate(groups)
+            for beat in group_beats
+        }
         out_nodes = [
             self._node_dict(
-                nodes_by_id[node_id], centre_x, rows[node_id], arm_counts,
-                node_id in spine_ids,
+                nodes_by_id[node_id], pos, shapes[node_id], arm_counts,
+                node_id in spine_ids, act_of, len(groups), arm_code.get(node_id),
             )
-            for node_id, centre_x in centres.items()
+            for node_id, pos in positions.items()
         ]
-        out_nodes.extend(self._headers(graph, beats, rows))
+        out_nodes.extend(self._headers(graph, groups, positions))
         out_edges = [self._edge_dict(edge) for edge in graph.edges]
         out_nodes.sort(key=lambda item: item["id"])
         out_edges.sort(key=lambda item: item["id"])
         return RenderedView(
             type="flow", page_title=graph.page_title, nodes=out_nodes, edges=out_edges,
-            hidden=[], hidden_edges=[], node_geometry=geometry_payload(),
+            hidden=[], hidden_edges=[], node_geometry=tour_geometry_payload(),
         )
 
-    def _rows(self, beats: list[Beat]) -> dict[str, int]:
-        rows: dict[str, int] = {}
-        cursor = 0
-        for beat in beats:
-            rows[beat.id] = cursor
-            cursor += 1
-            for index, arm in enumerate(beat.arms):
-                rows[arm.id] = cursor + index // 2
-            if beat.arms:
-                cursor += (len(beat.arms) + 1) // 2
-        return rows
+    ArmCode = dict[str, tuple[str, str]]
 
-    def _spine_x(self, position: int) -> int:
-        return round(
-            self._center_x + WAVE_AMPLITUDE * math.sin(2 * math.pi * position / WAVE_BEATS)
-        )
-
-    def _centres(self, beats: list[Beat]) -> dict[str, int]:
-        centres: dict[str, int] = {}
-        for position, beat in enumerate(beats):
-            centre = self._spine_x(position)
-            centres[beat.id] = centre
-            for index, arm in enumerate(beat.arms):
-                side = -1 if index % 2 == 0 else 1
-                centres[arm.id] = centre + side * SIDE_OFFSET
-        return centres
+    def _shape_for(self, node, node_id: str, arm_counts: dict[str, int], arm_code: ArmCode) -> str:
+        if node_id.startswith(CARD_ID_PREFIX):
+            return CARD_SHAPE
+        if node_id in arm_code:
+            return SNIPPET_SHAPE
+        return shape_for(node, arm_counts.get(node_id, 0))
 
     def _arm_counts(self, graph: FlowGraph) -> dict[str, int]:
         counts: dict[str, int] = {}
@@ -78,38 +75,53 @@ class TourPlacer:
                 counts[edge.source] = counts.get(edge.source, 0) + 1
         return counts
 
+    def _arm_code(self, beats: list[Beat]) -> ArmCode:
+        return {arm.id: (arm.code, arm.code_lang) for beat in beats for arm in beat.arms if arm.code}
+
     def _node_dict(
-        self, node, centre_x: int, row: int, arm_counts: dict[str, int], is_spine: bool,
+        self, node, pos: tuple[int, int], shape: str, arm_counts: dict[str, int], is_spine: bool,
+        act_of: dict[str, int], act_total: int, code_info: tuple[str, str] | None = None,
     ) -> dict:
         count = arm_counts.get(node.id, 0)
-        shape = shape_for(node, count)
-        geometry = geometry_for(shape)
         data = node_data(node, node.lane, 0, is_spine, count)
         data["hiddenChildren"] = []
+        data["shape"] = shape
+        if shape == CARD_SHAPE:
+            data["actNumber"] = act_of[node.id] + 1
+            data["actTotal"] = act_total
+        if code_info is not None:
+            data["code"] = code_info[0]
+            data["codeLang"] = code_info[1]
         return {
             "id": node.id,
             "type": "flow",
-            "position": {
-                "x": centre_x - geometry.width // 2,
-                "y": TOP_MARGIN + row * self._row_step,
-            },
+            "position": {"x": pos[0], "y": pos[1]},
             "kind": node.kind,
             "shape": shape,
             "label": node.llm_label or node.label,
             "data": data,
         }
 
-    def _headers(self, graph: FlowGraph, beats: list[Beat], rows: dict[str, int]) -> list[dict]:
+    def _headers(
+        self,
+        graph: FlowGraph,
+        groups: list[tuple[str, list[Beat]]],
+        positions: dict[str, tuple[int, int]],
+    ) -> list[dict]:
         first: dict[str, str] = {}
-        for beat in beats:
-            first.setdefault(beat.lane, beat.id)
+        group_of: dict[str, int] = {}
+        for group_index, (_, beats) in enumerate(groups):
+            for beat in beats:
+                if beat.lane not in first:
+                    first[beat.lane] = beat.id
+                    group_of[beat.lane] = group_index
         return [
             {
                 "id": f"lane:{lane.id}",
                 "type": "laneHeader",
                 "position": {
-                    "x": HEADER_X,
-                    "y": TOP_MARGIN + rows[first[lane.id]] * self._row_step,
+                    "x": self._stacker.column_bases[group_of[lane.id]] + HEADER_X,
+                    "y": positions[first[lane.id]][1],
                 },
                 "kind": "lane_header",
                 "shape": "lane_header",

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export const STEP_MS = 4200
+export const LOOP_PAUSE_MS = 2600
 
 export function useTourPlayback(steps, autoplay = true) {
   const [index, setIndex] = useState(0)
@@ -22,10 +23,11 @@ export function useTourPlayback(steps, autoplay = true) {
 
   useEffect(() => {
     if (!playing || !count) return undefined
-    if (index >= count - 1) { setPlaying(false); return undefined }
-    timer.current = setTimeout(() => setIndex(i => i + 1), STEP_MS)
+    const last = index >= count - 1
+    const dwellMs = last ? LOOP_PAUSE_MS : steps[index]?.dwellMs ?? STEP_MS
+    timer.current = setTimeout(() => setIndex(i => (last ? 0 : i + 1)), dwellMs)
     return () => clearTimeout(timer.current)
-  }, [playing, index, count])
+  }, [playing, index, count, steps])
 
   useEffect(() => {
     const onKey = event => {
