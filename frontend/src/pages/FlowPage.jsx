@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFlowGraph } from '../hooks/useFlowGraph'
 import { useExpansion } from '../hooks/useExpansion'
 import { useGraphTransform } from '../hooks/useGraphTransform'
+import { useFlowEditing } from '../hooks/useFlowEditing'
 import FlowCanvas from '../components/flow/FlowCanvas'
 import Legend from '../components/flow/Legend'
 
@@ -29,7 +30,8 @@ export default function FlowPage({ analysis, onBack, fixture }) {
     lastIsolateAt.current = Date.now()
     setIsolated(prev => (prev === nodeId ? null : nodeId))
   }, [])
-  const { nodes, edges } = useGraphTransform(expansion, expansion.toggle, onIsolate, view?.node_geometry)
+  const { nodes: baseNodes, edges: baseEdges } = useGraphTransform(expansion, expansion.toggle, onIsolate, view?.node_geometry)
+  const { editMode, toggleEditMode, nodes, edges, canvasProps, toolbar } = useFlowEditing(repo, baseNodes, baseEdges)
   const drawn = nodes.filter(n => n.type !== 'flowGroup').length
   const revealed = drawn - (view?.nodes?.length ?? 0)
 
@@ -62,6 +64,7 @@ export default function FlowPage({ analysis, onBack, fixture }) {
               {revealed > 0 && (
                 <button className="back" onClick={expansion.collapseAll}>collapse all</button>
               )}
+              <button className="back" onClick={toggleEditMode}>{editMode ? 'done' : 'edit'}</button>
               <span style={MUTED}>
                 {revealed > 0 ? `${view?.nodes?.length ?? 0} + ${revealed} revealed` : `${drawn} nodes`}
               </span>
@@ -85,7 +88,10 @@ export default function FlowPage({ analysis, onBack, fixture }) {
               onPaneClick={onPaneClick}
               revealTrigger={expansion.lastReveal}
               repo={repo}
-            />
+              {...canvasProps}
+            >
+              {toolbar}
+            </FlowCanvas>
             <Legend />
           </>
         )}

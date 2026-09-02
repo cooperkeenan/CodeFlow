@@ -1,7 +1,7 @@
 from shared.models.diagram_template import RenderedView
 from shared.models.flow_graph import FlowGraph
 
-from placement.flow_node_treatment import node_data, shape_for
+from render.placement.flow_node_treatment import node_data, shape_for
 
 from tour.layout.arrangement_picker import ArrangementPicker
 from tour.layout.cluster_box import ClusterBox

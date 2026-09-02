@@ -2,12 +2,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path("/home/user/CodeFlow")
+ROOT = Path(__file__).resolve().parent.parent
 AGENTS = {
-    "tracer": ROOT / "agents/tracer_agent",
-    "layout": ROOT / "agents/layout_agent",
-    "render": ROOT / "agents/render_agent",
     "api": ROOT / "api",
+    "explain": ROOT / "agents/explain_agent",
+    "profiler": ROOT / "agents/profiler_agent",
+    "render": ROOT / "agents/render_agent",
+    "tracer": ROOT / "agents/tracer_agent",
 }
 
 _CODE = "import main; print('ok')"

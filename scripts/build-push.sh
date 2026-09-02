@@ -24,7 +24,6 @@ build_and_push api                api
 build_and_push profiler           agents/profiler_agent
 build_and_push tracer             agents/tracer_agent
 build_and_push render             agents/render_agent
-build_and_push layout             agents/layout_agent
 build_and_push explain            agents/explain_agent
 
 echo ""
@@ -33,5 +32,4 @@ echo "  api:      $REGISTRY/codeflow-api:$TAG"
 echo "  profiler: $REGISTRY/codeflow-profiler:$TAG"
 echo "  tracer:   $REGISTRY/codeflow-tracer:$TAG"
 echo "  render:   $REGISTRY/codeflow-render:$TAG"
-echo "  layout:   $REGISTRY/codeflow-layout:$TAG"
 echo "  explain:  $REGISTRY/codeflow-explain:$TAG"

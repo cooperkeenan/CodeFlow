@@ -3,6 +3,7 @@ import ReactFlow, { Background, Controls, MiniMap, ReactFlowProvider } from 'rea
 import 'reactflow/dist/style.css'
 import './isolate.css'
 import './reveal.css'
+import '../diagram/edit/editCanvas.css'
 import { withRevealedNodes, withRevealedEdges, REVEAL_WINDOW_MS } from './revealTracking'
 import EntryNode from './nodes/EntryNode'
 import StepNode from './nodes/StepNode'
@@ -15,6 +16,7 @@ import LaneHeaderNode from './nodes/LaneHeaderNode'
 import CardNode from './nodes/CardNode'
 import SnippetNode from './nodes/SnippetNode'
 import GroupBox from './nodes/GroupBox'
+import TextNode from '../diagram/nodes/TextNode'
 import FlowEdgeComponent from './FlowEdgeComponent'
 import CameraController from './CameraController'
 import { KIND_ACCENT, CANVAS, GRID } from './styles'
@@ -32,6 +34,7 @@ const NODE_TYPES = {
   flowGroup: GroupBox,
   card: CardNode,
   snippet: SnippetNode,
+  text: TextNode,
 }
 const EDGE_TYPES = { flow: FlowEdgeComponent }
 const FIT_OPTIONS = { padding: 0.25 }
@@ -53,6 +56,8 @@ function FlowCanvasInner({
   nodes, edges, selectedId, isolatedId, onPaneClick, revealTrigger, repo,
   focusIds = null, adjacentIds = null, packetIds = null, stepKey = 0, children = null,
   visibleIds = null, enteringIds = null, suppressSelfLabels = false, chrome = DEFAULT_CHROME,
+  editMode = false, onInit = undefined, onConnect = undefined, onNodesDelete = undefined,
+  onEdgesDelete = undefined, onNodeDragStop = undefined, onSelectionChange = undefined,
 }) {
   const [hoveredEdge, setHoveredEdge] = useState(null)
   const { rfNodes, rfEdges, isolateCenter } = useIsolatedView(
@@ -131,11 +136,18 @@ function FlowCanvasInner({
       onPaneClick={onPaneClick}
       onEdgeMouseEnter={(_, edge) => setHoveredEdge(edge.id)}
       onEdgeMouseLeave={() => setHoveredEdge(null)}
+      onInit={onInit}
+      onConnect={onConnect}
+      onNodesDelete={onNodesDelete}
+      onEdgesDelete={onEdgesDelete}
+      onNodeDragStop={onNodeDragStop}
+      onSelectionChange={onSelectionChange}
       fitView
       fitViewOptions={FIT_OPTIONS}
       minZoom={0.1}
-      nodesDraggable={false}
-      nodesConnectable={false}
+      nodesDraggable={editMode}
+      nodesConnectable={editMode}
+      className={editMode ? 'edit-mode' : undefined}
       proOptions={{ hideAttribution: true }}
     >
       <CameraController revealTrigger={revealTrigger} isolateCenter={isolateCenter} />

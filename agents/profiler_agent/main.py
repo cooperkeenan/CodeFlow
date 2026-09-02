@@ -3,8 +3,7 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI
-
-from routers.profiler import router as profiler_router
+from profiler.routers.profiler import router as profiler_router
 
 logging.basicConfig(
     level=logging.INFO,

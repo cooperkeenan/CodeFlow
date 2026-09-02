@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const apiTarget = env.VITE_API_URL || 'http://localhost:8000'
   const proxy = Object.fromEntries(
-    ['/analyse', '/github', '/code', '/auth', '/tokens', '/repomaps', '/ci'].map(path => [
+    ['/github', '/auth', '/tokens', '/repomaps', '/ci', '/diagram'].map(path => [
       path,
       { target: apiTarget, changeOrigin: true, timeout: LONG_TIMEOUT, proxyTimeout: LONG_TIMEOUT },
     ])

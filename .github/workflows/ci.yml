@@ -25,7 +25,6 @@ jobs:
           - { name: profiler, dir: agents/profiler_agent }
           - { name: tracer,   dir: agents/tracer_agent }
           - { name: render,   dir: agents/render_agent }
-          - { name: layout,   dir: agents/layout_agent }
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3

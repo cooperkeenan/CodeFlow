@@ -3,7 +3,7 @@ from tour.tour_builders import ref
 
 RENDER = "render"
 FRONTEND = "frontend"
-_PLACE = "agents/render_agent/placement"
+_PLACE = "agents/render_agent/render/placement"
 
 
 def beats() -> list[Beat]:
@@ -16,7 +16,7 @@ def beats() -> list[Beat]:
             one_liner="Deterministic React Flow geometry.",
             detail="That is what makes the picture reproducible: the same repo in gives a "
                    "byte-identical graph out, so a diff between two runs is meaningful.",
-            refs=(ref(f"{_PLACE}/flow_page_placer.py", 28),), backing=("FlowPagePlacer.place",),
+            refs=(ref(f"{_PLACE}/flow_page_placer.py", 33),), backing=("FlowPagePlacer.place",),
             packets=("tr:budget:flow->act:delivery", "tr:budget:list->act:delivery"),
             facts=(("layout", "server-side"), ("output", "byte-identical")),
         ),
@@ -28,7 +28,7 @@ def beats() -> list[Beat]:
             one_liner="The longest path gets the straight line.",
             detail="The layout you are looking at right now is the same idea applied by hand: "
                    "a main line down the middle, branches to either side, converging back.",
-            refs=(ref(f"{_PLACE}/spine_router.py", 25),),
+            refs=(ref(f"{_PLACE}/spine_router.py", 26),),
             arms=(
                 Arm("rd:spine:main", "Straight down the lane", "spine",
                     "Drawn as the primary path.", terminal=False,

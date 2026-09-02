@@ -16,7 +16,7 @@
         "gw:dispatch",
         "gw:env"
       ],
-      "thesis": "One HTTP entry point decides whether this repo has been seen before, then fans the work out to four services.",
+      "thesis": "One HTTP entry point decides whether this repo has been seen before, then fans the work out to three services.",
       "title": "Taking the request"
     },
     {
@@ -107,7 +107,7 @@
   "steps": [
     {
       "anchor": "act:gateway",
-      "body": "One HTTP entry point decides whether this repo has been seen before, then fans the work out to four services.",
+      "body": "One HTTP entry point decides whether this repo has been seen before, then fans the work out to three services.",
       "branches": [],
       "chapter": "gateway",
       "chapterPosition": 1,
@@ -122,11 +122,11 @@
         "backing": [],
         "kind": "step",
         "label": "Taking the request",
-        "oneLiner": "One HTTP entry point decides whether this repo has been seen before, then fans the work out to four services.",
+        "oneLiner": "One HTTP entry point decides whether this repo has been seen before, then fans the work out to three services.",
         "refs": [
           {
-            "file": "api/routers/analysis.py",
-            "line": 25
+            "file": "api/gateway/routers/ci.py",
+            "line": 48
           }
         ]
       },
@@ -143,12 +143,12 @@
       "branches": [],
       "chapter": "gateway",
       "chapterPosition": 2,
-      "detail": "The gateway owns no analysis logic. It authenticates the request, then orchestrates four other FastAPI services and persists what comes back.",
+      "detail": "The gateway owns no analysis logic. It authenticates the request, then orchestrates three other FastAPI services and persists what comes back.",
       "dwellMs": 6160,
       "facts": [
         {
           "label": "services",
-          "value": "5"
+          "value": "4"
         },
         {
           "label": "cold run",
@@ -165,15 +165,15 @@
       "id": "gw:entry",
       "node": {
         "backing": [
-          "analyse"
+          "ci_analyse_local"
         ],
         "kind": "entry",
-        "label": "POST /analyse",
+        "label": "POST /ci/analyse/local",
         "oneLiner": "A user asks CodeFlow to map a repository.",
         "refs": [
           {
-            "file": "api/routers/analysis.py",
-            "line": 25
+            "file": "api/gateway/routers/ci.py",
+            "line": 48
           }
         ]
       },
@@ -221,8 +221,8 @@
         "oneLiner": "Neon is checked for a stored map before anything is re-analysed.",
         "refs": [
           {
-            "file": "api/services/repo_map_service.py",
-            "line": 26
+            "file": "api/gateway/services/repo_map_service.py",
+            "line": 25
           }
         ]
       },
@@ -235,12 +235,12 @@
     },
     {
       "anchor": "gw:dispatch",
-      "body": "The gateway hands the repo to the profiler, tracer, layout and render agents, one HTTP hop each, and stitches their JSON back together.",
+      "body": "The gateway hands the repo to the profiler, tracer and render agents, one HTTP hop each, and stitches their JSON back together.",
       "branches": [],
       "chapter": "gateway",
       "chapterPosition": 4,
-      "detail": "Gateway to tracer and layout timeouts are 900s, because a cold trace of a large repo genuinely takes minutes.",
-      "dwellMs": 5060,
+      "detail": "Gateway to tracer timeout is 900s, because a cold trace of a large repo genuinely takes minutes.",
+      "dwellMs": 4840,
       "facts": [
         {
           "label": "timeout",
@@ -259,11 +259,11 @@
         "backing": [],
         "kind": "step",
         "label": "Fan out to the agents",
-        "oneLiner": "Profiler, tracer, layout and render - one HTTP hop each.",
+        "oneLiner": "Profiler, tracer and render - one HTTP hop each.",
         "refs": [
           {
-            "file": "api/core/config.py",
-            "line": 39
+            "file": "api/gateway/core/config.py",
+            "line": 26
           }
         ]
       },
@@ -272,21 +272,21 @@
       "phaseTitle": "Gateway - orchestration, 8000",
       "position": 4,
       "shot": "detail",
-      "title": "Five services, one orchestrator"
+      "title": "Four services, one orchestrator"
     },
     {
       "anchor": "gw:env",
-      "body": "One environment variable decides whether the same code talks to four processes on this laptop or to four containers on Railway. Both arms rejoin the main line.",
+      "body": "One environment variable decides whether the same code talks to three processes on this laptop or to three containers on Railway. Both arms rejoin the main line.",
       "branches": [
         {
           "label": "local",
-          "note": "Four uvicorn processes.",
-          "target": "localhost:8002-8006",
+          "note": "Three uvicorn processes.",
+          "target": "localhost:8002-8004",
           "terminal": false
         },
         {
           "label": "production",
-          "note": "Four deployed containers.",
+          "note": "Three deployed containers.",
           "target": "Railway service URLs",
           "terminal": false
         }
@@ -309,8 +309,8 @@
         "oneLiner": "The same code targets localhost or Railway.",
         "refs": [
           {
-            "file": "api/core/config.py",
-            "line": 40
+            "file": "api/gateway/core/config.py",
+            "line": 43
           }
         ]
       },
@@ -341,8 +341,8 @@
         "oneLiner": "Static analysis builds a symbol table, resolves every call, and turns each branch point into a candidate decision.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/project_indexer.py",
-            "line": 25
+            "file": "agents/tracer_agent/tracer/services/analysis/indexing/project_indexer.py",
+            "line": 30
           }
         ]
       },
@@ -383,8 +383,8 @@
         "oneLiner": "Function-level symbol table for the whole repo.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/project_indexer.py",
-            "line": 25
+            "file": "agents/tracer_agent/tracer/services/analysis/indexing/project_indexer.py",
+            "line": 30
           }
         ]
       },
@@ -440,7 +440,7 @@
         "oneLiner": "Longest-prefix ancestor walk, stdlib short-circuited.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/syntax/paths.py",
             "line": 29
           }
         ]
@@ -482,8 +482,8 @@
         "oneLiner": "Call graph with per-call-site control context.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/call_resolver.py",
-            "line": 41
+            "file": "agents/tracer_agent/tracer/services/analysis/resolve/call_resolver.py",
+            "line": 47
           }
         ]
       },
@@ -529,8 +529,8 @@
         "oneLiner": "Confidence is carried through to the picture.",
         "refs": [
           {
-            "file": "agents/tracer_agent/models/resolved_target.py",
-            "line": 8
+            "file": "agents/tracer_agent/tracer/models/call_records.py",
+            "line": 15
           }
         ]
       },
@@ -622,8 +622,8 @@
         "oneLiner": "Seven kinds of branch point, no exceptions.",
         "refs": [
           {
-            "file": "agents/tracer_agent/models/dispatch_site.py",
-            "line": 7
+            "file": "agents/tracer_agent/tracer/models/sites.py",
+            "line": 8
           }
         ]
       },
@@ -706,8 +706,8 @@
         "oneLiner": "http, db, llm, file, queue, email, response.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-            "line": 25
+            "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+            "line": 27
           }
         ]
       },
@@ -738,7 +738,7 @@
         "oneLiner": "The only stage an LLM touches: it judges which forks a human would actually put on a mental model, and never rewires the graph.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/significance_filter.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/significance/significance_filter.py",
             "line": 43
           }
         ]
@@ -793,7 +793,7 @@
         "oneLiner": "Which forks are decisions a human would care about?",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/significance_filter.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/significance/significance_filter.py",
             "line": 43
           }
         ]
@@ -840,8 +840,8 @@
         "oneLiner": "No key means a deterministic offline judge.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/decision_judge_factory.py",
-            "line": 15
+            "file": "agents/tracer_agent/tracer/services/analysis/significance/factory.py",
+            "line": 51
           }
         ]
       },
@@ -887,7 +887,7 @@
         "oneLiner": "Content-addressed verdict cache.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/verdict_cache.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/labelling/verdict_cache.py",
             "line": 12
           }
         ]
@@ -941,8 +941,8 @@
         "oneLiner": "The verdict that decides what reaches the diagram.",
         "refs": [
           {
-            "file": "agents/tracer_agent/models/site_verdict.py",
-            "line": 4
+            "file": "agents/tracer_agent/tracer/models/verdicts.py",
+            "line": 7
           }
         ]
       },
@@ -973,7 +973,7 @@
         "oneLiner": "Condense to a graph, stitch the services together, and demote detail to a deeper level rather than deleting it.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/condense/flow_condenser.py",
             "line": 34
           }
         ]
@@ -1007,7 +1007,7 @@
         "oneLiner": "Projection onto entry/step/decision/effect/outcome.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/condense/flow_condenser.py",
             "line": 34
           }
         ]
@@ -1054,7 +1054,7 @@
         "oneLiner": "Arms that terminate get a named outcome.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/condense/flow_condenser.py",
             "line": 34
           }
         ]
@@ -1088,7 +1088,7 @@
         "oneLiner": "Outbound calls matched to route entries.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/flow_stitcher.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/stitch/flow_stitcher.py",
             "line": 11
           }
         ]
@@ -1135,7 +1135,7 @@
         "oneLiner": "URL matching first, the model only for leftovers.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/http_stitch_detector.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/stitch/http_stitch_detector.py",
             "line": 1
           }
         ]
@@ -1178,7 +1178,7 @@
         "oneLiner": "Nothing is deleted - detail is demoted.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/budget/visibility_budgeter.py",
             "line": 55
           }
         ]
@@ -1225,7 +1225,7 @@
         "oneLiner": "Over budget means demoted, not dropped.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/budget/visibility_budgeter.py",
             "line": 55
           }
         ]
@@ -1272,7 +1272,7 @@
         "oneLiner": "Derived from shape, never asserted.",
         "refs": [
           {
-            "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+            "file": "agents/tracer_agent/tracer/services/analysis/budget/containment_indexer.py",
             "line": 1
           }
         ]
@@ -1304,8 +1304,8 @@
         "oneLiner": "The server owns geometry; the browser is a thin renderer with progressive disclosure.",
         "refs": [
           {
-            "file": "agents/render_agent/placement/flow_page_placer.py",
-            "line": 28
+            "file": "agents/render_agent/render/placement/flow_page_placer.py",
+            "line": 33
           }
         ]
       },
@@ -1347,8 +1347,8 @@
         "oneLiner": "Deterministic React Flow geometry.",
         "refs": [
           {
-            "file": "agents/render_agent/placement/flow_page_placer.py",
-            "line": 28
+            "file": "agents/render_agent/render/placement/flow_page_placer.py",
+            "line": 33
           }
         ]
       },
@@ -1397,8 +1397,8 @@
         "oneLiner": "The longest path gets the straight line.",
         "refs": [
           {
-            "file": "agents/render_agent/placement/spine_router.py",
-            "line": 25
+            "file": "agents/render_agent/render/placement/spine_router.py",
+            "line": 26
           }
         ]
       },
@@ -2719,11 +2719,11 @@
           "isSpine": true,
           "laneId": "render",
           "oneLiner": "The server owns geometry; the browser is a thin renderer with progressive disclosure.",
-          "provenance": "flow_page_placer.py:28",
+          "provenance": "flow_page_placer.py:33",
           "refs": [
             {
-              "file": "agents/render_agent/placement/flow_page_placer.py",
-              "line": 28
+              "file": "agents/render_agent/render/placement/flow_page_placer.py",
+              "line": 33
             }
           ],
           "shape": "card"
@@ -2750,12 +2750,12 @@
           "hiddenChildren": [],
           "isSpine": true,
           "laneId": "gateway",
-          "oneLiner": "One HTTP entry point decides whether this repo has been seen before, then fans the work out to four services.",
-          "provenance": "analysis.py:25",
+          "oneLiner": "One HTTP entry point decides whether this repo has been seen before, then fans the work out to three services.",
+          "provenance": "ci.py:48",
           "refs": [
             {
-              "file": "api/routers/analysis.py",
-              "line": 25
+              "file": "api/gateway/routers/ci.py",
+              "line": 48
             }
           ],
           "shape": "card"
@@ -2786,7 +2786,7 @@
           "provenance": "significance_filter.py:43",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/significance_filter.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/significance/significance_filter.py",
               "line": 43
             }
           ],
@@ -2818,7 +2818,7 @@
           "provenance": "flow_condenser.py:34",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/condense/flow_condenser.py",
               "line": 34
             }
           ],
@@ -2847,11 +2847,11 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "Static analysis builds a symbol table, resolves every call, and turns each branch point into a candidate decision.",
-          "provenance": "project_indexer.py:25",
+          "provenance": "project_indexer.py:30",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/project_indexer.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/indexing/project_indexer.py",
+              "line": 30
             }
           ],
           "shape": "card"
@@ -2999,11 +2999,11 @@
           "isSpine": true,
           "laneId": "gateway",
           "oneLiner": "Neon is checked for a stored map before anything is re-analysed.",
-          "provenance": "repo_map_service.py:26",
+          "provenance": "repo_map_service.py:25",
           "refs": [
             {
-              "file": "api/services/repo_map_service.py",
-              "line": 26
+              "file": "api/gateway/services/repo_map_service.py",
+              "line": 25
             }
           ],
           "shape": "decision"
@@ -3029,11 +3029,11 @@
           "isSpine": false,
           "laneId": "gateway",
           "oneLiner": "Returns in about three seconds.",
-          "provenance": "repo_maps.py:19",
+          "provenance": "repo_maps.py:60",
           "refs": [
             {
-              "file": "api/routers/repo_maps.py",
-              "line": 19
+              "file": "api/gateway/routers/repo_maps.py",
+              "line": 60
             }
           ],
           "shape": "outcome"
@@ -3062,7 +3062,7 @@
           "provenance": "analysis_service.py:1",
           "refs": [
             {
-              "file": "api/services/analysis_service.py",
+              "file": "api/gateway/services/analysis_service.py",
               "line": 1
             }
           ],
@@ -3088,12 +3088,12 @@
           "hiddenChildren": [],
           "isSpine": true,
           "laneId": "gateway",
-          "oneLiner": "Profiler, tracer, layout and render - one HTTP hop each.",
-          "provenance": "config.py:39",
+          "oneLiner": "Profiler, tracer and render - one HTTP hop each.",
+          "provenance": "config.py:26",
           "refs": [
             {
-              "file": "api/core/config.py",
-              "line": 39
+              "file": "api/gateway/core/config.py",
+              "line": 26
             }
           ],
           "shape": "rect"
@@ -3111,28 +3111,28 @@
       {
         "data": {
           "backing": [
-            "analyse"
+            "ci_analyse_local"
           ],
           "badges": [],
           "column": 0,
           "dashed": false,
-          "fullLabel": "POST /analyse",
+          "fullLabel": "POST /ci/analyse/local",
           "hiddenChildren": [],
           "isSpine": true,
           "laneId": "gateway",
           "oneLiner": "A user asks CodeFlow to map a repository.",
-          "provenance": "analysis.py:25",
+          "provenance": "ci.py:48",
           "refs": [
             {
-              "file": "api/routers/analysis.py",
-              "line": 25
+              "file": "api/gateway/routers/ci.py",
+              "line": 48
             }
           ],
           "shape": "pill"
         },
         "id": "gw:entry",
         "kind": "entry",
-        "label": "POST /analyse",
+        "label": "POST /ci/analyse/local",
         "position": {
           "x": 1117,
           "y": 570
@@ -3151,11 +3151,11 @@
           "isSpine": true,
           "laneId": "gateway",
           "oneLiner": "The same code targets localhost or Railway.",
-          "provenance": "config.py:40",
+          "provenance": "config.py:43",
           "refs": [
             {
-              "file": "api/core/config.py",
-              "line": 40
+              "file": "api/gateway/core/config.py",
+              "line": 43
             }
           ],
           "shape": "decision"
@@ -3176,23 +3176,23 @@
           "badges": [],
           "column": 0,
           "dashed": false,
-          "fullLabel": "localhost:8002-8006",
+          "fullLabel": "localhost:8002-8004",
           "hiddenChildren": [],
           "isSpine": false,
           "laneId": "gateway",
-          "oneLiner": "Four uvicorn processes.",
-          "provenance": "config.py:10",
+          "oneLiner": "Three uvicorn processes.",
+          "provenance": "config.py:13",
           "refs": [
             {
-              "file": "api/core/config.py",
-              "line": 10
+              "file": "api/gateway/core/config.py",
+              "line": 13
             }
           ],
           "shape": "outcome"
         },
         "id": "gw:env:local",
         "kind": "outcome",
-        "label": "localhost:8002-8006",
+        "label": "localhost:8002-8004",
         "position": {
           "x": 961,
           "y": 2008
@@ -3210,12 +3210,12 @@
           "hiddenChildren": [],
           "isSpine": false,
           "laneId": "gateway",
-          "oneLiner": "Four deployed containers.",
-          "provenance": "config.py:21",
+          "oneLiner": "Three deployed containers.",
+          "provenance": "config.py:24",
           "refs": [
             {
-              "file": "api/core/config.py",
-              "line": 21
+              "file": "api/gateway/core/config.py",
+              "line": 24
             }
           ],
           "shape": "outcome"
@@ -3303,11 +3303,11 @@
           "isSpine": true,
           "laneId": "render",
           "oneLiner": "Deterministic React Flow geometry.",
-          "provenance": "flow_page_placer.py:28",
+          "provenance": "flow_page_placer.py:33",
           "refs": [
             {
-              "file": "agents/render_agent/placement/flow_page_placer.py",
-              "line": 28
+              "file": "agents/render_agent/render/placement/flow_page_placer.py",
+              "line": 33
             }
           ],
           "shape": "rect"
@@ -3333,11 +3333,11 @@
           "isSpine": true,
           "laneId": "render",
           "oneLiner": "The longest path gets the straight line.",
-          "provenance": "spine_router.py:25",
+          "provenance": "spine_router.py:26",
           "refs": [
             {
-              "file": "agents/render_agent/placement/spine_router.py",
-              "line": 25
+              "file": "agents/render_agent/render/placement/spine_router.py",
+              "line": 26
             }
           ],
           "shape": "decision"
@@ -3366,7 +3366,7 @@
           "provenance": "tree_layout.py:33",
           "refs": [
             {
-              "file": "agents/render_agent/placement/tree_layout.py",
+              "file": "agents/render_agent/render/placement/tree_layout.py",
               "line": 33
             }
           ],
@@ -3396,7 +3396,7 @@
           "provenance": "tree_layout.py:33",
           "refs": [
             {
-              "file": "agents/render_agent/placement/tree_layout.py",
+              "file": "agents/render_agent/render/placement/tree_layout.py",
               "line": 33
             }
           ],
@@ -3428,7 +3428,7 @@
           "provenance": "visibility_budgeter.py:55",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/budget/visibility_budgeter.py",
               "line": 55
             }
           ],
@@ -3458,7 +3458,7 @@
           "provenance": "containment_indexer.py:1",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/budget/containment_indexer.py",
               "line": 1
             }
           ],
@@ -3488,7 +3488,7 @@
           "provenance": "containment_indexer.py:1",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/budget/containment_indexer.py",
               "line": 1
             }
           ],
@@ -3518,7 +3518,7 @@
           "provenance": "containment_indexer.py:1",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/budget/containment_indexer.py",
               "line": 1
             }
           ],
@@ -3548,7 +3548,7 @@
           "provenance": "visibility_budgeter.py:55",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/budget/visibility_budgeter.py",
               "line": 55
             }
           ],
@@ -3578,7 +3578,7 @@
           "provenance": "containment_indexer.py:1",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/containment_indexer.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/budget/containment_indexer.py",
               "line": 1
             }
           ],
@@ -3608,7 +3608,7 @@
           "provenance": "visibility_budgeter.py:55",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/visibility_budgeter.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/budget/visibility_budgeter.py",
               "line": 55
             }
           ],
@@ -3638,7 +3638,7 @@
           "provenance": "flow_condenser.py:34",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/condense/flow_condenser.py",
               "line": 34
             }
           ],
@@ -3665,11 +3665,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "An honest ending, not a loose edge.",
-          "provenance": "arm.py:6",
+          "provenance": "call_records.py:28",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/arm.py",
-              "line": 6
+              "file": "agents/tracer_agent/tracer/models/call_records.py",
+              "line": 28
             }
           ],
           "shape": "outcome"
@@ -3698,7 +3698,7 @@
           "provenance": "flow_condenser.py:34",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/condense/flow_condenser.py",
               "line": 34
             }
           ],
@@ -3730,7 +3730,7 @@
           "provenance": "flow_condenser.py:34",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/flow_condenser.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/condense/flow_condenser.py",
               "line": 34
             }
           ],
@@ -3759,11 +3759,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "session.query",
-          "provenance": "effect_detector.py:25",
+          "provenance": "effect_detector.py:27",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+              "line": 27
             }
           ],
           "shape": "effect"
@@ -3791,11 +3791,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "send_mail",
-          "provenance": "effect_detector.py:25",
+          "provenance": "effect_detector.py:27",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+              "line": 27
             }
           ],
           "shape": "effect"
@@ -3823,11 +3823,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Path.read_text",
-          "provenance": "effect_detector.py:25",
+          "provenance": "effect_detector.py:27",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+              "line": 27
             }
           ],
           "shape": "effect"
@@ -3855,11 +3855,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "httpx / requests",
-          "provenance": "effect_detector.py:25",
+          "provenance": "effect_detector.py:27",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+              "line": 27
             }
           ],
           "shape": "effect"
@@ -3887,11 +3887,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "messages.create",
-          "provenance": "effect_detector.py:25",
+          "provenance": "effect_detector.py:27",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+              "line": 27
             }
           ],
           "shape": "effect"
@@ -3919,11 +3919,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "publish / enqueue",
-          "provenance": "effect_detector.py:25",
+          "provenance": "effect_detector.py:27",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+              "line": 27
             }
           ],
           "shape": "effect"
@@ -3951,11 +3951,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "returns to caller",
-          "provenance": "effect_detector.py:25",
+          "provenance": "effect_detector.py:27",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+              "line": 27
             }
           ],
           "shape": "effect"
@@ -3983,11 +3983,11 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "http, db, llm, file, queue, email, response.",
-          "provenance": "effect_detector.py:25",
+          "provenance": "effect_detector.py:27",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/effect_detector.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/effects/effect_detector.py",
+              "line": 27
             }
           ],
           "shape": "rect"
@@ -4013,11 +4013,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "if / elif / else",
-          "provenance": "dispatch_extractor.py:12",
+          "provenance": "dispatch_extractor.py:11",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
-              "line": 12
+              "file": "agents/tracer_agent/tracer/services/analysis/forks/dispatch_extractor.py",
+              "line": 11
             }
           ],
           "shape": "outcome"
@@ -4043,11 +4043,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "getattr / runtime name",
-          "provenance": "dispatch_extractor.py:12",
+          "provenance": "dispatch_extractor.py:11",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
-              "line": 12
+              "file": "agents/tracer_agent/tracer/services/analysis/forks/dispatch_extractor.py",
+              "line": 11
             }
           ],
           "shape": "outcome"
@@ -4073,11 +4073,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "try / except handler",
-          "provenance": "dispatch_extractor.py:12",
+          "provenance": "dispatch_extractor.py:11",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
-              "line": 12
+              "file": "agents/tracer_agent/tracer/services/analysis/forks/dispatch_extractor.py",
+              "line": 11
             }
           ],
           "shape": "outcome"
@@ -4103,11 +4103,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "match statement",
-          "provenance": "dispatch_extractor.py:12",
+          "provenance": "dispatch_extractor.py:11",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
-              "line": 12
+              "file": "agents/tracer_agent/tracer/services/analysis/forks/dispatch_extractor.py",
+              "line": 11
             }
           ],
           "shape": "outcome"
@@ -4133,11 +4133,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "subclass override",
-          "provenance": "dispatch_extractor.py:12",
+          "provenance": "dispatch_extractor.py:11",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
-              "line": 12
+              "file": "agents/tracer_agent/tracer/services/analysis/forks/dispatch_extractor.py",
+              "line": 11
             }
           ],
           "shape": "outcome"
@@ -4163,11 +4163,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "HTTP route table",
-          "provenance": "dispatch_extractor.py:12",
+          "provenance": "dispatch_extractor.py:11",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
-              "line": 12
+              "file": "agents/tracer_agent/tracer/services/analysis/forks/dispatch_extractor.py",
+              "line": 11
             }
           ],
           "shape": "outcome"
@@ -4193,11 +4193,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "dict or registry lookup",
-          "provenance": "dispatch_extractor.py:12",
+          "provenance": "dispatch_extractor.py:11",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/dispatch_extractor.py",
-              "line": 12
+              "file": "agents/tracer_agent/tracer/services/analysis/forks/dispatch_extractor.py",
+              "line": 11
             }
           ],
           "shape": "outcome"
@@ -4225,11 +4225,11 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "Seven kinds of branch point, no exceptions.",
-          "provenance": "dispatch_site.py:7",
+          "provenance": "sites.py:8",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/dispatch_site.py",
-              "line": 7
+              "file": "agents/tracer_agent/tracer/models/sites.py",
+              "line": 8
             }
           ],
           "shape": "decision"
@@ -4255,10 +4255,10 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "Longest-prefix ancestor walk, stdlib short-circuited.",
-          "provenance": "path_fqn.py:29",
+          "provenance": "paths.py:29",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/syntax/paths.py",
               "line": 29
             }
           ],
@@ -4285,10 +4285,10 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Not traced any further.",
-          "provenance": "path_fqn.py:33",
+          "provenance": "paths.py:33",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/syntax/paths.py",
               "line": 33
             }
           ],
@@ -4315,10 +4315,10 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Becomes a call-graph edge.",
-          "provenance": "path_fqn.py:24",
+          "provenance": "paths.py:24",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/syntax/paths.py",
               "line": 24
             }
           ],
@@ -4345,10 +4345,10 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Short-circuits the walk.",
-          "provenance": "path_fqn.py:4",
+          "provenance": "paths.py:4",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/path_fqn.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/syntax/paths.py",
               "line": 4
             }
           ],
@@ -4377,11 +4377,11 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "Function-level symbol table for the whole repo.",
-          "provenance": "project_indexer.py:25",
+          "provenance": "project_indexer.py:30",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/project_indexer.py",
-              "line": 25
+              "file": "agents/tracer_agent/tracer/services/analysis/indexing/project_indexer.py",
+              "line": 30
             }
           ],
           "shape": "rect"
@@ -4409,11 +4409,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "One file at a time: parse, then bucket classes and functions.",
-          "provenance": "project_indexer.py:32",
+          "provenance": "project_indexer.py:37",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/project_indexer.py",
-              "line": 32
+              "file": "agents/tracer_agent/tracer/services/analysis/indexing/project_indexer.py",
+              "line": 37
             }
           ],
           "shape": "snippet"
@@ -4444,7 +4444,7 @@
           "provenance": "significance_filter.py:43",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/significance_filter.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/significance/significance_filter.py",
               "line": 43
             }
           ],
@@ -4474,7 +4474,7 @@
           "provenance": "verdict_cache.py:12",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/verdict_cache.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/labelling/verdict_cache.py",
               "line": 12
             }
           ],
@@ -4501,11 +4501,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Real, but not a choice - a validation gate.",
-          "provenance": "site_verdict.py:4",
+          "provenance": "verdicts.py:7",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/site_verdict.py",
-              "line": 4
+              "file": "agents/tracer_agent/tracer/models/verdicts.py",
+              "line": 7
             }
           ],
           "shape": "outcome"
@@ -4534,7 +4534,7 @@
           "provenance": "heuristic_decision_judge.py:10",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/heuristic_decision_judge.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/significance/heuristic_decision_judge.py",
               "line": 10
             }
           ],
@@ -4564,7 +4564,7 @@
           "provenance": "verdict_cache.py:12",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/verdict_cache.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/labelling/verdict_cache.py",
               "line": 12
             }
           ],
@@ -4591,11 +4591,11 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "No key means a deterministic offline judge.",
-          "provenance": "decision_judge_factory.py:15",
+          "provenance": "factory.py:51",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/decision_judge_factory.py",
-              "line": 15
+              "file": "agents/tracer_agent/tracer/services/analysis/significance/factory.py",
+              "line": 51
             }
           ],
           "shape": "decision"
@@ -4624,7 +4624,7 @@
           "provenance": "llm_decision_judge.py:30",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/llm_decision_judge.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/significance/llm_decision_judge.py",
               "line": 30
             }
           ],
@@ -4654,7 +4654,7 @@
           "provenance": "llm_decision_judge.py:30",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/llm_decision_judge.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/significance/llm_decision_judge.py",
               "line": 30
             }
           ],
@@ -4681,11 +4681,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Demoted to a deeper level, never deleted.",
-          "provenance": "site_verdict.py:4",
+          "provenance": "verdicts.py:7",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/site_verdict.py",
-              "line": 4
+              "file": "agents/tracer_agent/tracer/models/verdicts.py",
+              "line": 7
             }
           ],
           "shape": "outcome"
@@ -4711,11 +4711,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "A diamond, labelled with a question.",
-          "provenance": "site_verdict.py:4",
+          "provenance": "verdicts.py:7",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/site_verdict.py",
-              "line": 4
+              "file": "agents/tracer_agent/tracer/models/verdicts.py",
+              "line": 7
             }
           ],
           "shape": "outcome"
@@ -4746,7 +4746,7 @@
           "provenance": "llm_decision_judge.py:44",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/llm_decision_judge.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/significance/llm_decision_judge.py",
               "line": 44
             }
           ],
@@ -4773,11 +4773,11 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "The verdict that decides what reaches the diagram.",
-          "provenance": "site_verdict.py:4",
+          "provenance": "verdicts.py:7",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/site_verdict.py",
-              "line": 4
+              "file": "agents/tracer_agent/tracer/models/verdicts.py",
+              "line": 7
             }
           ],
           "shape": "decision"
@@ -4805,11 +4805,11 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "Call graph with per-call-site control context.",
-          "provenance": "call_resolver.py:41",
+          "provenance": "call_resolver.py:47",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/call_resolver.py",
-              "line": 41
+              "file": "agents/tracer_agent/tracer/services/analysis/resolve/call_resolver.py",
+              "line": 47
             }
           ],
           "shape": "rect"
@@ -4837,11 +4837,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Control context - scope, local bindings, self types - travels with the call site.",
-          "provenance": "call_resolver.py:49",
+          "provenance": "call_resolver.py:55",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/call_resolver.py",
-              "line": 49
+              "file": "agents/tracer_agent/tracer/services/analysis/resolve/call_resolver.py",
+              "line": 55
             }
           ],
           "shape": "snippet"
@@ -4872,7 +4872,7 @@
           "provenance": "flow_stitcher.py:11",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/flow_stitcher.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/stitch/flow_stitcher.py",
               "line": 11
             }
           ],
@@ -4902,7 +4902,7 @@
           "provenance": "http_stitch_detector.py:1",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/http_stitch_detector.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/stitch/http_stitch_detector.py",
               "line": 1
             }
           ],
@@ -4932,7 +4932,7 @@
           "provenance": "llm_stitch_detector.py:1",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/llm_stitch_detector.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/stitch/llm_stitch_detector.py",
               "line": 1
             }
           ],
@@ -4962,7 +4962,7 @@
           "provenance": "http_stitch_detector.py:1",
           "refs": [
             {
-              "file": "agents/tracer_agent/services/analysis/http_stitch_detector.py",
+              "file": "agents/tracer_agent/tracer/services/analysis/stitch/http_stitch_detector.py",
               "line": 1
             }
           ],
@@ -4989,11 +4989,11 @@
           "isSpine": true,
           "laneId": "tracer",
           "oneLiner": "Confidence is carried through to the picture.",
-          "provenance": "resolved_target.py:8",
+          "provenance": "call_records.py:15",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/resolved_target.py",
-              "line": 8
+              "file": "agents/tracer_agent/tracer/models/call_records.py",
+              "line": 15
             }
           ],
           "shape": "decision"
@@ -5019,11 +5019,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Drawn faded.",
-          "provenance": "resolved_target.py:8",
+          "provenance": "call_records.py:15",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/resolved_target.py",
-              "line": 8
+              "file": "agents/tracer_agent/tracer/models/call_records.py",
+              "line": 15
             }
           ],
           "shape": "outcome"
@@ -5049,11 +5049,11 @@
           "isSpine": false,
           "laneId": "tracer",
           "oneLiner": "Exact function known.",
-          "provenance": "resolved_target.py:8",
+          "provenance": "call_records.py:15",
           "refs": [
             {
-              "file": "agents/tracer_agent/models/resolved_target.py",
-              "line": 8
+              "file": "agents/tracer_agent/tracer/models/call_records.py",
+              "line": 15
             }
           ],
           "shape": "outcome"

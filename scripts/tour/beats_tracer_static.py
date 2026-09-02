@@ -3,8 +3,8 @@ from tour.tour_beat import Arm, Beat
 from tour.tour_builders import ref
 
 LANE = "tracer"
-BASE = "agents/tracer_agent/services/analysis"
-MODELS = "agents/tracer_agent/models"
+BASE = "agents/tracer_agent/tracer/services/analysis"
+MODELS = "agents/tracer_agent/tracer/models"
 
 _FORKS = [
     ("branch", "if / elif / else"), ("match", "match statement"),
@@ -24,7 +24,7 @@ _EFFECTS = [
 def _fork_arms() -> tuple[Arm, ...]:
     return tuple(
         Arm(f"tr:fork:{kind}", kind, kind, desc, terminal=False,
-            refs=(ref(f"{BASE}/dispatch_extractor.py", 12),))
+            refs=(ref(f"{BASE}/forks/dispatch_extractor.py", 11),))
         for kind, desc in _FORKS
     )
 
@@ -32,7 +32,7 @@ def _fork_arms() -> tuple[Arm, ...]:
 def _effect_arms() -> tuple[Arm, ...]:
     return tuple(
         Arm(f"tr:eff:{kind}", label, kind, hint, kind="effect", terminal=True,
-            refs=(ref(f"{BASE}/effect_detector.py", 25),),
+            refs=(ref(f"{BASE}/effects/effect_detector.py", 27),),
             effect_kind=kind, effect_target=hint)
         for kind, label, hint in _EFFECTS
     )
@@ -49,13 +49,13 @@ def beats() -> list[Beat]:
             detail="Source roots are derived from where imports actually bind, never from "
                    "directory names. Assuming a folder was called 'agents' once resolved almost "
                    "every internal call to 'ext:' and shredded the entire call graph.",
-            refs=(ref(f"{BASE}/project_indexer.py", 25),), backing=("ProjectIndexer.index",),
+            refs=(ref(f"{BASE}/indexing/project_indexer.py", 30),), backing=("ProjectIndexer.index",),
             packets=("gw:env:local->act:static", "gw:env:prod->act:static"),
             arms=(
                 Arm("tr:index:snippet", "ProjectIndexer.index", "code",
                     "One file at a time: parse, then bucket classes and functions.",
                     kind="outcome", terminal=True,
-                    refs=(ref(f"{BASE}/project_indexer.py", 32, 40),),
+                    refs=(ref(f"{BASE}/indexing/project_indexer.py", 37, 45),),
                     code=tour_code_snippets.INDEX_CODE, code_lang="python"),
             ),
         ),
@@ -67,17 +67,17 @@ def beats() -> list[Beat]:
             one_liner="Longest-prefix ancestor walk, stdlib short-circuited.",
             detail="This exact function has been the site of two outages. Both were the same "
                    "bug: hardcoding this repo's own folder names into the resolver.",
-            refs=(ref(f"{BASE}/path_fqn.py", 29),),
+            refs=(ref(f"{BASE}/syntax/paths.py", 29),),
             arms=(
                 Arm("tr:import:internal", "Project module", "project",
                     "Becomes a call-graph edge.", terminal=False,
-                    refs=(ref(f"{BASE}/path_fqn.py", 24),)),
+                    refs=(ref(f"{BASE}/syntax/paths.py", 24),)),
                 Arm("tr:import:stdlib", "Standard library", "stdlib",
                     "Short-circuits the walk.", terminal=True,
-                    refs=(ref(f"{BASE}/path_fqn.py", 4),)),
+                    refs=(ref(f"{BASE}/syntax/paths.py", 4),)),
                 Arm("tr:import:ext", "Third party -> ext:", "third party",
                     "Not traced any further.", terminal=True,
-                    refs=(ref(f"{BASE}/path_fqn.py", 33),)),
+                    refs=(ref(f"{BASE}/syntax/paths.py", 33),)),
             ),
         ),
         Beat(
@@ -88,12 +88,12 @@ def beats() -> list[Beat]:
             one_liner="Call graph with per-call-site control context.",
             detail="The control context is what later lets a fork be described as a decision "
                    "rather than just a branch instruction.",
-            refs=(ref(f"{BASE}/call_resolver.py", 41),), backing=("CallResolver.resolve_project",),
+            refs=(ref(f"{BASE}/resolve/call_resolver.py", 47),), backing=("CallResolver.resolve_project",),
             arms=(
                 Arm("tr:resolve:snippet", "CallResolver.resolve_project", "code",
                     "Control context - scope, local bindings, self types - travels with "
                     "the call site.", kind="outcome", terminal=True,
-                    refs=(ref(f"{BASE}/call_resolver.py", 49, 56),),
+                    refs=(ref(f"{BASE}/resolve/call_resolver.py", 55, 62),),
                     code=tour_code_snippets.RESOLVE_CODE, code_lang="python"),
             ),
         ),
@@ -104,12 +104,12 @@ def beats() -> list[Beat]:
             "final diagram rather than being quietly promoted to a fact.",
             one_liner="Confidence is carried through to the picture.",
             detail="Both arms rejoin the line - an uncertain edge is still an edge.",
-            refs=(ref(f"{MODELS}/resolved_target.py", 8),),
+            refs=(ref(f"{MODELS}/call_records.py", 15),),
             arms=(
                 Arm("tr:target:resolved", "resolved", "static", "Exact function known.",
-                    terminal=False, refs=(ref(f"{MODELS}/resolved_target.py", 8),)),
+                    terminal=False, refs=(ref(f"{MODELS}/call_records.py", 15),)),
                 Arm("tr:target:inferred", "inferred", "ambiguous", "Drawn faded.",
-                    terminal=False, refs=(ref(f"{MODELS}/resolved_target.py", 8),)),
+                    terminal=False, refs=(ref(f"{MODELS}/call_records.py", 15),)),
             ),
         ),
         Beat(
@@ -121,7 +121,7 @@ def beats() -> list[Beat]:
             detail="Static analysis owns structure. The LLM that runs two stages later may "
                    "judge these forks and label them, but it may never add, remove, merge or "
                    "rewire a single one.",
-            refs=(ref(f"{MODELS}/dispatch_site.py", 7),), backing=("DispatchExtractor.extract",),
+            refs=(ref(f"{MODELS}/sites.py", 8),), backing=("DispatchExtractor.extract",),
             arms=_fork_arms(),
             facts=(("fork kinds", "7"), ("on django-helpdesk", "222 decisions")),
         ),
@@ -134,7 +134,7 @@ def beats() -> list[Beat]:
             detail="Effects are annotations, not control flow, so these branches stop rather "
                    "than rejoining. A call made inside a third-party SDK produces no effect - "
                    "a known and deliberate blind spot.",
-            refs=(ref(f"{BASE}/effect_detector.py", 25),), backing=("EffectDetector.detect",),
+            refs=(ref(f"{BASE}/effects/effect_detector.py", 27),), backing=("EffectDetector.detect",),
             arms=_effect_arms(),
         ),
     ]

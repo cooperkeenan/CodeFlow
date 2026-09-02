@@ -78,25 +78,6 @@
             "isBackground": true
         },
         {
-            "label": "Layout Agent",
-            "type": "shell",
-            "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8006 --reload",
-            "windows": {
-                "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8006 --reload"
-            },
-            "options": {
-                "cwd": "${workspaceFolder}/agents/layout_agent",
-                "env": {
-                    "PYTHONPATH": "${workspaceFolder}"
-                }
-            },
-            "icon": {
-                "id": "layout",
-                "color": "terminal.ansiBlue"
-            },
-            "isBackground": true
-        },
-        {
             "label": "Explain Agent",
             "type": "shell",
             "command": "${workspaceFolder}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8007 --reload",
@@ -135,7 +116,6 @@
                 "Profiler Agent",
                 "Tracer Agent",
                 "Render Agent",
-                "Layout Agent",
                 "Explain Agent",
                 "Frontend"
             ],
@@ -149,9 +129,9 @@
         {
             "label": "CodeFlow: Stop All",
             "type": "shell",
-            "command": "for port in 8000 8002 8003 8004 8006 8007 5173; do pids=$(lsof -ti :$port); if [ -n \"$pids\" ]; then echo \"$pids\" | xargs kill -9; echo \"Cleared port $port\"; else echo \"Port $port already free\"; fi; done",
+            "command": "for port in 8000 8002 8003 8004 8007 5173; do pids=$(lsof -ti :$port); if [ -n \"$pids\" ]; then echo \"$pids\" | xargs kill -9; echo \"Cleared port $port\"; else echo \"Port $port already free\"; fi; done",
             "windows": {
-                "command": "function Kill-Tree($procId) { Get-CimInstance Win32_Process -Filter \"ParentProcessId=$procId\" -ErrorAction SilentlyContinue | ForEach-Object { Kill-Tree $_.ProcessId }; Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }; foreach ($port in 8000,8002,8003,8004,8006,8007,5173) { $procIds = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | Where-Object { $_ -gt 0 }); if (-not $procIds) { Write-Host \"Port $port already free\"; continue }; $procIds | ForEach-Object { Kill-Tree $_ }; Start-Sleep -Milliseconds 400; $left = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | Where-Object { $_ -gt 0 }); if ($left) { Write-Host \"FAILED to clear port $port (still held by pid $($left -join ',')) - it may be a --reload child in another session; kill it manually\" } else { Write-Host \"Cleared port $port\" } }",
+                "command": "function Kill-Tree($procId) { Get-CimInstance Win32_Process -Filter \"ParentProcessId=$procId\" -ErrorAction SilentlyContinue | ForEach-Object { Kill-Tree $_.ProcessId }; Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }; foreach ($port in 8000,8002,8003,8004,8007,5173) { $procIds = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | Where-Object { $_ -gt 0 }); if (-not $procIds) { Write-Host \"Port $port already free\"; continue }; $procIds | ForEach-Object { Kill-Tree $_ }; Start-Sleep -Milliseconds 400; $left = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | Where-Object { $_ -gt 0 }); if ($left) { Write-Host \"FAILED to clear port $port (still held by pid $($left -join ',')) - it may be a --reload child in another session; kill it manually\" } else { Write-Host \"Cleared port $port\" } }",
                 "options": {
                     "shell": {
                         "executable": "powershell.exe",

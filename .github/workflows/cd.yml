@@ -21,7 +21,6 @@ jobs:
           - { name: profiler, dir: agents/profiler_agent }
           - { name: tracer,   dir: agents/tracer_agent }
           - { name: render,   dir: agents/render_agent }
-          - { name: layout,   dir: agents/layout_agent }
           - { name: explain,  dir: agents/explain_agent }
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +53,6 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: 3a23e4b9-3aa3-4f84-9ada-6c2ae7302ca6
         run: |
-          for service in CodeFlow codeflow-profiler codeflow-tracer codeflow-render codeflow-layout codeflow-explain; do
+          for service in CodeFlow codeflow-profiler codeflow-tracer codeflow-render codeflow-explain; do
             railway redeploy --service "$service" --yes
           done

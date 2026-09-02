@@ -8,20 +8,20 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(ROOT / "agents" / "tracer_agent"))
 
-from services.analysis.budget_config import BudgetConfig
-from services.analysis.decision_judge import DecisionJudge
-from services.analysis.decision_judge_factory import build_decision_judge
-from services.analysis.flow_naming import FlowNaming
-from services.analysis.flow_namer_factory import build_flow_namer
-from services.analysis.flow_pipeline import FlowPipeline
-from services.analysis.flow_reviewer_factory import build_flow_reviewer
-from services.analysis.flow_reviewing import FlowReviewing
-from services.analysis.effect_detector_factory import build_effect_detector
-from services.analysis.flow_stitcher_factory import build_flow_stitcher
-from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
-from services.analysis.visibility_budgeter_factory import build_visibility_budgeter
-from services.analysis.project_indexer_factory import build_project_indexer
-from placement.flow_page_placer_factory import build_flow_page_placer
+from tracer.services.analysis.config import BudgetConfig
+from tracer.services.analysis.contracts import DecisionJudge
+from tracer.services.analysis.significance.factory import build_decision_judge
+from tracer.services.analysis.contracts import FlowNaming
+from tracer.services.analysis.labelling.factory import build_flow_namer
+from tracer.services.analysis.flow_pipeline import FlowPipeline
+from tracer.services.analysis.labelling.factory import build_flow_reviewer
+from tracer.services.analysis.contracts import FlowReviewing
+from tracer.services.analysis.effects.factory import build_effect_detector
+from tracer.services.analysis.stitch.factory import build_flow_stitcher
+from tracer.services.analysis.significance.heuristic_decision_judge import HeuristicDecisionJudge
+from tracer.services.analysis.budget.factory import build_visibility_budgeter
+from tracer.services.analysis.indexing.factory import build_project_indexer
+from render.placement.flow_page_placer_factory import build_flow_page_placer
 from render_repo import load_dotenv, read_python_sources
 
 _GUARD_SELECTOR = re.compile(r"\bnot\b|is None|!=\s*None")
@@ -88,8 +88,8 @@ def main() -> int:
     budget = BudgetConfig().node_budget
     print("Assertions:")
     results = [
-        check("lanes == {api, profiler, tracer, layout, render}",
-              lanes == {"api", "profiler", "tracer", "layout", "render"}, str(sorted(lanes))),
+        check("lanes == {api, profiler, tracer, render}",
+              lanes == {"api", "profiler", "tracer", "render"}, str(sorted(lanes))),
         check(">=4 stitch edges api->agent entries", len(stitches) >= 4, f"{len(stitches)} stitches"),
         check("two runs byte-identical (ignoring llm_*)",
               canonical_first == canonical_second),

@@ -10,19 +10,19 @@ sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
 
 from render_repo import load_dotenv, read_python_sources
 from save_command import parse_save_flag, save_to_account
-from services.analysis.flow_pipeline import FlowPipeline
-from services.analysis.decision_judge_factory import build_decision_judge
-from services.analysis.flow_namer_factory import build_flow_namer
-from services.analysis.flow_reviewer_factory import build_flow_reviewer
-from services.analysis.heuristic_decision_judge import HeuristicDecisionJudge
-from services.analysis.heuristic_flow_namer import HeuristicFlowNamer
-from services.analysis.heuristic_flow_reviewer import HeuristicFlowReviewer
-from services.analysis.site_classifier import SiteClassifier
-from services.analysis.effect_detector_factory import build_effect_detector
-from services.analysis.flow_stitcher_factory import build_flow_stitcher
-from services.analysis.visibility_budgeter_factory import build_visibility_budgeter
-from services.analysis.project_indexer_factory import build_project_indexer
-from placement.flow_page_placer_factory import build_flow_page_placer
+from tracer.services.analysis.flow_pipeline import FlowPipeline
+from tracer.services.analysis.significance.factory import build_decision_judge
+from tracer.services.analysis.labelling.factory import build_flow_namer
+from tracer.services.analysis.labelling.factory import build_flow_reviewer
+from tracer.services.analysis.significance.heuristic_decision_judge import HeuristicDecisionJudge
+from tracer.services.analysis.labelling.heuristics import HeuristicFlowNamer
+from tracer.services.analysis.labelling.heuristics import HeuristicFlowReviewer
+from tracer.services.analysis.significance.site_classifier import SiteClassifier
+from tracer.services.analysis.effects.factory import build_effect_detector
+from tracer.services.analysis.stitch.factory import build_flow_stitcher
+from tracer.services.analysis.budget.factory import build_visibility_budgeter
+from tracer.services.analysis.indexing.factory import build_project_indexer
+from render.placement.flow_page_placer_factory import build_flow_page_placer
 
 from chrome_locator import ChromeLocator
 from dev_server_screenshotter import DevServerScreenshotter

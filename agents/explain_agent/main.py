@@ -1,9 +1,8 @@
 import logging
 from contextlib import asynccontextmanager
 
+from explain.routers.explain import router as explain_router
 from fastapi import FastAPI
-
-from routers.explain import router as explain_router
 
 logging.basicConfig(
     level=logging.INFO,

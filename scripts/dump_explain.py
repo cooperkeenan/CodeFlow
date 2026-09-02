@@ -11,14 +11,7 @@ sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
 from render_repo import load_dotenv, read_python_sources
 from screenshot_flow import _build_view
 
-import services
-import models
-import prompts
-
-services.__path__.append(str(REPO_ROOT / "api" / "services"))
-services.__path__.append(str(REPO_ROOT / "agents" / "explain_agent" / "services"))
-models.__path__.append(str(REPO_ROOT / "agents" / "explain_agent" / "models"))
-prompts.__path__.append(str(REPO_ROOT / "agents" / "explain_agent" / "prompts"))
+sys.path.insert(0, str(REPO_ROOT / "api"))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "explain_agent"))
 
 from symbol_explain_builder import build_payload, candidates, make_resolver
@@ -55,8 +48,8 @@ def _print_summary(node_id: str, payload: dict, summary: dict) -> None:
 def _explainer(use_llm: bool):
     if not use_llm:
         return None
-    from core.config import get_settings
-    from services.explanation.symbol_explainer_factory import build_symbol_explainer
+    from explain.core.config import get_settings
+    from explain.services.explanation.symbol_explainer_factory import build_symbol_explainer
 
     key = get_settings().ANTHROPIC_API_KEY
     if not key:

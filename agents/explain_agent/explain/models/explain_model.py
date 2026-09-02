@@ -1,0 +1,46 @@
+from typing import Literal
+
+from explain.models.step_input import StepInput
+from explain.models.symbol_slice import SymbolSlice
+from pydantic import BaseModel
+
+
+class ExplainRequest(BaseModel):
+    node_id: str
+    node_label: str = ""
+    service: str = ""
+    module: str = ""
+    cls: str = ""
+    focus_fqn: str
+    symbols: list[SymbolSlice] = []
+    helpers: list[SymbolSlice] = []
+    steps: list[StepInput] = []
+
+
+class MethodExplanation(BaseModel):
+    name: str
+    fqn: str
+    summary: str
+
+
+class HelperExplanation(BaseModel):
+    name: str
+    fqn: str
+    summary: str
+
+
+class NodeExplanation(BaseModel):
+    node_id: str
+    focus_fqn: str
+    service: str
+    primary_kind: Literal["class", "function"]
+    primary_name: str
+    primary_summary: str
+    methods: list[MethodExplanation] = []
+    helpers: list[HelperExplanation] = []
+    step_labels: dict[str, str] = {}
+    generated: bool = False
+
+
+class ExplainResponse(BaseModel):
+    explanation: NodeExplanation

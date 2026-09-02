@@ -7,7 +7,7 @@ _CHAPTER_META: tuple[tuple[str, str, str], ...] = (
         "gateway",
         "Taking the request",
         "One HTTP entry point decides whether this repo has been seen before, "
-        "then fans the work out to four services.",
+        "then fans the work out to three services.",
     ),
     (
         "static",

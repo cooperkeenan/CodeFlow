@@ -2,7 +2,7 @@ from tour.tour_beat import Arm, Beat
 from tour.tour_builders import ref
 
 LANE = "tracer"
-BASE = "agents/tracer_agent/services/analysis"
+BASE = "agents/tracer_agent/tracer/services/analysis"
 
 
 def beats() -> list[Beat]:
@@ -15,7 +15,7 @@ def beats() -> list[Beat]:
             one_liner="Projection onto entry/step/decision/effect/outcome.",
             detail="This is where the diagram's vocabulary is fixed. Straight-line step chains "
                    "are merged here so the picture is not padded with pass-through boxes.",
-            refs=(ref(f"{BASE}/flow_condenser.py", 34),), backing=("FlowCondenser.condense",),
+            refs=(ref(f"{BASE}/condense/flow_condenser.py", 34),), backing=("FlowCondenser.condense",),
         ),
         Beat(
             "tr:cond:arm", "decision", LANE, "Does this arm reach further code?",
@@ -25,14 +25,14 @@ def beats() -> list[Beat]:
             one_liner="Arms that terminate get a named outcome.",
             detail="OutcomeLabeler names the dead end Returns, Raises or Continues - or uses a "
                    "label the judge supplied.",
-            refs=(ref(f"{BASE}/flow_condenser.py", 34),),
+            refs=(ref(f"{BASE}/condense/flow_condenser.py", 34),),
             arms=(
                 Arm("tr:cond:more", "Continue the flow", "reaches code",
                     "Points at the next real node.", terminal=False,
-                    refs=(ref(f"{BASE}/flow_condenser.py", 34),)),
+                    refs=(ref(f"{BASE}/condense/flow_condenser.py", 34),)),
                 Arm("tr:cond:end", "Returns / Raises / Continues", "terminates",
                     "An honest ending, not a loose edge.", terminal=True,
-                    refs=(ref("agents/tracer_agent/models/arm.py", 6),)),
+                    refs=(ref("agents/tracer_agent/tracer/models/call_records.py", 28),)),
             ),
         ),
         Beat(
@@ -42,7 +42,7 @@ def beats() -> list[Beat]:
             "This is the stage that turns four separate graphs into one system.",
             one_liner="Outbound calls matched to route entries.",
             detail="Without this, a microservice repo renders as several disconnected islands.",
-            refs=(ref(f"{BASE}/flow_stitcher.py", 11),), backing=("FlowStitcher.stitch",),
+            refs=(ref(f"{BASE}/stitch/flow_stitcher.py", 11),), backing=("FlowStitcher.stitch",),
         ),
         Beat(
             "tr:stitch:url", "decision", LANE, "Does the URL match a known route?",
@@ -52,14 +52,14 @@ def beats() -> list[Beat]:
             one_liner="URL matching first, the model only for leftovers.",
             detail="The same discipline as everywhere else: the cheap deterministic path runs "
                    "first, and the LLM is the fallback rather than the default.",
-            refs=(ref(f"{BASE}/http_stitch_detector.py", 1),),
+            refs=(ref(f"{BASE}/stitch/http_stitch_detector.py", 1),),
             arms=(
                 Arm("tr:stitch:http", "HttpStitchDetector", "matched",
                     "Deterministic URL match.", terminal=False,
-                    refs=(ref(f"{BASE}/http_stitch_detector.py", 1),)),
+                    refs=(ref(f"{BASE}/stitch/http_stitch_detector.py", 1),)),
                 Arm("tr:stitch:llm", "LlmStitchDetector", "unresolved",
                     "Judged, and drawn as an inferred edge.", terminal=False,
-                    refs=(ref(f"{BASE}/llm_stitch_detector.py", 1),)),
+                    refs=(ref(f"{BASE}/stitch/llm_stitch_detector.py", 1),)),
             ),
         ),
         Beat(
@@ -70,7 +70,7 @@ def beats() -> list[Beat]:
             one_liner="Nothing is deleted - detail is demoted.",
             detail="A node's hidden_children is exactly what its + reveals. A + that opens 50 "
                    "nodes at once is treated as a bug, not as disclosure.",
-            refs=(ref(f"{BASE}/visibility_budgeter.py", 55),),
+            refs=(ref(f"{BASE}/budget/visibility_budgeter.py", 55),),
             backing=("VisibilityBudgeter.budget",),
             facts=(("top-level budget", "15 nodes"), ("deleted", "nothing")),
         ),
@@ -82,14 +82,14 @@ def beats() -> list[Beat]:
             one_liner="Over budget means demoted, not dropped.",
             detail="This is the difference between a summary and a lie. Every node in the "
                    "original graph is still reachable from the rendered page.",
-            refs=(ref(f"{BASE}/visibility_budgeter.py", 55),),
+            refs=(ref(f"{BASE}/budget/visibility_budgeter.py", 55),),
             arms=(
                 Arm("tr:budget:demote", "Demote, never delete", "over budget",
                     "Moves behind a + on its parent.", terminal=False,
-                    refs=(ref(f"{BASE}/containment_indexer.py", 1),)),
+                    refs=(ref(f"{BASE}/budget/containment_indexer.py", 1),)),
                 Arm("tr:budget:keep", "Keep on the skeleton", "fits",
                     "High-ranked nodes stay visible.", terminal=False,
-                    refs=(ref(f"{BASE}/visibility_budgeter.py", 55),)),
+                    refs=(ref(f"{BASE}/budget/visibility_budgeter.py", 55),)),
             ),
         ),
         Beat(
@@ -101,14 +101,14 @@ def beats() -> list[Beat]:
             detail="Asserting single-entry as an invariant crashed the pipeline on CodeFlow's "
                    "own repo: a shared memoized node can legitimately be both a predecessor of "
                    "a body member and a containment ancestor of it.",
-            refs=(ref(f"{BASE}/containment_indexer.py", 1),),
+            refs=(ref(f"{BASE}/budget/containment_indexer.py", 1),),
             arms=(
                 Arm("tr:budget:flow", "flow - chain them", "single entry",
                     "One entry, sequential members.", terminal=False,
-                    refs=(ref(f"{BASE}/containment_indexer.py", 1),)),
+                    refs=(ref(f"{BASE}/budget/containment_indexer.py", 1),)),
                 Arm("tr:budget:list", "list - alternatives", "alternatives",
                     "Mutually exclusive arms.", terminal=False,
-                    refs=(ref(f"{BASE}/containment_indexer.py", 1),)),
+                    refs=(ref(f"{BASE}/budget/containment_indexer.py", 1),)),
             ),
         ),
     ]

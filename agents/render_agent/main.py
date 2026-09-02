@@ -2,8 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-
-from routers.render import router as render_router
+from render.routers.render import router as render_router
 
 logging.basicConfig(
     level=logging.INFO,

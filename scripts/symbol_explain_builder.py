@@ -1,9 +1,9 @@
-from services.symbol_context_resolver import SymbolContextResolver
-from services.explanation.heuristic_symbol_explainer import HeuristicSymbolExplainer
-from services.step_tree_labeler import StepTreeLabeler
-from models.explain_model import ExplainRequest
-from models.step_input import StepInput
-from models.symbol_slice import SymbolSlice
+from gateway.services.symbol_context_resolver import SymbolContextResolver
+from explain.services.explanation.heuristic_symbol_explainer import HeuristicSymbolExplainer
+from gateway.services.step_tree_labeler import StepTreeLabeler
+from explain.models.explain_model import ExplainRequest
+from explain.models.step_input import StepInput
+from explain.models.symbol_slice import SymbolSlice
 
 
 def make_resolver() -> SymbolContextResolver:
