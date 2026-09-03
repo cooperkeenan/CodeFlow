@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 _SESSION_KIND = "session"
 _SESSION_PREFIX = "cfs_"
+_LOGIN_KINDS = frozenset({"session", "api"})
 
 
 class AuthService:
@@ -62,6 +63,8 @@ class AuthService:
     async def resolve(self, raw_token: str) -> AuthUser | None:
         record = await self._tokens.get_by_hash(self._hasher.hash(raw_token))
         if record is None or record["revoked_at"] is not None:
+            return None
+        if record["kind"] not in _LOGIN_KINDS:
             return None
         user = await self._users.get(record["user_id"])
         if user is None:

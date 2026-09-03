@@ -21,9 +21,15 @@ RETURNING id
 """
 
 _SELECT_BY_HASH = """
-SELECT id, user_id, kind, name, token_prefix, revoked_at
+SELECT id, user_id, kind, name, token_prefix, revoked_at, created_at
 FROM access_tokens
 WHERE token_hash = %s
+"""
+
+_REVOKE_KIND = """
+UPDATE access_tokens
+SET revoked_at = now()
+WHERE user_id = %s AND kind = %s AND revoked_at IS NULL
 """
 
 _LIST = """
@@ -90,6 +96,7 @@ class NeonAccessTokenStore:
             "name": row[3],
             "token_prefix": row[4],
             "revoked_at": row[5],
+            "created_at": row[6],
         }
 
     async def list_for_user(self, user_id: int, kind: str) -> list[dict]:
@@ -114,6 +121,11 @@ class NeonAccessTokenStore:
         async with pool.connection() as conn:
             cursor = await conn.execute(_REVOKE, (token_id, user_id))
         return cursor.rowcount > 0
+
+    async def revoke_kind(self, user_id: int, kind: str) -> None:
+        pool = await self._get_pool()
+        async with pool.connection() as conn:
+            await conn.execute(_REVOKE_KIND, (user_id, kind))
 
     async def touch_last_used(self, token_id: int) -> None:
         pool = await self._get_pool()

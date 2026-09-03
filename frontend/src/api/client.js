@@ -13,7 +13,9 @@ export async function request(path, options = {}) {
   })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`${res.status}: ${text}`)
+    const error = new Error(`${res.status}: ${text}`)
+    error.status = res.status
+    throw error
   }
   if (res.status === 204) return null
   return res.json()

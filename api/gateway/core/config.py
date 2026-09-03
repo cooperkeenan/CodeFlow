@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     LOCAL_REPO_PATH: str = ""
     DATABASE_URL: str = ""
     CI_MAX_UPLOAD_MB: int = 50
+    APP_BASE_URL: str = "http://localhost:5173"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "no-reply@codeflow.local"
 
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),

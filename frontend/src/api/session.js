@@ -20,6 +20,10 @@ export const saveSession = (token, user) => {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
 }
 
+export const saveUser = (user) => {
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))
+}
+
 export const clearSession = () => {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)

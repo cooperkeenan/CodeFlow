@@ -80,6 +80,11 @@ class NeonUserStore:
         async with pool.connection() as conn:
             await conn.execute(q.SET_GITHUB_TOKEN, (token, user_id))
 
+    async def set_password(self, user_id: int, password_hash: str) -> None:
+        pool = await self._get_pool()
+        async with pool.connection() as conn:
+            await conn.execute(q.SET_PASSWORD, (password_hash, user_id))
+
     async def get_github_token(self, user_id: int) -> str | None:
         pool = await self._get_pool()
         async with pool.connection() as conn:

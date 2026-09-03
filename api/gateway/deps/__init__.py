@@ -1,9 +1,11 @@
 from gateway.deps.auth import (
     get_auth_service,
     get_current_user,
+    get_email_sender,
     get_optional_user,
     get_password_auth_service,
     get_password_hasher,
+    get_password_reset_service,
     get_token_hasher,
 )
 from gateway.deps.clients import (
@@ -55,8 +57,10 @@ __all__ = [
     "get_local_ci_service",
     "get_node_explain_service",
     "get_optional_user",
+    "get_email_sender",
     "get_password_auth_service",
     "get_password_hasher",
+    "get_password_reset_service",
     "get_profiler_client",
     "get_progress_tracker",
     "get_render_client",

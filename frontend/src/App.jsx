@@ -3,13 +3,15 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useAnalysis } from './hooks/useAnalysis'
-import { getSessionToken, saveSession, saveGithubToken } from './api/session'
+import { getSessionToken, saveSession, saveGithubToken, saveUser } from './api/session'
 import { exchangeCode, linkGithub } from './api/github'
 import { RepoMapsProvider } from './hooks/RepoMapsContext'
 import { ExplanationCacheProvider } from './hooks/ExplanationCacheContext'
 import RequireAuth from './components/RequireAuth'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import DashboardPage from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import FlowPage from './pages/FlowPage'
@@ -34,7 +36,9 @@ export default function App() {
     if (!code) return
     const finish = (path) => { window.history.replaceState({}, '', '/'); setOauthPending(false); navigate(path) }
     if (getSessionToken()) {
-      linkGithub(code).then(() => finish('/settings')).catch(() => finish('/settings'))
+      linkGithub(code)
+        .then(user => { saveUser(user); finish('/settings') })
+        .catch(() => finish('/settings'))
     } else {
       exchangeCode(code)
         .then(d => { saveSession(d.session_token, d.user); saveGithubToken(d.github_access_token); finish('/') })
@@ -58,6 +62,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/"
             element={

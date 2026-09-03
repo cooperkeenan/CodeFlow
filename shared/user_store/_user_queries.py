@@ -20,6 +20,8 @@ MIGRATIONS = (
 
 SET_GITHUB_TOKEN = "UPDATE users SET github_access_token=%s, updated_at=now() WHERE id=%s"
 
+SET_PASSWORD = "UPDATE users SET password_hash=%s, updated_at=now() WHERE id=%s"
+
 SELECT_GITHUB_TOKEN = "SELECT github_access_token FROM users WHERE id=%s"
 
 UPSERT = """
