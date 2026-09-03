@@ -9,7 +9,7 @@ sys.path.insert(0, str(REPO_ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
 
 from render_repo import load_dotenv, read_python_sources
-from save_command import parse_save_flag, save_to_account
+from repo_map_saving.save_command import parse_save_flag, save_to_account
 from tracer.services.analysis.flow_pipeline import FlowPipeline
 from tracer.services.analysis.significance.factory import build_decision_judge
 from tracer.services.analysis.labelling.factory import build_flow_namer
@@ -24,8 +24,8 @@ from tracer.services.analysis.budget.factory import build_visibility_budgeter
 from tracer.services.analysis.indexing.factory import build_project_indexer
 from render.placement.flow_page_placer_factory import build_flow_page_placer
 
-from chrome_locator import ChromeLocator
-from dev_server_screenshotter import DevServerScreenshotter
+from browser_driver.chrome_locator import ChromeLocator
+from browser_driver.dev_server_screenshotter import DevServerScreenshotter
 
 FIXTURE_PATH = REPO_ROOT / "frontend" / "public" / "fixture" / "rendered_view.json"
 FLOW_URL = "http://localhost:5173/flow-fixture"

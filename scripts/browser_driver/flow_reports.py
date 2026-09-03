@@ -1,4 +1,4 @@
-from flow_session import FlowSession
+from browser_driver.flow_session import FlowSession
 
 
 def print_state(session: FlowSession) -> None:

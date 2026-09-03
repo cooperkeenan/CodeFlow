@@ -5,7 +5,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from tour_session import TourSession
+from browser_driver.tour_session import TourSession
 
 DEV_PORT = 5173
 TOUR_URL = f"http://localhost:{DEV_PORT}/tour"

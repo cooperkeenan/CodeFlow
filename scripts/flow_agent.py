@@ -7,8 +7,8 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
 
-from flow_reports import print_flowchart, print_isolated, print_state
-from flow_session import FlowSession
+from browser_driver.flow_reports import print_flowchart, print_isolated, print_state
+from browser_driver.flow_session import FlowSession
 from render_repo import load_dotenv
 from screenshot_flow import DEV_PORT, FIXTURE_PATH, FLOW_URL, _build_view, _write_outputs
 

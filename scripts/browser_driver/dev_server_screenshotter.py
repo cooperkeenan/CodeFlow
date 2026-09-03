@@ -2,7 +2,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from dev_server import DevServer
+from browser_driver.dev_server import DevServer
 
 
 class DevServerScreenshotter:

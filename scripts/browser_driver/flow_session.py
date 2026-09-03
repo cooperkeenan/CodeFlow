@@ -2,8 +2,8 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from dev_server import DevServer
-from flow_probe_js import READ_DIMMED, READ_FLOWCHART, READ_ISOLATED, READ_STATE
+from browser_driver.dev_server import DevServer
+from browser_driver.flow_probe_js import READ_DIMMED, READ_FLOWCHART, READ_ISOLATED, READ_STATE
 
 
 class FlowSession:

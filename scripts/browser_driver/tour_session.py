@@ -1,4 +1,4 @@
-from flow_session import FlowSession
+from browser_driver.flow_session import FlowSession
 
 _DOT_SELECTOR = '[title="step {index}"]'
 
