@@ -1,6 +1,6 @@
 from tracer.models.pillar_scores import PillarScores
 from tracer.services.analysis.budget.arm_folder import ArmFolder
-from tracer.services.analysis.budget.budget_invariants import BudgetInvariantChecker
+from tracer.services.analysis.budget.containment_invariants import ContainmentInvariants
 from tracer.services.analysis.budget.budget_recondenser import BudgetRecondenser
 from tracer.services.analysis.budget.budget_work_graph import BudgetWorkGraph
 from tracer.services.analysis.budget.containment_indexer import ContainmentIndexer
@@ -32,7 +32,7 @@ class VisibilityBudgeter:
         chunker: RevealChunker,
         seeds: SeedAnchorFolder,
         gateways: PillarGatewaySelector,
-        checker: BudgetInvariantChecker,
+        checker: ContainmentInvariants,
         root_anchor: RepoRootAnchor,
         indexer: ContainmentIndexer,
         sequencer: SequenceChainer,
@@ -63,7 +63,7 @@ class VisibilityBudgeter:
         self._root_anchor.anchor(work)
         self._sequencer.link(work)
         self._indexer.index(work)
-        self._checker.enforce_containment(work)
+        self._checker.enforce_structure(work)
         self._seeds.fold(work, pillars)
         gateway_ids = self._gateways.select(work, pillars, components)
         budgets = self._apportioner.apportion(work.lanes)
@@ -89,8 +89,8 @@ class VisibilityBudgeter:
         for node_id, children in sorted(chunked.items()):
             work.nodes[node_id].hidden_children = children
         self._indexer.relevel(work, skeleton_ids)
-        self._checker.enforce_containment(work)
-        self._checker.enforce(work)
+        self._checker.enforce_structure(work)
+        self._checker.enforce_bodies(work)
         result = work.to_flow_graph()
         result.meta["skeleton_nodes"] = sum(1 for n in result.nodes if n.level == 0)
         result.meta["revealed_nodes"] = sum(1 for n in result.nodes if n.level >= 1)

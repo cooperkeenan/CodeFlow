@@ -1,7 +1,7 @@
 from tracer.models.sites import FlowEntry
 from tracer.services.analysis.condense.anchor_resolver import AnchorResolver, entry_fqns
-from tracer.services.analysis.condense.drafts import _NodeDraft
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
+from tracer.services.analysis.graph_ops import ref_sort_key
 
 
 class IslandAnchor:
@@ -70,10 +70,4 @@ class IslandAnchor:
                 has_internal_in.add(edge.target)
         candidates = [node_id for node_id in component if node_id not in has_internal_in]
         pool = candidates or component
-        return min(pool, key=lambda node_id: self._sort_key(nodes, node_id))
-
-    def _sort_key(self, nodes: dict[str, _NodeDraft], node_id: str) -> tuple[str, int, str]:
-        refs = nodes[node_id].refs
-        if refs:
-            return (refs[0].file, refs[0].line, node_id)
-        return ("", 0, node_id)
+        return min(pool, key=lambda node_id: ref_sort_key(nodes, node_id))

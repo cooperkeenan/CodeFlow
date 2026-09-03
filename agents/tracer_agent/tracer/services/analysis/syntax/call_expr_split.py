@@ -28,3 +28,12 @@ def truncated_source(node: ast.expr) -> str:
     except Exception:
         source = "<unparseable>"
     return source[:120]
+
+
+def call_name(call: ast.Call) -> str | None:
+    func = call.func
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return None

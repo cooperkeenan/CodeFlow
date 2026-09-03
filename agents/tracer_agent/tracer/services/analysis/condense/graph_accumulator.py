@@ -1,5 +1,5 @@
-from tracer.services.analysis.condense.container_cycle_guard import ContainerCycleGuard
 from tracer.services.analysis.condense.drafts import _EdgeDraft, _NodeDraft
+from tracer.services.analysis.graph_ops import is_descendant
 
 from shared.models.flow_graph import (
     Badge,
@@ -13,12 +13,11 @@ from shared.models.flow_graph import (
 
 
 class GraphAccumulator:
-    def __init__(self, cycle_guard: ContainerCycleGuard | None = None) -> None:
+    def __init__(self) -> None:
         self._nodes: dict[str, _NodeDraft] = {}
         self._edges: dict[tuple[str, str, str], _EdgeDraft] = {}
         self._call_boundaries: list[tuple[str, str, str]] = []
         self._effect_boundaries: list[tuple[str, str, str]] = []
-        self._cycle_guard = cycle_guard or ContainerCycleGuard()
 
     def upsert(
         self,
@@ -70,7 +69,7 @@ class GraphAccumulator:
             return
         if container in draft.containers:
             return
-        if self._cycle_guard.creates_cycle(self._nodes, node_id, container):
+        if is_descendant(self._nodes, container, node_id):
             return
         draft.containers.append(container)
 

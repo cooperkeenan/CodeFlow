@@ -8,6 +8,7 @@ from tracer.services.analysis.condense.chain_builder import ChainBuilder
 from tracer.services.analysis.condense.drafts import CollectedEvents
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
 from tracer.services.analysis.condense.labels import DecisionLabeler, OutcomeLabeler
+from tracer.services.analysis.graph_ops import dedup
 
 _Path = tuple[tuple[str, int], ...]
 _BuildRegion = Callable[[str, CollectedEvents, _Path, str], tuple[str | None, list[str]]]
@@ -54,7 +55,7 @@ class DecisionProjector:
             else:
                 self._acc.connect(node_id, ahead, "arm", arm_label, site.id)
                 tails.extend(atails or [ahead])
-        chain.fan_out(node_id, _dedup(tails))
+        chain.fan_out(node_id, dedup(tails))
 
     def _emit_outcome(
         self,
@@ -73,10 +74,3 @@ class DecisionProjector:
             outcome_id, fqn, [f"{s}#{i}" for s, i in prefix] + [f"{site.id}#{arm.index}"]
         )
         self._acc.connect(node_id, outcome_id, "arm", label, site.id)
-
-
-def _dedup(values: list[str]) -> list[str]:
-    seen: dict[str, None] = {}
-    for value in values:
-        seen.setdefault(value, None)
-    return list(seen)

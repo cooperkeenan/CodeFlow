@@ -51,6 +51,3 @@ def noise_rule(fqn: str, node: ast.Call) -> str | None:
         return "builtin"
     return None
 
-
-def is_noise(fqn: str, node: ast.Call) -> bool:
-    return noise_rule(fqn, node) is not None

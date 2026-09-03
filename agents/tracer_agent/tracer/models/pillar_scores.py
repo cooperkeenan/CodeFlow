@@ -11,10 +11,3 @@ class PillarScores:
         if component is None:
             return 0.0
         return self.hub.get(component, 0.0)
-
-    def role(self, component: str | None) -> str:
-        if component is None:
-            return "authority"
-        if self.hub.get(component, 0.0) >= self.authority.get(component, 0.0):
-            return "hub"
-        return "authority"

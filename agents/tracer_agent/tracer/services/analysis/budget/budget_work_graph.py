@@ -52,9 +52,6 @@ class BudgetWorkGraph:
         for key in [k for k in self.edges if k[0] == node_id or k[1] == node_id]:
             del self.edges[key]
 
-    def lane_node_count(self, lane_id: str) -> int:
-        return sum(1 for n in self.nodes.values() if n.lane == lane_id)
-
     def entry_ids(self) -> list[str]:
         return sorted(n.id for n in self.nodes.values() if n.kind == "entry")
 
@@ -67,21 +64,16 @@ class BudgetWorkGraph:
         return adj
 
     def reachable(self, exclude: frozenset[str] = frozenset()) -> set[str]:
-        adj = self._adjacency(exclude)
-        seen: set[str] = set()
-        stack = [nid for nid in self.entry_ids() if nid not in exclude]
-        while stack:
-            node_id = stack.pop()
-            if node_id in seen:
-                continue
-            seen.add(node_id)
-            stack.extend(adj.get(node_id, ()))
-        return seen
+        starts = [nid for nid in self.entry_ids() if nid not in exclude]
+        return self._walk(starts, exclude)
 
     def reachable_from(self, start: str) -> set[str]:
-        adj = self._adjacency(frozenset())
+        return self._walk([start], frozenset())
+
+    def _walk(self, starts: list[str], exclude: frozenset[str]) -> set[str]:
+        adj = self._adjacency(exclude)
         seen: set[str] = set()
-        stack = [start]
+        stack = list(starts)
         while stack:
             node_id = stack.pop()
             if node_id in seen:

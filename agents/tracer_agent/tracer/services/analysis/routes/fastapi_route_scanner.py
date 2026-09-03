@@ -6,6 +6,7 @@ from tracer.models.sites import DispatchSite
 from tracer.services.analysis.contracts import DispatchDetectionContext
 from tracer.services.analysis.resolve.indexes import CallSiteCallerIndex
 from tracer.services.analysis.routes.route_prefix_index import RoutePrefixIndex
+from tracer.services.analysis.syntax.call_expr_split import call_name
 from tracer.services.analysis.syntax.terminal_classifier import classify_terminal
 
 from shared.models.flow_graph import SourceRef
@@ -41,17 +42,9 @@ class FastApiRouteScanner:
                 continue
             if len(stmt.targets) != 1 or not isinstance(stmt.targets[0], ast.Name):
                 continue
-            if self._factory_name(stmt.value) in _FACTORY_NAMES:
+            if call_name(stmt.value) in _FACTORY_NAMES:
                 found.append((stmt.targets[0].id, stmt.lineno))
         return found
-
-    def _factory_name(self, call: ast.Call) -> str | None:
-        func = call.func
-        if isinstance(func, ast.Name):
-            return func.id
-        if isinstance(func, ast.Attribute):
-            return func.attr
-        return None
 
     def _arms(
         self,

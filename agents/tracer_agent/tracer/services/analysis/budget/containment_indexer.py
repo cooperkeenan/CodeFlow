@@ -1,11 +1,12 @@
 from tracer.services.analysis.budget.budget_work_graph import BudgetWorkGraph
+from tracer.services.analysis.graph_ops import bodies_by_container, ref_sort_key
 
 from shared.models.flow_graph import FlowNode
 
 
 class ContainmentIndexer:
     def index(self, graph: BudgetWorkGraph, skeleton_ids: frozenset[str] = frozenset()) -> None:
-        bodies = self._bodies(graph)
+        bodies = bodies_by_container(graph.nodes)
         self._assign_levels(graph, bodies, skeleton_ids)
         for owner in sorted(graph.nodes):
             self._assign_shape(graph, graph.nodes[owner], bodies.get(owner, []))
@@ -13,14 +14,7 @@ class ContainmentIndexer:
             self._assign_kind(graph, owner, bodies.get(owner, []))
 
     def relevel(self, graph: BudgetWorkGraph, skeleton_ids: frozenset[str] = frozenset()) -> None:
-        self._assign_levels(graph, self._bodies(graph), skeleton_ids)
-
-    def _bodies(self, graph: BudgetWorkGraph) -> dict[str, list[str]]:
-        grouped: dict[str, list[str]] = {}
-        for node_id in sorted(graph.nodes):
-            for container in graph.nodes[node_id].containers:
-                grouped.setdefault(container, []).append(node_id)
-        return grouped
+        self._assign_levels(graph, bodies_by_container(graph.nodes), skeleton_ids)
 
     def _assign_levels(
         self,
@@ -118,18 +112,12 @@ class ContainmentIndexer:
         ready = [m for m in members if remaining[m] == 0]
         order: list[str] = []
         while ready:
-            ready.sort(key=lambda m: self._sort_key(graph, m))
+            ready.sort(key=lambda m: ref_sort_key(graph.nodes, m))
             current = ready.pop(0)
             order.append(current)
             for target in adjacency[current]:
                 remaining[target] -= 1
                 if remaining[target] == 0:
                     ready.append(target)
-        leftover = sorted((m for m in members if m not in order), key=lambda m: self._sort_key(graph, m))
+        leftover = sorted((m for m in members if m not in order), key=lambda m: ref_sort_key(graph.nodes, m))
         return order + leftover
-
-    def _sort_key(self, graph: BudgetWorkGraph, node_id: str) -> tuple[str, int, str]:
-        refs = graph.nodes[node_id].refs
-        if refs:
-            return (refs[0].file, refs[0].line, node_id)
-        return ("", 0, node_id)

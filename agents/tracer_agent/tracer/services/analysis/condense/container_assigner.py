@@ -1,5 +1,6 @@
 from tracer.services.analysis.condense.drafts import _NodeDraft
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
+from tracer.services.analysis.graph_ops import is_descendant, ref_sort_key
 
 
 class ContainerAssigner:
@@ -22,17 +23,11 @@ class ContainerAssigner:
     def _assign_body(
         self, acc: GraphAccumulator, nodes: dict[str, _NodeDraft], members: list[str]
     ) -> str:
-        head = min(members, key=lambda m: self._sort_key(nodes, m))
+        head = min(members, key=lambda m: ref_sort_key(nodes, m))
         for member in members:
             if member != head:
                 acc.add_container(member, head)
         return head
-
-    def _sort_key(self, nodes: dict[str, _NodeDraft], node_id: str) -> tuple[str, int, str]:
-        refs = nodes[node_id].refs
-        if refs:
-            return (refs[0].file, refs[0].line, node_id)
-        return ("", 0, node_id)
 
     def _link_call_boundaries(self, acc: GraphAccumulator, heads: dict[str, str]) -> None:
         nodes = acc.nodes()
@@ -63,7 +58,7 @@ class ContainerAssigner:
         while frontier:
             frontier.sort()
             for candidate in frontier:
-                if not self._is_descendant(nodes, candidate, target):
+                if not is_descendant(nodes, candidate, target):
                     return candidate
             next_frontier: list[str] = []
             for candidate in frontier:
@@ -73,20 +68,3 @@ class ContainerAssigner:
                         next_frontier.append(container)
             frontier = next_frontier
         return None
-
-    def _is_descendant(
-        self, nodes: dict[str, _NodeDraft], node_id: str, ancestor: str
-    ) -> bool:
-        seen = {node_id}
-        frontier = list(nodes[node_id].containers)
-        while frontier:
-            next_frontier: list[str] = []
-            for candidate in frontier:
-                if candidate == ancestor:
-                    return True
-                if candidate in seen:
-                    continue
-                seen.add(candidate)
-                next_frontier.extend(nodes[candidate].containers)
-            frontier = next_frontier
-        return False

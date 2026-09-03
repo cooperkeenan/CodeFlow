@@ -1,5 +1,7 @@
 import ast
 
+from tracer.services.analysis.syntax.call_expr_split import call_name
+
 _STATUS_BY_CLASS = {
     "HttpResponseForbidden": 403,
     "HttpResponseNotFound": 404,
@@ -13,15 +15,6 @@ _STATUS_BY_CLASS = {
 _STATUS_KWARG_CLASSES = frozenset({"HttpResponse", "Response", "JsonResponse"})
 
 
-def _callee_name(node: ast.Call) -> str | None:
-    func = node.func
-    if isinstance(func, ast.Name):
-        return func.id
-    if isinstance(func, ast.Attribute):
-        return func.attr
-    return None
-
-
 def _status_kwarg(node: ast.Call) -> int | None:
     for keyword in node.keywords:
         if keyword.arg != "status":
@@ -33,7 +26,7 @@ def _status_kwarg(node: ast.Call) -> int | None:
 
 
 def status_call_label(node: ast.Call) -> str | None:
-    name = _callee_name(node)
+    name = call_name(node)
     if name is None:
         return None
     if name in _STATUS_BY_CLASS:

@@ -14,7 +14,7 @@ from tracer.services.analysis.resolve.dependency_param_mapper import (
     DependencyParamMapper,
 )
 from tracer.services.analysis.resolve.direct_attr_type_index import DirectAttrTypeIndex
-from tracer.services.analysis.resolve.indexes import TierCounter, UniqueNameIndex
+from tracer.services.analysis.resolve.indexes import UniqueNameIndex
 from tracer.services.analysis.resolve.local_binding_collector import (
     LocalBindingCollector,
 )
@@ -42,7 +42,6 @@ class CallResolver:
         self._attribute_path = attribute_path
         self._unique_names = UniqueNameIndex(index)
         self._local_binder = LocalBindingCollector(attribute_path, index)
-        self.tier_counter = TierCounter()
 
     def resolve_project(self) -> tuple[CallSite, ...]:
         sites: list[CallSite] = []
@@ -58,7 +57,7 @@ class CallResolver:
             local_bindings.update(self._local_binder.collect(record.body, scope, self_types))
             resolver = CallTargetResolver(
                 record, scope, local_bindings, self._attribute_path, self._self_resolver,
-                self._unique_names, self.tier_counter, self._index,
+                self._unique_names, self._index,
             )
             visitor = CallSiteVisitor(record.fqn, resolver, self._index)
             visitor.visit(record.body)

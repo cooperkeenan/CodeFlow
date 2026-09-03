@@ -1,5 +1,4 @@
 from tracer.services.analysis.budget.arm_folder import ArmFolder
-from tracer.services.analysis.budget.budget_invariants import BudgetInvariantChecker
 from tracer.services.analysis.budget.budget_recondenser import BudgetRecondenser
 from tracer.services.analysis.budget.container_repointer import ContainerRepointer
 from tracer.services.analysis.budget.containment_indexer import ContainmentIndexer
@@ -34,7 +33,7 @@ def build_visibility_budgeter(config: BudgetConfig | None = None) -> VisibilityB
         RevealChunker(cfg.max_reveal_per_node),
         SeedAnchorFolder(cfg.seed_anchors_per_lane),
         gateways,
-        BudgetInvariantChecker(ContainmentInvariants()),
+        ContainmentInvariants(),
         RepoRootAnchor(),
         ContainmentIndexer(),
         SequenceChainer(),

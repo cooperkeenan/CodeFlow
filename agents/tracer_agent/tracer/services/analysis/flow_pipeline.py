@@ -2,7 +2,6 @@ import logging
 from collections.abc import Mapping
 
 from tracer.models.naming import ReviewFinding
-from tracer.models.pillar_scores import PillarScores
 from tracer.models.verdicts import SignificanceResult
 from tracer.services.analysis.budget.visibility_budgeter import VisibilityBudgeter
 from tracer.services.analysis.condense.factory import (
@@ -59,15 +58,11 @@ class FlowPipeline:
         self._namer = namer
         self._reviewer = reviewer
         self._last_significance: SignificanceResult | None = None
-        self._last_pillars: PillarScores | None = None
         self._last_pre_review: FlowGraph | None = None
         self._last_review: list[ReviewFinding] | None = None
 
     def last_significance(self) -> SignificanceResult | None:
         return self._last_significance
-
-    def last_pillars(self) -> PillarScores | None:
-        return self._last_pillars
 
     def last_pre_review(self) -> FlowGraph | None:
         return self._last_pre_review
@@ -96,7 +91,6 @@ class FlowPipeline:
         stitched = self._stitcher.stitch(graph, effects, entries)
         components = ComponentIndex(index)
         pillars = PillarRanker(components, self._config).rank(callsites)
-        self._last_pillars = pillars
         budgeted = self._budgeter.budget(stitched, pillars, components)
         named = budgeted if self._namer is None else self._namer.name(budgeted)
         self._last_pre_review = named

@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import defaultdict
 from collections.abc import Mapping
 
 from tracer.models.call_records import CallSite
@@ -19,25 +19,6 @@ class ComponentIndex:
 
     def is_project_target(self, fqn: str) -> bool:
         return fqn in self._index.functions or fqn in self._index.classes
-
-
-class TierCounter:
-    def __init__(self) -> None:
-        self._counts: Counter[int] = Counter()
-        self._ext_counts: Counter[int] = Counter()
-
-    def record(self, tier: int, is_ext: bool = False) -> None:
-        self._counts[tier] += 1
-        if is_ext:
-            self._ext_counts[tier] += 1
-
-    @property
-    def counts(self) -> dict[int, int]:
-        return dict(sorted(self._counts.items()))
-
-    @property
-    def ext_counts(self) -> dict[int, int]:
-        return dict(sorted(self._ext_counts.items()))
 
 
 class CallFqnLookup:

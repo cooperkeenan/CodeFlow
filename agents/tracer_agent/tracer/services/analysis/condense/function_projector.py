@@ -9,6 +9,7 @@ from tracer.services.analysis.condense.decision_projector import DecisionProject
 from tracer.services.analysis.condense.drafts import CollectedEvents, FlowEvent
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
 from tracer.services.analysis.condense.labels import DecisionLabeler, OutcomeLabeler
+from tracer.services.analysis.graph_ops import dedup
 from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
 
 from shared.models.flow_graph import Badge, SourceRef
@@ -118,15 +119,9 @@ class FunctionProjector:
             if summary.head is not None:
                 self._acc.connect(site.id, summary.head, "parallel")
                 tails.extend(summary.tails or (summary.head,))
-        chain.fan_out(site.id, _dedup(tails))
+        chain.fan_out(site.id, dedup(tails))
 
     def _handle_decision(
         self, chain: ChainBuilder, fqn: str, events: CollectedEvents, prefix: _Path, site: DispatchSite
     ) -> None:
         self._decisions.handle(self._build_region, chain, fqn, events, prefix, site)
-
-def _dedup(values: list[str]) -> list[str]:
-    seen: dict[str, None] = {}
-    for value in values:
-        seen.setdefault(value, None)
-    return list(seen)

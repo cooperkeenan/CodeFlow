@@ -27,21 +27,20 @@ class SelfCallResolver:
         self._construction_index = construction_index
         self._direct_attrs = direct_attrs
 
-    def resolve(self, owner_class_fqn: str, chain: list[str]) -> tuple[tuple[ResolvedTarget, ...], int] | None:
+    def resolve(self, owner_class_fqn: str, chain: list[str]) -> tuple[ResolvedTarget, ...] | None:
         if not chain:
             return None
         if len(chain) == 1:
             target = self._mro.find_method(owner_class_fqn, chain[0])
-            return ((ResolvedTarget(target, "resolved"),), 3) if target else None
+            return (ResolvedTarget(target, "resolved"),) if target else None
         attr = chain[0]
         dep_type = self._mro.find_attr_type(owner_class_fqn, attr) or self._direct_attrs.get(owner_class_fqn, attr)
         if dep_type is None:
             return None
         resolved = self._attribute_path.resolve(dep_type, chain[1:])
         if resolved is not None:
-            return resolved, 4
-        fallback = self._construction_fallback(owner_class_fqn, attr, chain[1:])
-        return (fallback, 5) if fallback is not None else None
+            return resolved
+        return self._construction_fallback(owner_class_fqn, attr, chain[1:])
 
     def _construction_fallback(
         self, owner_class_fqn: str, attr: str, remaining_chain: list[str]

@@ -24,10 +24,10 @@ class SelfExprTypeResolver:
         root, chain = split_call_target(unwrapped.func)
         if root not in _SELF_ROOTS:
             return None
-        outcome = self._self_resolver.resolve(self._owner_cls, chain)
-        if outcome is None or not outcome[0]:
+        targets = self._self_resolver.resolve(self._owner_cls, chain)
+        if not targets:
             return None
-        fqn = outcome[0][0].fqn
+        fqn = targets[0].fqn
         if fqn.startswith("ext:"):
             return fqn
         record = self._index.functions.get(fqn)

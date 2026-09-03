@@ -1,6 +1,7 @@
 import ast
 
 from tracer.models.index_records import FunctionRecord
+from tracer.services.analysis.syntax.call_expr_split import call_name
 
 _URL_FUNCS = frozenset({"path", "re_path", "url"})
 
@@ -20,14 +21,6 @@ def urlpatterns_lists(record: FunctionRecord) -> tuple[ast.List, ...]:
                 found.append(stmt.value)
     return tuple(sorted(found, key=lambda node: node.lineno))
 
-
-def call_name(call: ast.Call) -> str | None:
-    func = call.func
-    if isinstance(func, ast.Name):
-        return func.id
-    if isinstance(func, ast.Attribute):
-        return func.attr
-    return None
 
 
 def include_target(call: ast.Call) -> str | None:
