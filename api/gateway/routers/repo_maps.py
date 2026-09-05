@@ -1,15 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from gateway.deps import (
     get_current_user,
+    get_endpoint_view_service,
     get_node_explain_service,
     get_repo_map_service,
 )
 from gateway.models.auth_model import AuthUser
 from gateway.models.repo_map_model import (
     NodeExplainRequest,
+    RepoHomeResponse,
     RepoMapDetail,
     RepoMapListResponse,
 )
+from gateway.services.endpoint_view_service import EndpointViewService
 from gateway.services.node_explain_service import NodeExplainService
 from gateway.services.repo_map_service import RepoMapService
 
@@ -24,12 +27,31 @@ async def list_repo_maps(
     return RepoMapListResponse(repo_maps=await service.list(user.id))
 
 
+@router.get("/{repo:path}/home", response_model=RepoHomeResponse)
+async def get_repo_home(
+    repo: str,
+    user: AuthUser = Depends(get_current_user),
+    endpoints: EndpointViewService = Depends(get_endpoint_view_service),
+) -> RepoHomeResponse:
+    home = await endpoints.home(user.id, repo)
+    if home is None:
+        raise HTTPException(status_code=404, detail="Repo map not found")
+    return home
+
+
 @router.get("/{repo:path}/flow")
 async def get_repo_flow(
     repo: str,
+    entry: str | None = None,
     user: AuthUser = Depends(get_current_user),
     service: RepoMapService = Depends(get_repo_map_service),
+    endpoints: EndpointViewService = Depends(get_endpoint_view_service),
 ) -> dict:
+    if entry:
+        view = await endpoints.view(user.id, repo, entry)
+        if view is None:
+            raise HTTPException(status_code=404, detail="Endpoint not found")
+        return view
     detail = await service.get(user.id, repo)
     if detail is None:
         raise HTTPException(status_code=404, detail="Repo map not found")

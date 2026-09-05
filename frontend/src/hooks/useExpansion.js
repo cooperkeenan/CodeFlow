@@ -50,6 +50,23 @@ export function useExpansion(view, showSecondary, initialIds) {
   const result = useMemo(() => {
     if (!view?.nodes) return { nodes: [], edges: [], expandableCount: 0 }
     const hiddenById = new Map((view.hidden ?? []).map(n => [n.id, n]))
+    const soleChildOf = id => {
+      const source = (view.nodes ?? []).find(n => n.id === id) ?? hiddenById.get(id)
+      const kids = source?.data?.hiddenChildren ?? []
+      return kids.length === 1 ? kids[0].id : null
+    }
+    const implicit = new Set()
+    const walkSole = id => {
+      let current = id
+      while (current && !implicit.has(current)) {
+        const only = soleChildOf(current)
+        if (!only) return
+        implicit.add(current)
+        current = only
+      }
+    }
+    for (const node of view.nodes) walkSole(node.id)
+    const open = new Set([...expanded, ...implicit])
     const placed = new Map()
     const order = []
     for (const node of view.nodes) {
@@ -59,9 +76,9 @@ export function useExpansion(view, showSecondary, initialIds) {
     }
     const boxes = []
     const chainPairs = new Set()
-    const ctx = { hiddenById, placed, expanded, order, boxes, chainPairs, geometry: view.node_geometry }
+    const ctx = { hiddenById, placed, expanded: open, order, boxes, chainPairs, geometry: view.node_geometry }
     const roots = order
-      .filter(n => expanded.has(n.id))
+      .filter(n => open.has(n.id))
       .sort((a, b) => a.position.y - b.position.y)
     for (const node of roots) placeChildren(node, ctx)
     const boxNodes = buildBoxes(boxes, placed, view.node_geometry)
@@ -71,8 +88,8 @@ export function useExpansion(view, showSecondary, initialIds) {
         ...node,
         data: {
           ...node.data,
-          expandable: (node.data?.hiddenChildren ?? []).length > 0,
-          expanded: expanded.has(node.id),
+          expandable: (node.data?.hiddenChildren ?? []).length > 1,
+          expanded: open.has(node.id),
           hiddenCount: (node.data?.hiddenChildren ?? []).length,
         },
       })),
@@ -107,7 +124,7 @@ export function useExpansion(view, showSecondary, initialIds) {
         scale: Math.min(placed.get(e.source)?.scale ?? 1, placed.get(e.target)?.scale ?? 1),
       }))
     const expandableCount = view.nodes.filter(
-      n => (n.data?.hiddenChildren ?? []).length > 0,
+      n => (n.data?.hiddenChildren ?? []).length > 1,
     ).length
     return { nodes, edges, expandableCount }
   }, [view, expanded, showSecondary])

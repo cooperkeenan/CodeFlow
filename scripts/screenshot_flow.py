@@ -24,6 +24,8 @@ from tracer.services.analysis.budget.factory import build_visibility_budgeter
 from tracer.services.analysis.indexing.factory import build_project_indexer
 from render.placement.flow_page_placer_factory import build_flow_page_placer
 
+from repo_home_fixture import write_repo_home_fixture
+
 from browser_driver.chrome_locator import ChromeLocator
 from browser_driver.dev_server_screenshotter import DevServerScreenshotter
 
@@ -57,10 +59,12 @@ def _write_outputs(graph, view, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     graph_json = graph.model_dump_json(indent=2)
     view_json = json.dumps(view.model_dump(), indent=2)
-    (out_dir / "flow_graph.json").write_text(graph_json)
-    (out_dir / "rendered_view.json").write_text(view_json)
+    (out_dir / "flow_graph.json").write_text(graph_json, encoding="utf-8")
+    (out_dir / "rendered_view.json").write_text(view_json, encoding="utf-8")
     FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    FIXTURE_PATH.write_text(view_json)
+    FIXTURE_PATH.write_text(view_json, encoding="utf-8")
+    count = write_repo_home_fixture(graph, FIXTURE_PATH.parent)
+    print(f"wrote repo home fixture with {count} entry points")
 
 
 def _print_summary(graph, png_path: Path) -> None:

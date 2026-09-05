@@ -8,6 +8,7 @@ from tracer.prompts.flow_review_prompt import (
     FLOW_REVIEW_SYSTEM_PROMPT,
     build_review_bundle,
 )
+from tracer.services.analysis.llm_telemetry import log_llm_call
 from tracer.services.analysis.fingerprints import compute_review_fingerprint
 from tracer.services.analysis.labelling.name_validator import NameValidator
 from tracer.services.analysis.labelling.review_cache import ReviewCache
@@ -51,13 +52,15 @@ class FlowReviewer:
             return ReviewResult(corrected={}, page_title="", lane_titles={}, findings=[]), False
 
     def _call(self, bundle: list[dict]) -> dict:
+        content = json.dumps({"nodes": bundle})
         response = self._llm.messages.create(
             model=_MODEL,
             max_tokens=4000,
             temperature=0,
             system=FLOW_REVIEW_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": json.dumps({"nodes": bundle})}],
+            messages=[{"role": "user", "content": content}],
         )
+        log_llm_call("review", len(bundle), FLOW_REVIEW_SYSTEM_PROMPT, content, response)
         text = next((b.text for b in response.content if b.type == "text"), "")
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:

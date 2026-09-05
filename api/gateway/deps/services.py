@@ -28,6 +28,7 @@ from gateway.services.analysis_service import AnalysisService
 from gateway.services.archive_extractor import ArchiveExtractor
 from gateway.services.ci_ingest_service import CiIngestService
 from gateway.services.diagram_edit_service import DiagramEditService
+from gateway.services.endpoint_view_service import EndpointViewService
 from gateway.services.github_ci_service import GitHubCiService
 from gateway.services.github_repo_service import GitHubRepoService
 from gateway.services.github_service import GitHubService
@@ -44,6 +45,8 @@ from gateway.services.token_service import TokenService
 from shared.access_token_store.access_token_store import AccessTokenStore
 from shared.code_store.code_store import CodeStore
 from shared.diagram_edit_store.diagram_edit_store import DiagramEditStore
+from shared.flow_endpoints.endpoint_catalog import EndpointCatalog
+from shared.flow_endpoints.endpoint_subgraph import EndpointSubgraph
 from shared.explanation_store.explanation_store import ExplanationStore
 from shared.repo_map_store.repo_map_store import RepoMapStore
 from shared.user_store.user_store import UserStore
@@ -65,6 +68,15 @@ def get_repo_map_service(
     repo_map_store: RepoMapStore = Depends(get_repo_map_store),
 ) -> RepoMapService:
     return RepoMapService(repo_map_store)
+
+
+def get_endpoint_view_service(
+    repo_map_service: RepoMapService = Depends(get_repo_map_service),
+    render_client: RenderClient = Depends(get_render_client),
+) -> EndpointViewService:
+    return EndpointViewService(
+        repo_map_service, render_client, EndpointCatalog(), EndpointSubgraph()
+    )
 
 
 def get_diagram_edit_service(

@@ -107,8 +107,12 @@ def main(argv: list[str]) -> int:
     graph = pipeline.run(target.name, files)
     view = build_flow_page_placer().place(graph)
 
-    (out_dir / "flow_graph.json").write_text(graph.model_dump_json(indent=2))
-    (out_dir / "rendered_view.json").write_text(json.dumps(view.model_dump(), indent=2))
+    (out_dir / "flow_graph.json").write_text(
+        graph.model_dump_json(indent=2), encoding="utf-8"
+    )
+    (out_dir / "rendered_view.json").write_text(
+        json.dumps(view.model_dump(), indent=2), encoding="utf-8"
+    )
 
     kinds: dict[str, int] = {}
     for node in graph.nodes:

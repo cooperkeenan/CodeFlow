@@ -9,6 +9,13 @@ import { useCiProgress } from '../../hooks/useCiProgress'
 import GithubLinkPrompt from './GithubLinkPrompt'
 import GithubRepoPicker from './GithubRepoPicker'
 
+function progressLabel(progress) {
+  const step = progress.substeps
+    ? ` · ${progress.detail || 'working'} (${progress.substep}/${progress.substeps})`
+    : ''
+  return `${progress.current}${step} — ${progress.percent}%`
+}
+
 export default function RepoMapsPanel({ onOpenMap }) {
   const { maps, error: listError, signedOut, refresh } = useRepoMaps()
   const { running, progress, error, setError, startRun, startGithubRun } = useCiProgress(refresh)
@@ -52,7 +59,7 @@ export default function RepoMapsPanel({ onOpenMap }) {
         <Box sx={{ mb: 2 }}>
           <LinearProgress variant="determinate" value={progress?.percent ?? 0} sx={{ mb: 0.5 }} />
           <Typography variant="caption" color="text.secondary">
-            {progress ? `${progress.current} — ${progress.percent}%` : 'starting…'}
+            {progress ? progressLabel(progress) : 'starting…'}
           </Typography>
         </Box>
       )}

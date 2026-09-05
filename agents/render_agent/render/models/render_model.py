@@ -6,6 +6,7 @@ from shared.models.flow_graph import FlowGraph
 
 class RenderRequest(BaseModel):
     flow_graph: FlowGraph
+    lane_headers: bool = True
 
 
 class RenderResponse(BaseModel):

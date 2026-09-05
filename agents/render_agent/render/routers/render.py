@@ -11,5 +11,5 @@ async def render(
     request: RenderRequest,
     placer: FlowPagePlacer = Depends(get_flow_page_placer),
 ) -> RenderResponse:
-    view = placer.place(request.flow_graph)
+    view = placer.place(request.flow_graph, request.lane_headers)
     return RenderResponse(view=view)

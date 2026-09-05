@@ -30,7 +30,7 @@ class FlowPagePlacer:
         self._tree_layout = tree_layout
         self._hidden = hidden_emitter
 
-    def place(self, graph: FlowGraph) -> RenderedView:
+    def place(self, graph: FlowGraph, lane_headers: bool = True) -> RenderedView:
         spine = self._spine_router.route(graph)
         order = self._lane_packer.order(graph)
         arm_counts = self._arm_counts(graph)
@@ -57,7 +57,7 @@ class FlowPagePlacer:
             )
             tree_pairs |= band.tree_pairs
             lane = lanes_by_id.get(lane_id)
-            if lane is not None:
+            if lane is not None and lane_headers:
                 out_nodes.append(build_header_dict(lane, band.center_y, self._config))
             for placement in band.placements:
                 node_dict = build_node_dict(

@@ -5,8 +5,8 @@ from pathlib import Path
 
 
 def _load(out_dir: Path) -> tuple[dict, dict]:
-    graph = json.loads((out_dir / "flow_graph.json").read_text())
-    view = json.loads((out_dir / "rendered_view.json").read_text())
+    graph = json.loads((out_dir / "flow_graph.json").read_text(encoding="utf-8"))
+    view = json.loads((out_dir / "rendered_view.json").read_text(encoding="utf-8"))
     return graph, view
 
 

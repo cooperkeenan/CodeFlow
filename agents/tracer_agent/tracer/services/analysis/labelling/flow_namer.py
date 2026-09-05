@@ -5,6 +5,7 @@ import re
 import anthropic
 from tracer.models.naming import NodeNameContext, NodeNaming
 from tracer.prompts.flow_name_prompt import FLOW_NAME_SYSTEM_PROMPT, build_node_evidence
+from tracer.services.analysis.llm_telemetry import log_llm_call
 from tracer.services.analysis.fingerprints import compute_name_fingerprint
 from tracer.services.analysis.labelling.name_cache import NameCache
 from tracer.services.analysis.labelling.name_validator import NameValidator
@@ -71,13 +72,15 @@ class FlowNamer:
         return parsed, cacheable
 
     def _call(self, batch: list[NodeNameContext]) -> dict:
+        content = build_node_evidence(batch)
         response = self._llm.messages.create(
             model=_MODEL,
             max_tokens=4000,
             temperature=0,
             system=FLOW_NAME_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": build_node_evidence(batch)}],
+            messages=[{"role": "user", "content": content}],
         )
+        log_llm_call("naming", len(batch), FLOW_NAME_SYSTEM_PROMPT, content, response)
         text = next((b.text for b in response.content if b.type == "text"), "")
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:

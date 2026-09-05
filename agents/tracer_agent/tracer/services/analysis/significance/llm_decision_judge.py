@@ -8,6 +8,7 @@ from tracer.prompts.decision_judge_prompt import (
     DECISION_JUDGE_SYSTEM_PROMPT,
     build_decision_evidence,
 )
+from tracer.services.analysis.llm_telemetry import log_llm_call
 from tracer.services.analysis.contracts import DecisionJudge
 from tracer.services.analysis.fingerprints import compute_decision_fingerprint
 from tracer.services.analysis.labelling.verdict_cache import VerdictCache
@@ -79,13 +80,15 @@ class LlmDecisionJudge:
         return verdicts, cacheable
 
     def _call(self, batch: list[DecisionCandidate]) -> list[dict]:
+        content = build_decision_evidence(tuple(batch))
         response = self._llm.messages.create(
             model=_MODEL,
             max_tokens=4000,
             temperature=0,
             system=DECISION_JUDGE_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": build_decision_evidence(tuple(batch))}],
+            messages=[{"role": "user", "content": content}],
         )
+        log_llm_call("judge", len(batch), DECISION_JUDGE_SYSTEM_PROMPT, content, response)
         text = next((b.text for b in response.content if b.type == "text"), "")
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:

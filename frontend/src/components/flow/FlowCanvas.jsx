@@ -53,7 +53,7 @@ function useActiveReveal(revealTrigger) {
 }
 
 function FlowCanvasInner({
-  nodes, edges, selectedId, isolatedId, onPaneClick, revealTrigger, repo,
+  nodes, edges, selectedId, isolatedId, onPaneClick, onNodeClick, revealTrigger, repo,
   focusIds = null, adjacentIds = null, packetIds = null, stepKey = 0, children = null,
   visibleIds = null, enteringIds = null, suppressSelfLabels = false, chrome = DEFAULT_CHROME,
   editMode = false, onInit = undefined, onConnect = undefined, onNodesDelete = undefined,
@@ -134,6 +134,7 @@ function FlowCanvasInner({
       nodeTypes={NODE_TYPES}
       edgeTypes={EDGE_TYPES}
       onPaneClick={onPaneClick}
+      onNodeClick={onNodeClick}
       onEdgeMouseEnter={(_, edge) => setHoveredEdge(edge.id)}
       onEdgeMouseLeave={() => setHoveredEdge(null)}
       onInit={onInit}

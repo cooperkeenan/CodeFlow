@@ -9,6 +9,7 @@ from tracer.prompts.stitch_judge_prompt import (
     STITCH_JUDGE_SYSTEM_PROMPT,
     build_stitch_evidence,
 )
+from tracer.services.analysis.llm_telemetry import log_llm_call
 from tracer.services.analysis.fingerprints import compute_stitch_fingerprint
 from tracer.services.analysis.stitch.route_index import RouteMatcher, RouteStitchIndex
 from tracer.services.analysis.stitch.stitch_verdict_cache import StitchVerdictCache
@@ -91,13 +92,15 @@ class LlmStitchDetector:
         return verdicts, set(verdicts)
 
     def _call(self, batch: list[EffectSite], entries: tuple[FlowEntry, ...]) -> list[dict]:
+        content = build_stitch_evidence(tuple(batch), entries)
         response = self._llm.messages.create(
             model=_MODEL,
             max_tokens=4000,
             temperature=0,
             system=STITCH_JUDGE_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": build_stitch_evidence(tuple(batch), entries)}],
+            messages=[{"role": "user", "content": content}],
         )
+        log_llm_call("stitch", len(batch), STITCH_JUDGE_SYSTEM_PROMPT, content, response)
         text = next((b.text for b in response.content if b.type == "text"), "")
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:

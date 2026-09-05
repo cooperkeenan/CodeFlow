@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI
 from tracer.routers.tracer import router as tracer_router
+from tracer.services.analysis.stage_reporter import StageReporter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Tracer Agent starting up")
     app.state.http_client = httpx.AsyncClient()
+    app.state.stage_reporter = StageReporter()
     yield
     await app.state.http_client.aclose()
     logger.info("Tracer Agent shut down")

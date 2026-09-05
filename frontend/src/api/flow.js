@@ -8,4 +8,9 @@ import { request } from './client'
 // used by the provenance popover. The node `data` must also carry `backing`
 // and `refs` (present on FlowNode, currently dropped by flow_emit) and edges
 // their `confidence` so provenance rows and inferred-edge styling render.
-export const getFlowGraph = (repo) => request(`/repomaps/${repo}/flow`)
+export const getFlowGraph = (repo, entry) =>
+  request(`/repomaps/${repo}/flow${entry ? `?entry=${encodeURIComponent(entry)}` : ''}`)
+
+export const endpointSlug = (entry) => entry.replace(/[^A-Za-z0-9]+/g, '_')
+
+export const endpointFixtureUrl = (entry) => `/fixture/endpoints/${endpointSlug(entry)}.json`

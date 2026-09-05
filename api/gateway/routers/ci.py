@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from gateway.clients.tracer_client import TracerClient
 from gateway.core.config import Settings, get_settings
 from gateway.deps import (
     get_ci_ingest_service,
@@ -9,6 +10,7 @@ from gateway.deps import (
     get_github_ci_service,
     get_local_ci_service,
     get_progress_tracker,
+    get_tracer_client,
 )
 from gateway.models.auth_model import AuthUser
 from gateway.services.ci_ingest_service import CiIngestService
@@ -40,8 +42,18 @@ async def ci_analyse(
 
 
 @router.get("/progress")
-async def ci_progress(progress: ProgressTracker = Depends(get_progress_tracker)) -> dict:
-    return progress.snapshot()
+async def ci_progress(
+    progress: ProgressTracker = Depends(get_progress_tracker),
+    tracer: TracerClient = Depends(get_tracer_client),
+) -> dict:
+    snapshot = progress.snapshot()
+    if not snapshot["active"] or snapshot["current"] != "tracer":
+        return snapshot
+    stages = await tracer.progress()
+    if stages and stages.get("active"):
+        progress.track(stages.get("stage", ""), stages.get("completed", 0), stages.get("total", 0))
+        return progress.snapshot()
+    return snapshot
 
 
 @router.post("/analyse/local")

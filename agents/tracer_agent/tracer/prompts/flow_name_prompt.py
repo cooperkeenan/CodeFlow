@@ -2,7 +2,7 @@ import json
 
 from tracer.models.naming import NodeNameContext
 
-PROMPT_VERSION = "2"
+PROMPT_VERSION = "4"
 
 FLOW_NAME_SYSTEM_PROMPT = """You are naming the nodes of a control-flow diagram the way a \
 senior engineer would on a whiteboard. You receive a JSON evidence bundle describing nodes from \
@@ -12,7 +12,14 @@ ids — you cannot invent ids or structure.
 
 Naming style (obey strictly):
 - steps: verb phrases for what the step DOES ("Fetch & persist sources", "Parse & validate request").
-- decisions: the QUESTION being decided ("What kind of request?").
+- decisions carry an `is_fork` flag. OBEY IT — `deterministic_label` is phrased as a question for
+  every decision, including the ones that are not forks, so do not copy its phrasing.
+  - `is_fork: true` — a real branch. Name it as the QUESTION being decided ("What kind of
+    request?").
+  - `is_fork: false` — NOT a branch: the code takes a single path. Name the ACTION or the
+    CONDITION being applied and NEVER end the label with "?". Rewrite the question into what the
+    code does: "Which escape strategy?" becomes "Escape by data type"; "Testing environment?"
+    becomes "Use the test data directory"; "Is API key configured?" becomes "Require an API key".
 - arms: the ANSWER that the arm represents.
 - effects: a NOUN for the side effect and its target ("Neon: repo_map", "Anthropic: messages").
 - entries/parallels: a short verb phrase for the work triggered, not the name of the class or
@@ -51,6 +58,8 @@ def _node(context: NodeNameContext) -> dict:
     if node.effect_kind:
         entry["effect_kind"] = node.effect_kind
         entry["effect_target"] = node.effect_target
+    if node.kind == "decision":
+        entry["is_fork"] = len(context.arm_label_sources) >= 2
     if context.arm_label_sources:
         entry["arm_label_sources"] = list(context.arm_label_sources)
     if context.child_labels:

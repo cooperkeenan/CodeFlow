@@ -20,6 +20,7 @@ from tracer.services.analysis.labelling.factory import (
 from tracer.services.analysis.significance.factory import (
     build_decision_judge,
 )
+from tracer.services.analysis.stage_reporter import StageReporter
 from tracer.services.analysis.stitch.factory import build_flow_stitcher
 from tracer.services.evidence.file_fetch_service import FileFetchService
 from tracer.services.evidence.github_file_fetcher import GitHubFileFetcher
@@ -55,8 +56,13 @@ def get_source_persist_service(
     return SourcePersistService(code_store)
 
 
+def get_stage_reporter(request: Request) -> StageReporter:
+    return request.app.state.stage_reporter
+
+
 def get_flow_pipeline(
     settings: Settings = Depends(get_settings),
+    stages: StageReporter = Depends(get_stage_reporter),
 ) -> FlowPipeline:
     return FlowPipeline(
         build_project_indexer(),
@@ -66,6 +72,7 @@ def get_flow_pipeline(
         judge=build_decision_judge(settings.ANTHROPIC_API_KEY, _CACHE_ROOT / "decision_verdicts.json"),
         namer=build_flow_namer(settings.ANTHROPIC_API_KEY, _CACHE_ROOT / "node_names.json"),
         reviewer=build_flow_reviewer(settings.ANTHROPIC_API_KEY, _CACHE_ROOT / "review_findings.json"),
+        stages=stages,
     )
 
 

@@ -42,6 +42,24 @@ class NodeExplainRequest(BaseModel):
     node_id: str
 
 
+class EndpointSummary(BaseModel):
+    id: str
+    label: str
+    title: str
+    one_liner: str
+    route_count: int
+    file: str
+    line: int
+
+
+class RepoHomeResponse(BaseModel):
+    repo: str
+    title: str
+    description: str
+    endpoints: list[EndpointSummary]
+    entry_points: list[EndpointSummary]
+
+
 class DiagramEditsResponse(BaseModel):
     repo: str
     edits: dict

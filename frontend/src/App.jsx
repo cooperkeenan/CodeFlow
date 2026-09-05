@@ -13,6 +13,7 @@ import SignupPage from './pages/SignupPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import DashboardPage from './pages/DashboardPage'
+import RepoHomePage from './pages/RepoHomePage'
 import SettingsPage from './pages/SettingsPage'
 import FlowPage from './pages/FlowPage'
 import TourPage from './pages/TourPage'
@@ -46,7 +47,11 @@ export default function App() {
     }
   }, [])
 
-  const openMap = (map) => { show(map); navigate('/flow') }
+  const openMap = (map) => { show(map); navigate('/repo') }
+  const leaveFlow = () => {
+    if (new URLSearchParams(window.location.search).get('entry')) navigate('/repo')
+    else { reset(); navigate('/') }
+  }
 
   if (oauthPending) {
     return (
@@ -75,15 +80,41 @@ export default function App() {
           <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
           <Route path="/tour" element={<TourPage />} />
           <Route
+            path="/repo"
+            element={
+              <RequireAuth>
+                {analysis
+                  ? <RepoHomePage repo={analysis.repo} onBack={() => { reset(); navigate('/') }} />
+                  : <Navigate to="/" replace />}
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/repo-fixture"
+            element={
+              <RepoHomePage
+                fixture="/fixture/repo_home.json"
+                flowPath="/flow-fixture"
+                repo={fixtureAnalysis()?.repo}
+              />
+            }
+          />
+          <Route
             path="/flow-fixture"
-            element={<FlowPage fixture="/fixture/rendered_view.json" analysis={fixtureAnalysis()} />}
+            element={
+              <FlowPage
+                fixture="/fixture/rendered_view.json"
+                analysis={fixtureAnalysis()}
+                onBack={() => navigate('/repo-fixture')}
+              />
+            }
           />
           <Route
             path="/flow"
             element={
               <RequireAuth>
                 {analysis
-                  ? <FlowPage analysis={analysis} onBack={() => { reset(); navigate('/') }} />
+                  ? <FlowPage analysis={analysis} onBack={leaveFlow} />
                   : <Navigate to="/" replace />}
               </RequireAuth>
             }

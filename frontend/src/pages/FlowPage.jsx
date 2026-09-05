@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { endpointFixtureUrl } from '../api/flow'
 import { useFlowGraph } from '../hooks/useFlowGraph'
 import { useExpansion } from '../hooks/useExpansion'
 import { useGraphTransform } from '../hooks/useGraphTransform'
@@ -9,6 +11,7 @@ import Legend from '../components/flow/Legend'
 const MONO = 'IBM Plex Mono, monospace'
 const MUTED = { fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.38)' }
 const PANE_CLICK_GRACE_MS = 300
+const ENDPOINT_LINK_PREFIX = 'endlink:'
 
 function initialExpansion() {
   if (typeof window === 'undefined') return []
@@ -18,7 +21,11 @@ function initialExpansion() {
 
 export default function FlowPage({ analysis, onBack, fixture }) {
   const repo = analysis?.repo
-  const { payload, loading, error } = useFlowGraph(repo, fixture)
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const entry = params.get('entry')
+  const fixtureUrl = fixture && entry ? endpointFixtureUrl(entry) : fixture
+  const { payload, loading, error } = useFlowGraph(repo, fixtureUrl, entry)
   const [isolated, setIsolated] = useState(null)
   const [showSecondary, setShowSecondary] = useState(false)
 
@@ -35,6 +42,12 @@ export default function FlowPage({ analysis, onBack, fixture }) {
   const drawn = nodes.filter(n => n.type !== 'flowGroup').length
   const revealed = drawn - (view?.nodes?.length ?? 0)
 
+  const onNodeClick = useCallback((_event, node) => {
+    if (!node?.id?.startsWith(ENDPOINT_LINK_PREFIX)) return
+    const target = node.id.slice(ENDPOINT_LINK_PREFIX.length)
+    navigate(`${window.location.pathname}?entry=${encodeURIComponent(target)}`)
+  }, [navigate])
+
   const onPaneClick = useCallback(() => {
     if (Date.now() - lastIsolateAt.current < PANE_CLICK_GRACE_MS) return
     setIsolated(null)
@@ -50,7 +63,7 @@ export default function FlowPage({ analysis, onBack, fixture }) {
   return (
     <main style={{ height: '100vh', display: 'flex', flexDirection: 'column', padding: '1.1rem 1.4rem', gap: '0.9rem', boxSizing: 'border-box' }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
-        <button className="back" onClick={onBack}>← repos</button>
+        <button className="back" onClick={onBack}>{entry ? '← endpoints' : '← repos'}</button>
         <h1 style={{ fontFamily: MONO, fontSize: '1.25rem', fontWeight: 600, color: 'rgba(255,255,255,0.87)', margin: 0 }}>
           {pageTitle}
         </h1>
@@ -86,6 +99,7 @@ export default function FlowPage({ analysis, onBack, fixture }) {
               selectedId={isolated}
               isolatedId={isolated}
               onPaneClick={onPaneClick}
+              onNodeClick={onNodeClick}
               revealTrigger={expansion.lastReveal}
               repo={repo}
               {...canvasProps}

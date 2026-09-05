@@ -14,9 +14,12 @@ class FlowSession:
         url: str,
         explain_payload: dict | None = None,
         repo: str | None = None,
+        wait_selector: str = ".react-flow__node",
     ) -> None:
         self._server = DevServer(frontend_dir, port)
-        self._url = f"{url}?repo={repo}" if repo else url
+        joiner = "&" if "?" in url else "?"
+        self._url = f"{url}{joiner}repo={repo}" if repo else url
+        self._wait_selector = wait_selector
         self._explain_payload = explain_payload
         self._started = False
         self._playwright = None
@@ -31,7 +34,7 @@ class FlowSession:
         if self._explain_payload is not None:
             self._page.route("**/explain", lambda route: route.fulfill(json=self._explain_payload))
         self._page.goto(self._url, wait_until="networkidle")
-        self._page.wait_for_selector(".react-flow__node", timeout=30000)
+        self._page.wait_for_selector(self._wait_selector, timeout=30000)
         return self
 
     def __exit__(self, *_: object) -> None:
@@ -57,6 +60,11 @@ class FlowSession:
     def click_node(self, node_id: str) -> None:
         self._page.click(f'.react-flow__node[data-id="{node_id}"]')
         self._page.wait_for_timeout(250)
+
+    def open_endpoint(self, slug: str) -> None:
+        self._page.click(f'[data-testid="endpoint-{slug}"]')
+        self._page.wait_for_selector(".react-flow__node", timeout=30000)
+        self._page.wait_for_timeout(600)
 
     def press_button(self, text: str) -> None:
         self._page.click(f'header button:has-text("{text}")')
