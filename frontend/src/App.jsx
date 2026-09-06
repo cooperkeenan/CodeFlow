@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useAnalysis } from './hooks/useAnalysis'
 import { getSessionToken, saveSession, saveGithubToken, saveUser } from './api/session'
 import { exchangeCode, linkGithub } from './api/github'
 import { RepoMapsProvider } from './hooks/RepoMapsContext'
-import { ExplanationCacheProvider } from './hooks/ExplanationCacheContext'
 import RequireAuth from './components/RequireAuth'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
@@ -17,6 +17,17 @@ import RepoHomePage from './pages/RepoHomePage'
 import SettingsPage from './pages/SettingsPage'
 import FlowPage from './pages/FlowPage'
 import TourPage from './pages/TourPage'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60_000,
+      gcTime: 30 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+})
 
 function fixtureAnalysis() {
   if (typeof window === 'undefined') return null
@@ -49,7 +60,8 @@ export default function App() {
 
   const openMap = (map) => { show(map); navigate('/repo') }
   const leaveFlow = () => {
-    if (new URLSearchParams(window.location.search).get('entry')) navigate('/repo')
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('entry') || params.get('helper')) navigate('/repo')
     else { reset(); navigate('/') }
   }
 
@@ -62,8 +74,8 @@ export default function App() {
   }
 
   return (
-    <RepoMapsProvider>
-      <ExplanationCacheProvider>
+    <QueryClientProvider client={queryClient}>
+      <RepoMapsProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
@@ -121,7 +133,7 @@ export default function App() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </ExplanationCacheProvider>
-    </RepoMapsProvider>
+      </RepoMapsProvider>
+    </QueryClientProvider>
   )
 }

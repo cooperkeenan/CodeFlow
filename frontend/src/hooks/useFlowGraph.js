@@ -1,25 +1,12 @@
-import { useEffect, useState } from 'react'
-import { getFlowGraph } from '../api/flow'
+import { useQuery } from '@tanstack/react-query'
+import { flowQueryFn, flowQueryKey } from '../api/queries'
 
-export function useFlowGraph(repo, fixtureUrl, entry) {
-  const [payload, setPayload] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+export function useFlowGraph(repo, fixtureUrl, entry, helper) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: flowQueryKey(repo, fixtureUrl, entry, helper),
+    queryFn: flowQueryFn(repo, fixtureUrl, entry, helper),
+    enabled: Boolean(fixtureUrl || repo),
+  })
 
-  useEffect(() => {
-    if (!fixtureUrl && !repo) return
-    let live = true
-    setLoading(true)
-    setError(null)
-    const request = fixtureUrl
-      ? fetch(fixtureUrl).then(res => res.json())
-      : getFlowGraph(repo, entry)
-    request
-      .then(data => { if (live) setPayload(data) })
-      .catch(e => { if (live) setError(e.message) })
-      .finally(() => { if (live) setLoading(false) })
-    return () => { live = false }
-  }, [repo, fixtureUrl, entry])
-
-  return { payload, loading, error }
+  return { payload: data ?? null, loading: isLoading, error: error?.message ?? null }
 }

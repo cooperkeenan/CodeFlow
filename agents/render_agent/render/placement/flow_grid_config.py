@@ -8,7 +8,7 @@ class FlowGridConfig:
     column_width: int = 200
     row_height: int = 72
     column_gutter: int = 120
-    row_gutter: int = 32
+    row_gutter: int = 96
     lane_gutter: int = 80
     lane_padding: int = 40
     lane_header_gutter: int = 24

@@ -3,8 +3,8 @@ from shared.flow_endpoints.chunk_dissolver import ChunkDissolver
 from shared.flow_endpoints.endpoint_elider import EndpointElider
 from shared.flow_endpoints.level_assigner import LevelAssigner
 from shared.flow_endpoints.shared_owner_index import SharedOwnerIndex
-from shared.flow_endpoints.terminal_closer import TerminalCloser
 from shared.flow_endpoints.slice_graph import SliceGraph
+from shared.flow_endpoints.terminal_closer import TerminalCloser
 from shared.models.flow_graph import FlowEdge, FlowGraph, FlowNode, Lane
 
 ENDPOINT_LANE_ID = "endpoint"
@@ -26,6 +26,14 @@ class EndpointSubgraph:
         root = nodes_by_id.get(entry_id)
         if root is None or root.kind != "entry":
             return None
+        return self.slice_root(graph, entry_id)
+
+    def slice_root(self, graph: FlowGraph, root_id: str) -> FlowGraph | None:
+        nodes_by_id = {node.id: node for node in graph.nodes}
+        root = nodes_by_id.get(root_id)
+        if root is None:
+            return None
+        entry_id = root_id
         member_ids = self._closure(entry_id, nodes_by_id)
         working = SliceGraph(
             {node_id: self._scoped(nodes_by_id[node_id], member_ids) for node_id in member_ids},

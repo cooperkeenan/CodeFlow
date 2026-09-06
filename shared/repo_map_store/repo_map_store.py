@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Protocol
 
 
@@ -7,3 +8,5 @@ class RepoMapStore(Protocol):
     async def list_for_user(self, user_id: int) -> list[dict]: ...
 
     async def get(self, user_id: int, repo: str) -> dict | None: ...
+
+    async def updated_at(self, user_id: int, repo: str) -> datetime | None: ...

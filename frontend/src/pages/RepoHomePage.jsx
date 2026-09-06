@@ -45,7 +45,12 @@ export default function RepoHomePage({ repo, fixture, onBack, flowPath = '/flow'
               borderColor: 'divider',
             }}
           >
-            <EndpointList endpoints={home.endpoints} onOpen={openEndpoint} />
+            <EndpointList
+              endpoints={home.endpoints}
+              onOpen={openEndpoint}
+              repo={repo}
+              canPrefetch={!fixture}
+            />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0, overflowY: 'auto', p: 4 }}>
             <RepoOverview home={home} onOpenFullMap={() => navigate(flowPath)} />

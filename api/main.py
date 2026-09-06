@@ -11,6 +11,8 @@ from gateway.routers.diagram_edits import router as diagram_edits_router
 from gateway.routers.github import router as github_router
 from gateway.routers.repo_maps import router as repo_maps_router
 from gateway.routers.tokens import router as tokens_router
+from gateway.services.endpoint_view_cache import EndpointViewCache
+from gateway.services.flow_graph_cache import FlowGraphCache
 from gateway.services.progress_tracker import ProgressTracker
 
 from shared.access_token_store.neon_access_token_store import NeonAccessTokenStore
@@ -40,6 +42,8 @@ async def lifespan(app: FastAPI):
     app.state.explanation_store = NeonExplanationStore(database_url)
     app.state.diagram_edit_store = NeonDiagramEditStore(database_url)
     app.state.progress_tracker = ProgressTracker()
+    app.state.flow_graph_cache = FlowGraphCache()
+    app.state.endpoint_view_cache = EndpointViewCache()
     await app.state.user_store.ensure_schema()
     await app.state.token_store.ensure_schema()
     await app.state.repo_map_store.ensure_schema()

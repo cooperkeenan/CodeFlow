@@ -49,9 +49,17 @@ class FlowSession:
         return self._page.evaluate(READ_STATE)
 
     def toggle(self, node_id: str) -> None:
-        selector = f'.react-flow__node[data-id="{node_id}"] [role="button"]:not([data-testid="isolate-button"])'
+        selector = (
+            f'.react-flow__node[data-id="{node_id}"] [role="button"]'
+            ':not([data-testid="isolate-button"]):not([data-testid="link-chip"])'
+        )
         self._page.click(selector)
         self._page.wait_for_timeout(350)
+
+    def follow_link(self, node_id: str) -> None:
+        self._page.click(f'.react-flow__node[data-id="{node_id}"] [data-testid="link-chip"]')
+        self._page.wait_for_selector(".react-flow__node", timeout=30000)
+        self._page.wait_for_timeout(700)
 
     def isolate(self, node_id: str) -> None:
         self._page.click(f'.react-flow__node[data-id="{node_id}"] [data-testid="isolate-button"]')

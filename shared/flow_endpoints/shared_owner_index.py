@@ -4,9 +4,9 @@ _ENTRY_PREFIX = "entry:"
 
 
 class SharedOwnerIndex:
-    def counts(self, graph: FlowGraph) -> dict[str, int]:
+    def owners(self, graph: FlowGraph) -> dict[str, list[str]]:
         nodes_by_id = {node.id: node for node in graph.nodes}
-        totals: dict[str, int] = {}
+        totals: dict[str, list[str]] = {}
         for node in graph.nodes:
             if node.kind != "entry" or not node.id.startswith(_ENTRY_PREFIX):
                 continue
@@ -16,8 +16,11 @@ class SharedOwnerIndex:
                 if nodes_by_id[member].owner_fqn
             }
             for owner in owners:
-                totals[owner] = totals.get(owner, 0) + 1
-        return totals
+                totals.setdefault(owner, []).append(node.id)
+        return {owner: sorted(entries) for owner, entries in totals.items()}
+
+    def counts(self, graph: FlowGraph) -> dict[str, int]:
+        return {owner: len(entries) for owner, entries in self.owners(graph).items()}
 
     def _closure(self, entry_id: str, nodes_by_id: dict[str, FlowNode]) -> set[str]:
         seen = {entry_id}

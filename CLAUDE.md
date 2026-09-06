@@ -50,6 +50,35 @@ container path and no local test exercises it. `scripts/_verify_imports.py` will
 here because it injects env vars explicitly. This has broken three times; check both branches and
 simulate the `/app/<pkg>/core/config.py` case before claiming it works.
 
+## The Python Version Trap
+This project is pinned to **Python 3.10** and the venv at `venv/` is built on it. Always run
+`venv/bin/python` and `venv/bin/ruff`, never a bare `python3` — on at least one dev machine `python3`
+resolves to Homebrew 3.14, and that silently breaks two things:
+
+- `ast.unparse` renders some nodes differently across versions (3.14 emits
+  `{i for i, _ in t}` where 3.10 emits `{i for (i, _) in t}`). That text lands in `raw` fields in
+  `flow_graph.json`, so **the golden diff fails for a reason that has nothing to do with your change.**
+  If you see a one-line diff in a `raw` field, check your interpreter before debugging your code.
+- PEP 695 generics (`class JsonCache[T]:`) parse on 3.12+ and are a `SyntaxError` on 3.10. Use
+  `TypeVar`/`Generic`. This has already broken the tracer once.
+
+If the venv is missing, rebuild it with `/opt/homebrew/bin/python3.10 -m venv venv` and
+`venv/bin/python -m pip install -r requirements-dev.txt ruff`, then re-run the golden diff to confirm
+the environment is faithful before trusting any other result.
+
+## Restart Services After Changing `shared/`
+The services run under `uvicorn --reload`, and each watches **only its own directory** — `api/` for
+the gateway, `agents/<name>/` for an agent. Nothing watches `shared/`. Change
+`shared/flow_endpoints/` or `shared/models/` and every running service keeps serving the old code
+indefinitely, with no error and no reload line in the log.
+
+This has already produced a full round of false conclusions: a diagram was judged "still too busy"
+and cross-diagram links "not working" when both had been fixed hours earlier and the gateway was
+simply 18 hours stale. Before believing anything you see in the browser against the live API, check
+the worker start time (`ps -o lstart= -p $(lsof -ti:8000)`) against your edit times, and restart if
+it is older. The fixture routes driven by `flow_agent.py` do not have this problem — they read
+regenerated JSON, not the running gateway.
+
 ## Design Principles
 - SOLID principles on every file:
   - Single Responsibility: one class, one reason to change
@@ -191,6 +220,35 @@ deleted to achieve this — it is demoted to a deeper visibility level and reach
 branch. Expanding a branch shows the decisions sitting *between two nodes*, so a single expansion
 must stay small too; a `+` that reveals 50 nodes at once is a bug, not disclosure.
 
+## Endpoint Diagrams Get Their Own Budget
+The whole-repo map and a single endpoint's diagram are budgeted separately.
+`shared/flow_endpoints/endpoint_elider.py` slices one entry at read time with `DEFAULT_BUDGET = 16`,
+which is the "at most 15 nodes" rule above applied per endpoint. The budget is not a hard ceiling:
+`SoleChildPromoter` (below) can push a view a little past it, so the observed range on the demo repo
+is 2–19 visible nodes, mean 8. The whole-repo budget stage is separate: it works to
+`skeleton_budget = 15` / `node_budget = 40` and is a different tuning surface. Changing one does not
+affect the other.
+
+Two interactions are load-bearing and easy to undo by accident:
+
+`SoleChildPromoter` runs last and pulls any node that is its host's **only** hidden child back into
+view. This exists because `useExpansion.js` implicitly expands a lone hidden child anyway — demoting
+one achieves nothing except rendering it inside an expansion box with ~250px of dead space. Removing
+the promoter re-introduces boxes and makes medium diagrams worse, not smaller.
+
+`TerminalCloser` must never assert a continuation that does not exist. It emits a terminal only when
+the node genuinely has an external successor (naming it, and linking to it via `endcont:<owner_fqn>`),
+or an entry-node target (`endlink:<entry_id>`). When there is no successor anywhere in the graph it
+emits **nothing** and the node is left as a leaf. An earlier version emitted a node labelled
+"Continues" in all cases: on django-helpdesk that was 31 terminals, a tenth of every visible node, of
+which only 4 had any continuation — for the other 27 the label was simply false.
+
+## Decision Records
+`decision-records/` is tracked (unlike ephemeral scoped task docs) and holds long-lived descriptions
+of how a subsystem works and why. Each record pins the commit it was written against. **When you
+change logic a record describes, update the record in the same commit and re-pin it** — a stale
+record is worse than none, because it will be believed.
+
 ## Determinism
 Same repo in → byte-identical `flow_graph.json` out. Sort every set/dict iteration; break ties on
 `(file, line, name)`. LLM calls run at temperature 0 behind a content-addressed cache — bump the
@@ -200,6 +258,16 @@ prompt's `PROMPT_VERSION` when the prompt changes, or stale cached verdicts are 
 Static analysis finds every candidate fork and builds the graph. The LLM judges which forks are
 real decisions and writes their human-readable labels. The LLM must never add, remove, merge or
 rewire a node or edge.
+
+## A Thing Present In The DOM Is Not A Thing The User Can See
+`flow_agent.py state` proves an element exists; it does not prove anyone can see it. The
+cross-diagram link chip shipped as a bare arrow glyph at 9px inside a 15px box — correct in the DOM,
+asserted green, and about **7 screen pixels** once `fitView` zoomed the canvas to 0.47. The user
+reported the feature as missing and they were right.
+
+When you add an affordance, work out its size *at the zoom the page actually renders at* and open the
+PNG. Scale new chrome against something already known to be legible in a screenshot (the
+`file:line` provenance line is the useful yardstick), not against the unzoomed CSS pixel.
 
 ## Do Not Weaken Checks To Go Green
 Never loosen an assertion, invariant or budget to make a run pass. If a check genuinely no longer

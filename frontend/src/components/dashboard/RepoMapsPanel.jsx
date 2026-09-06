@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Typography } from '@mui/material'
+import { useQueryClient } from '@tanstack/react-query'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import GitHubIcon from '@mui/icons-material/GitHub'
 import { getRepoMap } from '../../api/repomaps'
+import { repoHomeQueryFn, repoHomeQueryKey } from '../../api/queries'
 import { getUser } from '../../api/session'
 import { useRepoMaps } from '../../hooks/RepoMapsContext'
 import { useCiProgress } from '../../hooks/useCiProgress'
@@ -22,8 +24,14 @@ export default function RepoMapsPanel({ onOpenMap }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [openError, setOpenError] = useState(null)
   const githubLinked = Boolean(getUser()?.github_login)
+  const queryClient = useQueryClient()
 
   const open = (repo) => getRepoMap(repo).then(d => onOpenMap(d.map)).catch(e => setOpenError(e.message))
+  const prefetchHome = (repo) =>
+    queryClient.prefetchQuery({
+      queryKey: repoHomeQueryKey(repo, null),
+      queryFn: repoHomeQueryFn(repo, null),
+    })
 
   const onGithubClick = () => {
     setError(null)
@@ -89,6 +97,8 @@ export default function RepoMapsPanel({ onOpenMap }) {
           <Paper
             key={m.repo}
             onClick={() => open(m.repo)}
+            onMouseEnter={() => prefetchHome(m.repo)}
+            onFocus={() => prefetchHome(m.repo)}
             sx={{ p: 2, cursor: 'pointer', '&:hover': { borderColor: 'primary.main' } }}
           >
             <Stack direction="row" alignItems="center" spacing={1}>

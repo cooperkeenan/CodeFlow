@@ -1,9 +1,12 @@
 import json
 from collections.abc import Callable
 from pathlib import Path
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
 
 
-class JsonCache[T]:
+class JsonCache(Generic[T]):
     def __init__(
         self,
         path: Path,

@@ -9,6 +9,7 @@ from render.placement.hidden_emitter import HiddenEmitter
 from render.placement.lane_packer import LanePacker
 from render.placement.spine_router import SpineRouter
 from render.placement.tree_layout import TreeLayout
+from render.placement.vertical_stretcher import VerticalStretcher
 
 from shared.models.diagram_template import RenderedView
 from shared.models.flow_graph import FlowGraph, FlowNode
@@ -23,12 +24,14 @@ class FlowPagePlacer:
         lane_packer: LanePacker,
         tree_layout: TreeLayout,
         hidden_emitter: HiddenEmitter,
+        vertical_stretcher: VerticalStretcher,
     ) -> None:
         self._config = config
         self._spine_router = spine_router
         self._lane_packer = lane_packer
         self._tree_layout = tree_layout
         self._hidden = hidden_emitter
+        self._stretcher = vertical_stretcher
 
     def place(self, graph: FlowGraph, lane_headers: bool = True) -> RenderedView:
         spine = self._spine_router.route(graph)
@@ -78,12 +81,14 @@ class FlowPagePlacer:
             out_edges.append(edge_dict)
         out_nodes.sort(key=lambda node: node["id"])
         out_edges.sort(key=lambda edge: edge["id"])
+        hidden = self._hidden.payloads(graph, arm_counts, run_ids)
+        self._stretcher.stretch(out_nodes, hidden)
         return RenderedView(
             type="flow",
             page_title=graph.page_title,
             nodes=out_nodes,
             edges=out_edges,
-            hidden=self._hidden.payloads(graph, arm_counts, run_ids),
+            hidden=hidden,
             hidden_edges=self._hidden.edges(graph, skeleton_ids),
             node_geometry=geometry_payload(),
         )

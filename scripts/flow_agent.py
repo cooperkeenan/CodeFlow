@@ -24,6 +24,7 @@ actions:
   overlaps             list overlapping node pairs — empty is the goal
   toggle:<node_id>     click that node's +/- control
   click:<node_id>      click the node body (no-op — FlowCanvas has no onNodeClick)
+  link:<node_id>       click that node's cross-diagram link chip, wait for the diagram
   isolate:<node_id>    click that node's isolate button
   isolated             dump the isolated (rf-iso) node: box size, canvas fill, border
   dimmed               report dimmed/total nodes and which stayed bright
@@ -57,6 +58,9 @@ def _run_action(session: FlowSession, action: str) -> None:
     elif verb == "click":
         session.click_node(arg)
         print(f"clicked {arg}")
+    elif verb == "link":
+        session.follow_link(arg)
+        print(f"followed link on {arg}")
     elif verb == "isolate":
         session.isolate(arg)
         print(f"isolated {arg}")

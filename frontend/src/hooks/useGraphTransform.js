@@ -5,7 +5,7 @@ const HEADER_TYPE = 'laneHeader'
 const GROUP_TYPE = 'flowGroup'
 const SHAPE_TYPE = { pipeline: 'pipeline', card: 'card', snippet: 'snippet' }
 
-function toNode(node, onToggle, onIsolate, geometry) {
+function toNode(node, onToggle, onIsolate, geometry, links, onLink) {
   const type =
     node.type === HEADER_TYPE || node.type === GROUP_TYPE
       ? node.type
@@ -29,6 +29,8 @@ function toNode(node, onToggle, onIsolate, geometry) {
       depth: node.depth,
       onToggle,
       onIsolate,
+      link: links?.[node.id] ?? null,
+      onLink,
     },
     ...(type === HEADER_TYPE || type === GROUP_TYPE
       ? {}
@@ -55,12 +57,12 @@ function toEdge(edge) {
   }
 }
 
-export function useGraphTransform(view, onToggle, onIsolate, geometry) {
+export function useGraphTransform(view, onToggle, onIsolate, geometry, links, onLink) {
   return useMemo(() => {
     if (!view?.nodes) return { nodes: [], edges: [] }
     return {
-      nodes: view.nodes.map(node => toNode(node, onToggle, onIsolate, geometry)),
+      nodes: view.nodes.map(node => toNode(node, onToggle, onIsolate, geometry, links, onLink)),
       edges: (view.edges ?? []).map(toEdge),
     }
-  }, [view, onToggle, onIsolate, geometry])
+  }, [view, onToggle, onIsolate, geometry, links, onLink])
 }

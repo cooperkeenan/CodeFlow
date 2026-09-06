@@ -1,5 +1,7 @@
 from fastapi import Request
 
+from gateway.services.endpoint_view_cache import EndpointViewCache
+from gateway.services.flow_graph_cache import FlowGraphCache
 from gateway.services.progress_tracker import ProgressTracker
 from shared.access_token_store.access_token_store import AccessTokenStore
 from shared.code_store.code_store import CodeStore
@@ -35,3 +37,11 @@ def get_explanation_store(request: Request) -> ExplanationStore:
 
 def get_diagram_edit_store(request: Request) -> DiagramEditStore:
     return request.app.state.diagram_edit_store
+
+
+def get_flow_graph_cache(request: Request) -> FlowGraphCache:
+    return request.app.state.flow_graph_cache
+
+
+def get_endpoint_view_cache(request: Request) -> EndpointViewCache:
+    return request.app.state.endpoint_view_cache

@@ -17,11 +17,11 @@ from gateway.deps.clients import (
     get_render_client,
     get_tracer_client,
 )
+from gateway.deps.endpoint_view import get_endpoint_view_service
 from gateway.deps.services import (
     get_analysis_service,
     get_ci_ingest_service,
     get_diagram_edit_service,
-    get_endpoint_view_service,
     get_github_ci_service,
     get_github_repo_service,
     get_local_ci_service,
@@ -33,7 +33,9 @@ from gateway.deps.services import (
 from gateway.deps.stores import (
     get_code_store,
     get_diagram_edit_store,
+    get_endpoint_view_cache,
     get_explanation_store,
+    get_flow_graph_cache,
     get_progress_tracker,
     get_repo_map_store,
     get_token_store,
@@ -48,9 +50,11 @@ __all__ = [
     "get_current_user",
     "get_diagram_edit_service",
     "get_diagram_edit_store",
+    "get_endpoint_view_cache",
     "get_endpoint_view_service",
     "get_explain_client",
     "get_explanation_store",
+    "get_flow_graph_cache",
     "get_github_ci_service",
     "get_github_client",
     "get_github_repo_service",

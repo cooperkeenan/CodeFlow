@@ -1,23 +1,12 @@
-import { useEffect, useState } from 'react'
-import { getRepoHome } from '../api/repomaps'
+import { useQuery } from '@tanstack/react-query'
+import { repoHomeQueryFn, repoHomeQueryKey } from '../api/queries'
 
 export function useRepoHome(repo, fixtureUrl) {
-  const [home, setHome] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { data, isLoading, error } = useQuery({
+    queryKey: repoHomeQueryKey(repo, fixtureUrl),
+    queryFn: repoHomeQueryFn(repo, fixtureUrl),
+    enabled: Boolean(fixtureUrl || repo),
+  })
 
-  useEffect(() => {
-    if (!fixtureUrl && !repo) return undefined
-    let live = true
-    setLoading(true)
-    setError(null)
-    const req = fixtureUrl ? fetch(fixtureUrl).then(r => r.json()) : getRepoHome(repo)
-    req
-      .then(data => { if (live) setHome(data) })
-      .catch(e => { if (live) setError(e.message) })
-      .finally(() => { if (live) setLoading(false) })
-    return () => { live = false }
-  }, [repo, fixtureUrl])
-
-  return { home, loading, error }
+  return { home: data ?? null, loading: isLoading, error: error?.message ?? null }
 }

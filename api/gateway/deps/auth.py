@@ -10,10 +10,10 @@ from gateway.services.email_sender import (
     LoggingEmailSender,
     SmtpEmailSender,
 )
-from gateway.services.password_reset_service import PasswordResetService
 from gateway.services.github_service import GitHubService
 from gateway.services.password_auth_service import PasswordAuthService
 from gateway.services.password_hasher import PasswordHasher
+from gateway.services.password_reset_service import PasswordResetService
 from gateway.services.token_hasher import TokenHasher
 from shared.access_token_store.access_token_store import AccessTokenStore
 from shared.user_store.user_store import UserStore

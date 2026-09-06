@@ -4,11 +4,12 @@ from shared.flow_endpoints.fanout_capper import FanoutCapper
 from shared.flow_endpoints.island_demoter import IslandDemoter
 from shared.flow_endpoints.run_collapser import RunCollapser
 from shared.flow_endpoints.shared_helper_collapser import SharedHelperCollapser
+from shared.flow_endpoints.sole_child_promoter import SoleChildPromoter
 from shared.flow_endpoints.level_assigner import LevelAssigner
 from shared.flow_endpoints.slice_graph import SliceGraph
 from shared.flow_endpoints.terminal_closer import TerminalCloser
 
-DEFAULT_BUDGET = 50
+DEFAULT_BUDGET = 16
 _MAX_PASSES = 3
 
 
@@ -21,6 +22,7 @@ class EndpointElider:
         islands: IslandDemoter | None = None,
         runs: RunCollapser | None = None,
         helpers: SharedHelperCollapser | None = None,
+        promoter: SoleChildPromoter | None = None,
         budget: int = DEFAULT_BUDGET,
     ) -> None:
         self._dissolver = dissolver
@@ -29,6 +31,7 @@ class EndpointElider:
         self._islands = islands or IslandDemoter()
         self._runs = runs or RunCollapser()
         self._helpers = helpers or SharedHelperCollapser()
+        self._promoter = promoter or SoleChildPromoter()
         self._budget = budget
 
     def elide(
@@ -40,6 +43,15 @@ class EndpointElider:
         self._dissolver.dissolve(graph)
         self._helpers.collapse(graph, exclusivity)
         self._runs.collapse(graph)
+        self._reduce(graph, exclusivity, closer)
+        self._promoter.promote(graph, self._levels)
+
+    def _reduce(
+        self,
+        graph: SliceGraph,
+        exclusivity: dict[str, int],
+        closer: TerminalCloser,
+    ) -> None:
         original = set(graph.keep)
         headroom = 0
         for _ in range(_MAX_PASSES):

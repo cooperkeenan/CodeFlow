@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from gateway.models.repo_map_model import AnalyseResponse, RepoMapDetail, RepoMapSummary
 
 from shared.repo_map_store.repo_map_store import RepoMapStore
@@ -21,6 +23,9 @@ class RepoMapService:
             )
             for r in rows
         ]
+
+    async def updated_at(self, user_id: int, repo: str) -> datetime | None:
+        return await self._store.updated_at(user_id, repo)
 
     async def get(self, user_id: int, repo: str) -> RepoMapDetail | None:
         row = await self._store.get(user_id, repo)

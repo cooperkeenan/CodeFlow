@@ -4,10 +4,16 @@ from render.placement.hidden_emitter import HiddenEmitter
 from render.placement.lane_packer import LanePacker
 from render.placement.spine_router import SpineRouter
 from render.placement.tree_layout import TreeLayout
+from render.placement.vertical_stretcher import VerticalStretcher
 
 
 def build_flow_page_placer() -> FlowPagePlacer:
     config = FlowGridConfig()
     return FlowPagePlacer(
-        config, SpineRouter(), LanePacker(), TreeLayout(config), HiddenEmitter(config)
+        config,
+        SpineRouter(),
+        LanePacker(),
+        TreeLayout(config),
+        HiddenEmitter(config),
+        VerticalStretcher(),
     )

@@ -1,5 +1,6 @@
 import ExpandToggle from './ExpandToggle'
 import IsolateButton from './IsolateButton'
+import LinkChip from './LinkChip'
 import NodeBadges from './NodeBadges'
 import IsolatedChrome from './isolate/IsolatedChrome'
 import { LABEL_STYLE, CHIP_STYLE, PROVENANCE_STYLE, MONO, TEXT_MUTED, scaleText } from './styles'
@@ -56,6 +57,11 @@ export default function NodeChrome({ data, align = 'flex-start', subtitle = null
             {data.provenance}
           </span>
           <NodeBadges badges={data.badges} guardSource={data.guardSource} scale={scale} />
+        </div>
+      )}
+      {data.link && (
+        <div style={{ display: 'flex', width: '100%', marginTop: Math.round(4 * scale), justifyContent: align === 'center' ? 'center' : 'flex-start' }}>
+          <LinkChip link={data.link} onLink={data.onLink} nodeId={data.nodeId} scale={scale} />
         </div>
       )}
       {(data.expandable || (data.depth > 0 && data.onIsolate)) && (

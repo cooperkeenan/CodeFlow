@@ -21,6 +21,7 @@ import FlowEdgeComponent from './FlowEdgeComponent'
 import CameraController from './CameraController'
 import { KIND_ACCENT, CANVAS, GRID } from './styles'
 import { useIsolatedView } from '../../hooks/useIsolatedView'
+import { useArrowKeyPan } from '../../hooks/useArrowKeyPan'
 
 const NODE_TYPES = {
   entry: EntryNode,
@@ -60,6 +61,7 @@ function FlowCanvasInner({
   onEdgesDelete = undefined, onNodeDragStop = undefined, onSelectionChange = undefined,
 }) {
   const [hoveredEdge, setHoveredEdge] = useState(null)
+  useArrowKeyPan()
   const { rfNodes, rfEdges, isolateCenter } = useIsolatedView(
     nodes, edges, selectedId, isolatedId, hoveredEdge, repo,
   )

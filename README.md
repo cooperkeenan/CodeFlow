@@ -4,19 +4,27 @@ Generates a **decision diagram** from a Python codebase: every point where the c
 by an LLM to the ones a human would actually put on a mental model of the system, rendered as a tree
 with `file:line` provenance on every node.
 
+You start at a repo's **endpoint list**, open one endpoint's diagram (2–19 nodes, mean 8 on the
+demo repo, with the rest behind `+N` controls), and follow **links on terminal nodes** into the diagram for whatever that path
+hands off to — another endpoint, or a shared helper's own diagram — with a breadcrumb back.
+
 Static analysis owns the structure. The LLM only judges which forks are real decisions and writes
 their labels — it never adds, removes, merges or rewires a node or edge.
 
 ## Quick start
 
 ```bash
-pip install -r requirements.txt
+# Python 3.10 exactly — a newer interpreter changes ast.unparse and breaks determinism
+python3.10 -m venv venv
+venv/bin/python -m pip install -r requirements-dev.txt
 cp .env.example .env          # ANTHROPIC_API_KEY, DATABASE_URL, LOCAL_REPO_PATH, GitHub OAuth
 
 # render any local repo to a PNG — no API, DB or login needed
-python scripts/render_repo.py /path/to/repo scratch_out/out
-python scripts/screenshot_flow.py /path/to/repo     # → scratch_out/flow.png
+venv/bin/python scripts/render_repo.py /path/to/repo scratch_out/out
+venv/bin/python scripts/screenshot_flow.py /path/to/repo     # → scratch_out/flow.png
 ```
+
+Always invoke `venv/bin/python`, not a bare `python3`.
 
 Run the full stack with the VS Code task **CodeFlow: All Services** (gateway 8000, profiler 8002,
 tracer 8003, render 8004, explain 8007), plus `cd frontend && npm run dev`.
@@ -29,7 +37,7 @@ agents/profiler_agent/  repo skeleton     (package `profiler`)
 agents/tracer_agent/    the analysis core (package `tracer`)
 agents/render_agent/    React Flow geometry (package `render`)
 agents/explain_agent/   on-demand node explanations (package `explain`)
-shared/                 models and Neon stores
+shared/                 models, Neon stores, endpoint slicing (`flow_endpoints/`)
 scripts/                developer tooling
 frontend/               Vite + React + React Flow
 ```
@@ -37,7 +45,8 @@ frontend/               Vite + React + React Flow
 Each service directory is its Docker build context, with `main.py` at the root and everything else in
 a uniquely-named package inside it.
 
-See `PROMPT.md` for the architecture and pipeline, and `CLAUDE.md` for the engineering rules.
+See `PROMPT.md` for the architecture and pipeline, `CLAUDE.md` for the engineering rules, and
+`decision-records/` for commit-pinned write-ups of how individual subsystems work.
 
 ## Verifying a change
 
@@ -45,11 +54,14 @@ There are no unit tests. Determinism is the regression check — the same repo i
 byte-identical `flow_graph.json` out:
 
 ```bash
-python scripts/render_repo.py "$LOCAL_REPO_PATH" scratch_out/after
+venv/bin/python scripts/render_repo.py "$LOCAL_REPO_PATH" scratch_out/after
 diff scratch_out/baseline/flow_graph.json scratch_out/after/flow_graph.json   # must be empty
-python scripts/flow_metrics.py scratch_out/after                              # must exit 0
-python scripts/flow_agent.py "$LOCAL_REPO_PATH" state overlaps                # overlaps must be 0
+venv/bin/python scripts/flow_metrics.py scratch_out/after                     # must exit 0
+venv/bin/python scripts/flow_agent.py "$LOCAL_REPO_PATH" state overlaps       # overlaps must be 0
 ```
+
+Then open the PNG and look at it — counts are not evidence. Note that `uvicorn --reload` does not
+watch `shared/`, so restart the services after changing it or you will be validating stale output.
 
 ## License
 

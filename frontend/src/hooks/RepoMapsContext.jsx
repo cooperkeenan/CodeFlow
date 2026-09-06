@@ -1,22 +1,22 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { listRepoMaps } from '../api/repomaps'
+import { createContext, useContext } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { repoMapListQueryFn, repoMapListQueryKey } from '../api/queries'
 
 const RepoMapsContext = createContext(null)
 
 export function RepoMapsProvider({ children }) {
-  const [maps, setMaps] = useState([])
-  const [error, setError] = useState(null)
-  const [signedOut, setSignedOut] = useState(false)
+  const { data, error, refetch } = useQuery({
+    queryKey: repoMapListQueryKey(),
+    queryFn: repoMapListQueryFn(),
+  })
 
-  const refresh = () =>
-    listRepoMaps()
-      .then(d => { setMaps(d.repo_maps); setError(null); setSignedOut(false) })
-      .catch(e => (e.status === 401 ? setSignedOut(true) : setError(e.message)))
-
-  useEffect(() => { refresh() }, [])
+  const signedOut = error?.status === 401
+  const errorMessage = !signedOut && error ? error.message : null
 
   return (
-    <RepoMapsContext.Provider value={{ maps, error, signedOut, refresh }}>
+    <RepoMapsContext.Provider
+      value={{ maps: data?.repo_maps ?? [], error: errorMessage, signedOut, refresh: refetch }}
+    >
       {children}
     </RepoMapsContext.Provider>
   )

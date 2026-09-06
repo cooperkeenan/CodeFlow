@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { getDiagramEdits, saveDiagramEdits } from '../api/diagrams'
+import { useQuery } from '@tanstack/react-query'
+import { saveDiagramEdits } from '../api/diagrams'
+import { diagramEditsQueryFn, diagramEditsQueryKey } from '../api/queries'
 import { debounce } from './debounce'
 import { EMPTY_OVERLAY } from './graph/overlayReducer'
 import {
@@ -19,18 +21,15 @@ const DEBOUNCE_MS = 600
 
 export function useDiagramEdits(repo) {
   const [editsMap, setEditsMap] = useState({})
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const { data, isLoading, error } = useQuery({
+    queryKey: diagramEditsQueryKey(repo),
+    queryFn: diagramEditsQueryFn(repo),
+    enabled: Boolean(repo),
+  })
 
   useEffect(() => {
-    if (!repo) return
-    setLoading(true)
-    setError(null)
-    getDiagramEdits(repo)
-      .then(data => setEditsMap(data?.edits ?? {}))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
-  }, [repo])
+    setEditsMap(data?.edits ?? {})
+  }, [data])
 
   const saveRef = useRef(null)
   useEffect(() => {
@@ -109,8 +108,8 @@ export function useDiagramEdits(repo) {
   )
 
   return {
-    loading,
-    error,
+    loading: isLoading,
+    error: error?.message ?? null,
     overlayFor,
     addEdge,
     deleteElements,

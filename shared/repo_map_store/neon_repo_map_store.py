@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from psycopg.types.json import Json
 from psycopg_pool import AsyncConnectionPool
 
@@ -32,6 +34,12 @@ ORDER BY updated_at DESC
 
 _SELECT = """
 SELECT repo, source, payload, created_at, updated_at
+FROM repo_maps
+WHERE user_id = %s AND repo = %s
+"""
+
+_SELECT_UPDATED_AT = """
+SELECT updated_at
 FROM repo_maps
 WHERE user_id = %s AND repo = %s
 """
@@ -90,3 +98,12 @@ class NeonRepoMapStore:
             "created_at": row[3],
             "updated_at": row[4],
         }
+
+    async def updated_at(self, user_id: int, repo: str) -> datetime | None:
+        pool = await self._get_pool()
+        async with pool.connection() as conn:
+            cursor = await conn.execute(_SELECT_UPDATED_AT, (user_id, repo))
+            row = await cursor.fetchone()
+        if row is None:
+            return None
+        return row[0]
