@@ -51,7 +51,11 @@ def print_endpoint_detail(session: FlowSession) -> None:
     print(f"DETAIL: {info['method']} {info['path']}")
     print(f"  title: {info['title']}")
     print(f"  description: {info['description']}")
-    print(f"  contract: params={info['paramCount']} responses={info['responseCount']}")
+    print(
+        f"  contract: routes={info['routeCount']} params={info['paramCount']} "
+        f"errors={info['errorCount']} (table rows shown: {info['errorTableRows']})"
+    )
+    print(f"  sections: {', '.join(info['sectionTitles'])}")
     print(f"  generated note: {info['generatedNote']!r}")
     print(f"  key methods ({len(info['methodNames'])}): {', '.join(info['methodNames'])}")
 

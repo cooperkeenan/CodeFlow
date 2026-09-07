@@ -74,7 +74,11 @@ class TrivialEntryFolder:
             members=tuple(m.handler_fqn for m in members),
             route_count=total_routes,
         )
-        acc.upsert(grouped.id, "entry", root, grouped.label, folded_count=total_routes)
+        routes = [route for m in members for route in m.route_members]
+        acc.upsert(
+            grouped.id, "entry", root, grouped.label,
+            folded_count=total_routes, members=routes,
+        )
         return grouped
 
     def _prune_orphans(

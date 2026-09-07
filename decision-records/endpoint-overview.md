@@ -1,12 +1,13 @@
 # Endpoint Overview and API Contracts
 
 **Status:** accepted
-**Recorded against:** commit `5c946448` (2026-09-05) plus the uncommitted endpoint-overview work on
+**Recorded against:** commit `6c275719` (2026-09-07) plus the uncommitted endpoint-overview work on
 branch `feature/api-contracts`. Re-pin this line to the merge commit when the branch lands.
 
 This record describes why the per-endpoint "API contract" (method, path, params, responses, auth,
 examples) is written at **read time** by an LLM rather than during the analyse pipeline, why the
-LLM is not trusted with method or path, and why no new storage was added to hold any of it.
+LLM is not trusted with method or path, why a grouped route entry carries one contract per route,
+and why no new storage was added to hold any of it.
 
 ---
 
@@ -32,10 +33,12 @@ call, `POST /contract` on `agents/explain_agent`, the same posture as the existi
 ## 2. Why the LLM never sees method or path as something to invent
 
 Static analysis owns structure; the LLM owns judgement and words — the same split `node-labelling.md`
-describes for node selection. Method and path are not judgement calls: they are parsed statically
-from the entry node's own label by `shared/flow_endpoints/route_label.py::RouteLabel`, which already
-exists as the single source of truth other code reads route shape from (`EndpointDetailBuilder`,
-`EndpointContractResolver`, `scripts/endpoint_detail_fixture.py`). Those parsed values are passed
+describes for node selection. Method and path are not judgement calls: they come from
+`shared/flow_endpoints/entry_routes.py::EntryRoutes.of`, which reads `FlowNode.members` when the
+entry is a group and otherwise falls back to parsing the node's own label with
+`shared/flow_endpoints/route_label.py::RouteLabel` (§4). That pair is the single source of truth
+other code reads route shape from (`EndpointDetailBuilder`, `EndpointContractResolver`,
+`scripts/endpoint_detail_fixture.py`). Those parsed values are passed
 **into** `ContractRequest` as fixed fields (`agents/explain_agent/explain/models/contract_model.py`);
 the LLM is asked to describe params, responses, auth and examples around them, not to state them.
 
@@ -71,11 +74,43 @@ writer has no `code_files` table to read from, so it slices source directly off 
 disk (`span.file` under the given `repo_path`) into the static fixture JSON it writes — the same
 `span`-driven slicing, just against a filesystem instead of Postgres.
 
-## 4. Where the caches sit
+## 4. Why a grouped route entry gets one contract per route
+
+`EntryFinder._grouped` (`analysis/routes/entry_finder.py`) folds two or more routes sharing a module
+into a single `entry:group:<module>` node, labelled `auth · 3 routes`. That fold is what keeps the
+whole-repo map inside its 15-node budget and is not being undone here.
+
+The endpoint page originally inherited the fold wholesale and described only the **first** member. On
+mealie's `entry:group:mealie.routes.auth.auth` that meant the page showed `POST /token` alone;
+`GET /oauth` and `GET /oauth/callback` were silently absent, and the panel still said "3 routes". The
+label also never parsed — `RouteLabel.parse` only accepts a leading all-caps verb, so `auth · 3
+routes` yielded `method=""`, `path="auth · 3 routes"`, which the OpenAPI export then emitted as a
+nonsense path under a guessed `get`.
+
+`FlowEntry.members` already held every handler FQN but was dropped at condensation. `FlowNode` now
+carries `members: list[RouteMember]` (`handler_fqn`, `method`, `path`), populated by
+`FlowEntry.route_members` and forwarded through `GraphAccumulator.upsert`. `EndpointDetailService`
+resolves one contract per member — each with that member's own handler source promoted in the symbol
+payload — and `EndpointDetail.contracts` is a list.
+
+Two consequences worth stating:
+
+- **`members` is additive to `flow_graph.json`.** Verified on the demo repo: the graph is
+  byte-identical with the field stripped, and `rendered_view.json` is byte-identical outright. The
+  golden check is unaffected in substance, but the file does change, so a stored baseline predating
+  this needs recapturing.
+- **The whole-repo map still shows one node.** This changes what the *endpoint page* says about a
+  group, not how the diagram draws it.
+
+The OpenAPI export benefits directly: `contractsToOpenApi` merges the members into one document's
+`paths` object, which is what that object is for — `entry:group:...auth` exports as three operations
+under `/oauth`, `/oauth/callback` and `/token` in a single Postman import.
+
+## 5. Where the caches sit
 
 - **Contract payloads** — `explanations` table (Neon), keyed by the fingerprint above. No
   in-process cache in front of it beyond the response-level `EndpointViewCache`.
-- **The assembled `EndpointDetail` response** (contract + key methods + sliced sources) —
+- **The assembled `EndpointDetail` response** (contracts + key methods + sliced sources) —
   `EndpointViewCache`, an in-process LRU keyed on `(user_id, repo, updated_at, "detail:<entry_id>")`
   (`api/gateway/services/endpoint_view_cache.py`), the same cache the whole-repo and per-endpoint
   flow views already share. `updated_at` in the key means a re-analysed repo invalidates every

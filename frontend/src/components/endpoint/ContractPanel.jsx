@@ -1,66 +1,55 @@
-import { Box, Chip, Divider, Stack, Typography } from '@mui/material'
-import ContractParamTable from './ContractParamTable'
-import ContractResponses from './ContractResponses'
+import { useState } from 'react'
+import { Box, Button, Stack, Typography } from '@mui/material'
+import ContractRoute from './ContractRoute'
+import { contractsToOpenApiText } from '../../lib/contractToOpenApi'
 
 const MONO = "'IBM Plex Mono', monospace"
 
-function Example({ title, value }) {
-  if (!value) return null
+function CopyOpenApiButton({ contracts, title }) {
+  const [state, setState] = useState('copy OpenAPI')
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(contractsToOpenApiText(contracts, { title }))
+      setState('copied')
+    } catch {
+      setState('copy failed')
+    }
+    setTimeout(() => setState('copy OpenAPI'), 2000)
+  }
   return (
-    <Box sx={{ mb: 2 }}>
-      <Typography variant="overline" color="text.disabled">{title}</Typography>
-      <Box
-        component="pre"
-        sx={{
-          fontFamily: MONO,
-          fontSize: 11,
-          color: 'text.secondary',
-          bgcolor: 'background.default',
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1,
-          p: 1,
-          overflowX: 'auto',
-        }}
-      >
-        {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
-      </Box>
-    </Box>
+    <Button
+      size="small"
+      variant="outlined"
+      color="inherit"
+      data-testid="copy-openapi"
+      onClick={copy}
+      sx={{ fontSize: 11, color: 'text.secondary', borderColor: 'divider' }}
+    >
+      {state}
+    </Button>
   )
 }
 
-export default function ContractPanel({ contract }) {
-  if (!contract) return null
+export default function ContractPanel({ contracts, title }) {
+  const routes = (contracts || []).filter(Boolean)
+  if (!routes.length) return null
   return (
     <Box data-testid="contract-panel" sx={{ maxWidth: 720 }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
         <Typography variant="h6" sx={{ fontFamily: MONO, fontSize: 16 }}>API Contract</Typography>
-        {contract.generated === false && (
+        {routes.length > 1 && (
           <Typography variant="caption" color="text.disabled">
-            derived statically, not model-generated
+            {routes.length} routes
           </Typography>
         )}
+        <Box sx={{ flex: 1 }} />
+        <CopyOpenApiButton contracts={routes} title={title} />
       </Stack>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-        <Chip label={contract.method} size="small" color="primary" />
-        <Typography sx={{ fontFamily: MONO, fontSize: 13 }}>{contract.path}</Typography>
+      <Stack spacing={2}>
+        {routes.map(contract => (
+          <ContractRoute key={`${contract.method}:${contract.path}`} contract={contract} />
+        ))}
       </Stack>
-      {contract.summary && (
-        <Typography color="text.secondary" sx={{ mb: 2 }}>{contract.summary}</Typography>
-      )}
-      {contract.auth && (
-        <Typography variant="body2" sx={{ mb: 2 }}>
-          <strong>Auth:</strong> {contract.auth}
-        </Typography>
-      )}
-      <ContractParamTable params={contract.params} />
-      {contract.request_body && (
-        <Example title="Request body" value={contract.request_body} />
-      )}
-      <ContractResponses responses={contract.responses} />
-      {(contract.example_request || contract.example_response) && <Divider sx={{ my: 2 }} />}
-      <Example title="Example request" value={contract.example_request} />
-      <Example title="Example response" value={contract.example_response} />
     </Box>
   )
 }

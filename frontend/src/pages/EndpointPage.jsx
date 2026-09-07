@@ -5,6 +5,7 @@ import { useEndpointDetail } from '../hooks/useEndpointDetail'
 import { endpointDetailFixtureUrl } from '../api/endpoints'
 import { flowQueryFn, flowQueryKey } from '../api/queries'
 import ContractPanel from '../components/endpoint/ContractPanel'
+import { methodChipSx } from '../components/endpoint/contractChips'
 import KeyMethodPanel from '../components/endpoint/KeyMethodPanel'
 
 const MONO = "'IBM Plex Mono', monospace"
@@ -30,7 +31,8 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
     })
   }
 
-  const description = detail?.description || detail?.contract?.summary || ''
+  const contracts = detail?.contracts ?? (detail?.contract ? [detail.contract] : [])
+  const description = detail?.description || contracts[0]?.summary || ''
 
   return (
     <Box data-testid="endpoint-page" sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -44,7 +46,14 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
         <button className="back" onClick={backToList}>← endpoints</button>
         {detail && (
           <>
-            <Chip label={detail.method} size="small" color="primary" />
+            {detail.method && (
+              <Chip
+                label={detail.method}
+                size="small"
+                variant="outlined"
+                sx={methodChipSx(detail.method)}
+              />
+            )}
             <Typography sx={{ fontFamily: MONO, fontSize: 13 }}>{detail.path}</Typography>
             <Typography sx={{ fontFamily: MONO, fontSize: '1.1rem', fontWeight: 600 }}>
               {detail.title}
@@ -79,7 +88,7 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
             >
               view diagram
             </Button>
-            <ContractPanel contract={detail.contract} />
+            <ContractPanel contracts={contracts} title={detail.title} />
             <KeyMethodPanel methods={detail.methods} sources={detail.sources} />
           </Stack>
         </Box>

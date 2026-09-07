@@ -10,7 +10,7 @@ class EndpointDetailBuilder:
     def build(
         self,
         node: FlowNode,
-        contract: EndpointContract,
+        contracts: list[EndpointContract],
         method_fqns: list[str],
         symbol_context: dict,
         sources: dict[str, str],
@@ -23,7 +23,7 @@ class EndpointDetailBuilder:
             path=path,
             title=node.llm_label or node.label,
             description=node.one_liner,
-            contract=contract,
+            contracts=contracts,
             methods=[self._key_method(fqn, symbol_context) for fqn in method_fqns],
             sources={fqn: source for fqn, source in sources.items() if fqn in method_fqns},
         )

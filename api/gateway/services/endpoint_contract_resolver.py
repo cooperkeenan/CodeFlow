@@ -26,12 +26,13 @@ class EndpointContractResolver:
         sources: dict[str, str],
         symbol_context: dict,
         repo: str,
+        handler_fqn: str = "",
     ) -> EndpointContract:
         fingerprint = self._fingerprint(entry_id, method, path, sources)
         cached = await self._store.get(fingerprint)
         if cached is not None:
             return EndpointContract.model_validate(cached)
-        handler_fqn = symbol_context.get("nodes", {}).get(entry_id, "")
+        handler_fqn = handler_fqn or symbol_context.get("nodes", {}).get(entry_id, "")
         request_payload = {
             "entry_id": entry_id,
             "label": node.label,

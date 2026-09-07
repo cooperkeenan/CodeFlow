@@ -1,7 +1,14 @@
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from shared.models.flow_graph import Badge, EdgeKind, EffectKind, NodeKind, SourceRef
+from shared.models.flow_graph import (
+    Badge,
+    EdgeKind,
+    EffectKind,
+    NodeKind,
+    RouteMember,
+    SourceRef,
+)
 
 EventKind = Literal["call", "effect", "decision", "parallel"]
 
@@ -41,6 +48,7 @@ class _NodeDraft:
     effect_kind: EffectKind | None = None
     effect_target: str = ""
     folded_count: int = 0
+    members: list[RouteMember] = field(default_factory=list)
     owner_fqn: str = ""
     arm_path: list[str] = field(default_factory=list)
     containers: list[str] = field(default_factory=list)

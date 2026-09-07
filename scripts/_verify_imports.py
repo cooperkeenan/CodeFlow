@@ -36,3 +36,4 @@ if __name__ == "__main__":
     targets = sys.argv[1:] or list(AGENTS)
     results = [check(t, AGENTS[t]) for t in targets]
     sys.exit(0 if all(results) else 1)
+

@@ -1,13 +1,13 @@
-import re
-
 from explain.models.contract_model import ContractRequest
 
+from shared.flow_endpoints.handler_name import HandlerName
 from shared.models.endpoint_contract import ContractParam, EndpointContract
-
-_SPLIT_PATTERN = re.compile(r"[_\s]+")
 
 
 class HeuristicContractWriter:
+    def __init__(self, handler_name: HandlerName | None = None) -> None:
+        self._handler_name_source = handler_name or HandlerName()
+
     def write(self, request: ContractRequest) -> EndpointContract:
         params = [
             ContractParam(name=name, location="path", required=True)
@@ -33,8 +33,4 @@ class HeuristicContractWriter:
         return request.label
 
     def _humanize(self, name: str) -> str:
-        words = [w for w in _SPLIT_PATTERN.split(name) if w]
-        if not words:
-            return name
-        sentence = " ".join(words).lower()
-        return sentence[0].upper() + sentence[1:]
+        return self._handler_name_source.humanize(name)

@@ -16,6 +16,12 @@ class SourceRef(BaseModel):
     end_line: int
 
 
+class RouteMember(BaseModel):
+    handler_fqn: str
+    method: str = ""
+    path: str = ""
+
+
 class FlowNode(BaseModel):
     id: str
     kind: NodeKind
@@ -27,6 +33,7 @@ class FlowNode(BaseModel):
     refs: list[SourceRef] = []
     badges: list[Badge] = []
     folded_count: int = 0
+    members: list[RouteMember] = []
     effect_kind: EffectKind | None = None
     effect_target: str = ""
     level: int = 0

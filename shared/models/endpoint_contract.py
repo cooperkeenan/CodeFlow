@@ -20,6 +20,7 @@ class ContractResponse(BaseModel):
 class EndpointContract(BaseModel):
     method: str
     path: str
+    name: str = ""
     summary: str = ""
     params: list[ContractParam] = Field(default_factory=list)
     request_body: str = ""
@@ -45,6 +46,6 @@ class EndpointDetail(BaseModel):
     path: str
     title: str
     description: str = ""
-    contract: EndpointContract
+    contracts: list[EndpointContract] = Field(default_factory=list)
     methods: list[KeyMethod] = Field(default_factory=list)
     sources: dict[str, str] = Field(default_factory=dict)

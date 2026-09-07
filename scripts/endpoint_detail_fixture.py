@@ -6,7 +6,10 @@ from explain.services.contract.heuristic_contract_writer import HeuristicContrac
 
 from shared.flow_endpoints.endpoint_detail_builder import EndpointDetailBuilder
 from shared.flow_endpoints.endpoint_key_methods import KeyMethodSelector
+from shared.flow_endpoints.entry_routes import EntryRoutes
+from shared.flow_endpoints.handler_name import HandlerName
 from shared.flow_endpoints.route_label import RouteLabel
+from shared.models.endpoint_contract import EndpointContract
 from shared.models.flow_graph import FlowGraph, FlowNode
 
 _MAX_LINES = 120
@@ -49,26 +52,38 @@ class EndpointDetailFixtureWriter:
         self._builder = EndpointDetailBuilder(self._route_label)
         self._contract_writer = HeuristicContractWriter()
         self._slicer = LocalSourceSlicer(repo_path)
+        self._routes = EntryRoutes(self._route_label)
+        self._handler_name = HandlerName()
 
     def write(self, graph: FlowGraph, node: FlowNode, entry_id: str, target: Path) -> None:
         symbol_context = graph.meta.get("symbol_context", {})
         method_fqns = self._key_methods.select(graph, entry_id, symbol_context)
-        method, path = self._route_label.parse(node.label)
-        path_params = self._route_label.path_params(path)
-        handler_fqn = symbol_context.get("nodes", {}).get(entry_id, "")
         sources = self._sources_for(method_fqns, symbol_context)
-        request = ContractRequest(
-            entry_id=entry_id,
-            label=node.label,
-            method=method,
-            path=path,
-            handler_fqn=handler_fqn,
-            path_params=path_params,
-        )
-        contract = self._contract_writer.write(request)
-        detail = self._builder.build(node, contract, method_fqns, symbol_context, sources)
+        default_fqn = symbol_context.get("nodes", {}).get(entry_id, "")
+        contracts = [
+            self._named(
+                self._contract_writer.write(
+                    ContractRequest(
+                        entry_id=entry_id,
+                        label=node.label,
+                        method=route.method,
+                        path=route.path,
+                        handler_fqn=route.handler_fqn or default_fqn,
+                        path_params=self._route_label.path_params(route.path),
+                    )
+                ),
+                route.handler_fqn or default_fqn,
+            )
+            for route in self._routes.of(node)
+        ]
+        detail = self._builder.build(node, contracts, method_fqns, symbol_context, sources)
         payload = detail.model_dump(mode="json")
         target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    def _named(self, contract: EndpointContract, handler_fqn: str) -> EndpointContract:
+        if not handler_fqn:
+            return contract
+        return contract.model_copy(update={"name": self._handler_name.humanize(handler_fqn)})
 
     def _sources_for(self, fqns: list[str], symbol_context: dict) -> dict[str, str]:
         functions = symbol_context.get("functions", {})

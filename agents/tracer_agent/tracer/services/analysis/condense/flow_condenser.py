@@ -81,6 +81,7 @@ class FlowCondenser:
             acc.upsert(
                 entry.id, "entry", entry.service_root, entry.label,
                 refs=refs or None, folded_count=folded,
+                members=list(entry.route_members),
             )
             for handler in handlers:
                 summary = summarizer.summarize(handler)

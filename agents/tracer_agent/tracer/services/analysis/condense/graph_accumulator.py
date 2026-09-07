@@ -8,6 +8,7 @@ from shared.models.flow_graph import (
     FlowEdge,
     FlowNode,
     NodeKind,
+    RouteMember,
     SourceRef,
 )
 
@@ -31,6 +32,7 @@ class GraphAccumulator:
         effect_kind: EffectKind | None = None,
         effect_target: str = "",
         folded_count: int = 0,
+        members: list[RouteMember] | None = None,
     ) -> str:
         draft = self._nodes.get(node_id)
         if draft is None:
@@ -38,6 +40,9 @@ class GraphAccumulator:
             self._nodes[node_id] = draft
         if folded_count:
             draft.folded_count = folded_count
+        for member in members or []:
+            if member not in draft.members:
+                draft.members.append(member)
         for fqn in backing or []:
             if fqn not in draft.backing:
                 draft.backing.append(fqn)
@@ -135,6 +140,7 @@ class GraphAccumulator:
                 effect_kind=d.effect_kind,
                 effect_target=d.effect_target,
                 folded_count=d.folded_count,
+                members=list(d.members),
                 owner_fqn=d.owner_fqn,
                 arm_path=list(d.arm_path),
                 containers=sorted(d.containers),

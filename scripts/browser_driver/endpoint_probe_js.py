@@ -1,4 +1,4 @@
-READ_ENDPOINT_DETAIL = """
+READ_ENDPOINT_DETAIL = r"""
 () => {
   const page = document.querySelector('[data-testid="endpoint-page"]');
   if (!page) return { present: false };
@@ -6,15 +6,24 @@ READ_ENDPOINT_DETAIL = """
   const chip = header ? header.querySelector('.MuiChip-label') : null;
   const headerTexts = header ? [...header.querySelectorAll('p')].map(p => p.textContent.trim()) : [];
   const contractPanel = page.querySelector('[data-testid="contract-panel"]');
-  const heading = (text) => {
-    if (!contractPanel) return null;
-    return [...contractPanel.querySelectorAll('h6, .MuiTypography-h6')]
-      .find(h => h.textContent.trim() === text) || null;
-  };
-  const paramCount = contractPanel ? contractPanel.querySelectorAll('table tbody tr').length : 0;
-  const responsesHeading = heading('Responses');
-  const responseCount = responsesHeading && responsesHeading.nextElementSibling
-    ? responsesHeading.nextElementSibling.children.length : 0;
+  const routes = contractPanel
+    ? [...contractPanel.querySelectorAll('[data-testid="contract-route"]')] : [];
+  const routeCount = routes.length;
+  const paramCount = routes.reduce(
+    (n, r) => n + [...r.querySelectorAll('table tbody tr')]
+      .filter(row => !row.closest('[data-testid="error-codes-table"]')).length, 0);
+  const errorToggles = routes
+    .map(r => r.querySelector('[data-testid="error-codes-toggle"]'))
+    .filter(Boolean);
+  const errorCount = errorToggles.reduce((n, b) => {
+    const m = b.textContent.match(/\((\d+)\)/);
+    return n + (m ? Number(m[1]) : 0);
+  }, 0);
+  const sectionTitles = routes.length
+    ? [...routes[0].querySelectorAll('.MuiTypography-overline')].map(el => el.textContent.trim())
+    : [];
+  const errorTableRows = contractPanel
+    ? contractPanel.querySelectorAll('[data-testid="error-codes-table"] tbody tr').length : 0;
   const generatedNote = contractPanel
     ? [...contractPanel.querySelectorAll('span, p')]
         .map(el => el.textContent.trim())
@@ -30,8 +39,11 @@ READ_ENDPOINT_DETAIL = """
     path: headerTexts[0] || '',
     title: headerTexts[1] || '',
     description,
+    routeCount,
     paramCount,
-    responseCount,
+    errorCount,
+    errorTableRows,
+    sectionTitles,
     generatedNote,
     methodNames,
   };

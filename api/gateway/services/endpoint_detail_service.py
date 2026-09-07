@@ -8,6 +8,8 @@ from gateway.services.symbol_context_resolver import SymbolContextResolver
 
 from shared.flow_endpoints.endpoint_detail_builder import EndpointDetailBuilder
 from shared.flow_endpoints.endpoint_key_methods import KeyMethodSelector
+from shared.flow_endpoints.entry_routes import EntryRoutes
+from shared.flow_endpoints.handler_name import HandlerName
 from shared.flow_endpoints.route_label import RouteLabel
 from shared.models.flow_graph import FlowGraph, FlowNode
 
@@ -32,6 +34,8 @@ class EndpointDetailService:
         self._key_methods = key_method_selector
         self._route_label = route_label
         self._builder = detail_builder
+        self._routes = EntryRoutes(route_label)
+        self._handler_name = HandlerName()
 
     async def detail(self, user_id: int, repo: str, entry_id: str) -> dict | None:
         resolved = await self._resolve(user_id, repo)
@@ -61,16 +65,27 @@ class EndpointDetailService:
         functions = symbol_context.get("functions", {})
         classes = symbol_context.get("classes", {})
         method_fqns = self._key_methods.select(graph, entry_id, symbol_context)
-        method, path = self._route_label.parse(node.label)
-        path_params = self._route_label.path_params(path)
+        routes = self._routes.of(node)
 
         file_cache: dict[str, dict | None] = {}
-        sources = await self._sources_for(method_fqns, functions, classes, repo, file_cache)
-
-        contract = await self._contracts.resolve(
-            entry_id, node, method, path, path_params, sources, symbol_context, repo
+        fetch_fqns = method_fqns + [r.handler_fqn for r in routes if r.handler_fqn]
+        sources = await self._sources_for(
+            list(dict.fromkeys(fetch_fqns)), functions, classes, repo, file_cache
         )
-        detail = self._builder.build(node, contract, method_fqns, symbol_context, sources)
+
+        contracts = []
+        for route in routes:
+            contract = await self._contracts.resolve(
+                entry_id, node, route.method, route.path,
+                self._route_label.path_params(route.path),
+                sources, symbol_context, repo, route.handler_fqn,
+            )
+            if route.handler_fqn:
+                contract = contract.model_copy(
+                    update={"name": self._handler_name.humanize(route.handler_fqn)}
+                )
+            contracts.append(contract)
+        detail = self._builder.build(node, contracts, method_fqns, symbol_context, sources)
         return detail.model_dump(mode="json")
 
     async def _sources_for(

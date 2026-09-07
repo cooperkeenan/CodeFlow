@@ -5,6 +5,8 @@ from tracer.services.analysis.indexing.service_root_resolver import ServiceRootR
 from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
 from tracer.services.analysis.routes.route_handler_locator import RouteHandlerLocator
 
+from shared.models.flow_graph import RouteMember
+
 
 class EntryFinder:
     def __init__(
@@ -56,6 +58,10 @@ class EntryFinder:
             label=f"{short} · {len(members)} routes",
             service_root=head.service_root,
             members=tuple(m.handler_fqn for m in members),
+            routes=tuple(
+                RouteMember(handler_fqn=m.handler_fqn, method=m.method, path=m.path)
+                for m in members
+            ),
             route_count=len(members),
         )
 
