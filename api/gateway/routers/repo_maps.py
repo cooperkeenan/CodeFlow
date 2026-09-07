@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from gateway.deps import (
     get_current_user,
+    get_endpoint_detail_service,
     get_endpoint_view_service,
     get_node_explain_service,
     get_repo_map_service,
@@ -12,6 +13,7 @@ from gateway.models.repo_map_model import (
     RepoMapDetail,
     RepoMapListResponse,
 )
+from gateway.services.endpoint_detail_service import EndpointDetailService
 from gateway.services.endpoint_view_service import EndpointViewService
 from gateway.services.etag import ETag
 from gateway.services.node_explain_service import NodeExplainService
@@ -99,6 +101,27 @@ async def _flow_payload(
         "repo_url": "",
         "view": detail.map.diagram.get("view", {}),
     }
+
+
+@router.get("/{repo:path}/endpoint", response_model=None)
+async def get_repo_endpoint(
+    repo: str,
+    request: Request,
+    response: Response,
+    entry: str | None = None,
+    user: AuthUser = Depends(get_current_user),
+    service: EndpointDetailService = Depends(get_endpoint_detail_service),
+) -> dict | Response:
+    if not entry:
+        raise HTTPException(status_code=400, detail="entry is required")
+    detail = await service.detail(user.id, repo, entry)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Endpoint not found")
+    etag = ETag(detail)
+    if etag.not_modified(request):
+        return Response(status_code=304)
+    etag.apply(response)
+    return detail
 
 
 @router.post("/{repo:path}/explain")

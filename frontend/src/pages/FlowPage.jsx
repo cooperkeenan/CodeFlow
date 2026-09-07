@@ -8,6 +8,7 @@ import { useFlowEditing } from '../hooks/useFlowEditing'
 import { appendCurrentView, parseTrail, viewUrl } from '../components/flow/viewTrail'
 import FlowCanvas from '../components/flow/FlowCanvas'
 import FlowHeader from '../components/flow/FlowHeader'
+import EndpointSidebar from '../components/flow/EndpointSidebar'
 import Legend from '../components/flow/Legend'
 
 const MONO = 'IBM Plex Mono, monospace'
@@ -74,51 +75,60 @@ export default function FlowPage({ analysis, onBack, fixture }) {
   }, [isolated])
 
   return (
-    <main style={{ height: '100vh', display: 'flex', flexDirection: 'column', padding: '1.1rem 1.4rem', gap: '0.9rem', boxSizing: 'border-box' }}>
-      <FlowHeader
-        pageTitle={pageTitle}
-        entry={entry}
-        helper={helper}
+    <main style={{ height: '100vh', display: 'flex', boxSizing: 'border-box' }}>
+      <EndpointSidebar
         repo={repo}
         fixture={fixture}
-        fromParam={fromParam}
-        pathname={window.location.pathname}
-        navigate={navigate}
-        onBack={onBack}
-        showSecondary={showSecondary}
-        onToggleSecondary={() => setShowSecondary(v => !v)}
-        revealed={revealed}
-        onCollapseAll={expansion.collapseAll}
-        editMode={editMode}
-        onToggleEditMode={toggleEditMode}
-        drawn={drawn}
-        viewNodeCount={view?.nodes?.length ?? 0}
-        loading={loading}
-        error={error}
+        entry={entry}
+        flowPath={window.location.pathname}
+        endpointPath={fixture ? '/endpoint-fixture' : '/endpoint'}
       />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '1.1rem 1.4rem', gap: '0.9rem', boxSizing: 'border-box' }}>
+        <FlowHeader
+          pageTitle={pageTitle}
+          entry={entry}
+          helper={helper}
+          repo={repo}
+          fixture={fixture}
+          fromParam={fromParam}
+          pathname={window.location.pathname}
+          navigate={navigate}
+          onBack={onBack}
+          showSecondary={showSecondary}
+          onToggleSecondary={() => setShowSecondary(v => !v)}
+          revealed={revealed}
+          onCollapseAll={expansion.collapseAll}
+          editMode={editMode}
+          onToggleEditMode={toggleEditMode}
+          drawn={drawn}
+          viewNodeCount={view?.nodes?.length ?? 0}
+          loading={loading}
+          error={error}
+        />
 
-      <div style={{ position: 'relative', flex: 1, minHeight: 0, border: '1px solid #232A36', borderRadius: 3, overflow: 'hidden', background: '#0F1218' }}>
-        {error && <div style={{ ...MUTED, padding: '1rem' }}>failed to load flow: {error}</div>}
-        {!error && loading && <div style={{ ...MUTED, padding: '1rem' }}>loading flow…</div>}
-        {!error && !loading && !nodes.length && <div style={{ ...MUTED, padding: '1rem' }}>no flow data.</div>}
-        {!error && !loading && nodes.length > 0 && (
-          <>
-            <FlowCanvas
-              nodes={nodes}
-              edges={edges}
-              selectedId={isolated}
-              isolatedId={isolated}
-              onPaneClick={onPaneClick}
-              onNodeClick={onNodeClick}
-              revealTrigger={expansion.lastReveal}
-              repo={repo}
-              {...canvasProps}
-            >
-              {toolbar}
-            </FlowCanvas>
-            <Legend />
-          </>
-        )}
+        <div style={{ position: 'relative', flex: 1, minHeight: 0, border: '1px solid #232A36', borderRadius: 3, overflow: 'hidden', background: '#0F1218' }}>
+          {error && <div style={{ ...MUTED, padding: '1rem' }}>failed to load flow: {error}</div>}
+          {!error && loading && <div style={{ ...MUTED, padding: '1rem' }}>loading flow…</div>}
+          {!error && !loading && !nodes.length && <div style={{ ...MUTED, padding: '1rem' }}>no flow data.</div>}
+          {!error && !loading && nodes.length > 0 && (
+            <>
+              <FlowCanvas
+                nodes={nodes}
+                edges={edges}
+                selectedId={isolated}
+                isolatedId={isolated}
+                onPaneClick={onPaneClick}
+                onNodeClick={onNodeClick}
+                revealTrigger={expansion.lastReveal}
+                repo={repo}
+                {...canvasProps}
+              >
+                {toolbar}
+              </FlowCanvas>
+              <Legend />
+            </>
+          )}
+        </div>
       </div>
     </main>
   )

@@ -6,10 +6,10 @@ import RepoOverview from '../components/repo/RepoOverview'
 
 const MONO = "'IBM Plex Mono', monospace"
 
-export default function RepoHomePage({ repo, fixture, onBack, flowPath = '/flow' }) {
+export default function RepoHomePage({ repo, fixture, onBack, flowPath = '/flow', endpointPath = '/endpoint' }) {
   const { home, loading, error } = useRepoHome(repo, fixture)
   const navigate = useNavigate()
-  const openEndpoint = id => navigate(`${flowPath}?entry=${encodeURIComponent(id)}`)
+  const openEndpoint = id => navigate(`${endpointPath}?entry=${encodeURIComponent(id)}`)
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>

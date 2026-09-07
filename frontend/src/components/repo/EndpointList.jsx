@@ -1,7 +1,7 @@
 import { Box, Chip, List, ListItemButton, Stack, Typography } from '@mui/material'
 import { useQueryClient } from '@tanstack/react-query'
 import { endpointSlug } from '../../api/flow'
-import { flowQueryFn, flowQueryKey } from '../../api/queries'
+import { endpointDetailQueryFn, endpointDetailQueryKey } from '../../api/queries'
 
 const MONO = "'IBM Plex Mono', monospace"
 
@@ -47,8 +47,8 @@ export default function EndpointList({ endpoints, onOpen, repo, canPrefetch = tr
   const prefetch = (entryId) => {
     if (!canPrefetch || !repo) return
     queryClient.prefetchQuery({
-      queryKey: flowQueryKey(repo, null, entryId, null),
-      queryFn: flowQueryFn(repo, null, entryId, null),
+      queryKey: endpointDetailQueryKey(repo, null, entryId),
+      queryFn: endpointDetailQueryFn(repo, null, entryId),
     })
   }
 

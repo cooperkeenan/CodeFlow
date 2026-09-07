@@ -7,17 +7,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
+sys.path.insert(0, str(REPO_ROOT / "agents" / "explain_agent"))
 
 from browser_driver.flow_reports import print_flowchart, print_isolated, print_state
 from browser_driver.flow_session import FlowSession
+from flow_agent_endpoint_actions import USAGE as _ENDPOINT_USAGE
+from flow_agent_endpoint_actions import run_endpoint_action
 from render_repo import load_dotenv
-from repo_home_fixture import endpoint_slug
 from screenshot_flow import DEV_PORT, FIXTURE_PATH, FLOW_URL, _build_view, _write_outputs
 
 HOME_URL = "http://localhost:5173/repo-fixture"
 _HOME_SELECTOR = '[data-testid="endpoint-list"]'
 
-_USAGE = """usage: flow_agent.py <repo> [--no-llm] [--rebuild] [--explain <path.json>] <action> [<action> ...]
+_USAGE = f"""usage: flow_agent.py <repo> [--no-llm] [--rebuild] [--explain <path.json>] <action> [<action> ...]
 
 actions:
   state                dump visible nodes (id, position, label, +N control)
@@ -34,8 +36,7 @@ actions:
   press:<text>         click a header button, e.g. press:"collapse all"
   fit                  fit the view
   shot:<path>          screenshot to path
-  endpoint:<entry_id>  click that endpoint link on the repo home page, wait for the diagram
-
+{_ENDPOINT_USAGE}
 flags:
   --explain <path.json>  stub POST .../explain with this payload and pass ?repo=<name>
   --home                 open the repo home page (endpoint list) instead of the diagram
@@ -71,9 +72,8 @@ def _run_action(session: FlowSession, action: str) -> None:
         print(f"DIMMED: {info['dimmed']}/{info['total']}")
         for node_id in info["bright"]:
             print(f"  bright: {node_id}")
-    elif verb == "endpoint":
-        session.open_endpoint(endpoint_slug(arg))
-        print(f"opened endpoint {arg}")
+    elif run_endpoint_action(session, verb, arg):
+        pass
     elif verb == "tap":
         session.tap(arg)
         print(f"tapped {arg}")
@@ -125,7 +125,7 @@ def main(argv: list[str]) -> int:
 
     if rebuild or not FIXTURE_PATH.exists():
         graph, view = _build_view(target, no_llm)
-        _write_outputs(graph, view, REPO_ROOT / "scratch_out")
+        _write_outputs(graph, view, REPO_ROOT / "scratch_out", target)
         print(f"rebuilt fixture: {len(view.nodes)} placed, {len(view.hidden)} hidden")
 
     explain_payload = json.loads(Path(explain_path).read_text()) if explain_path else None

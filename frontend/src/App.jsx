@@ -16,6 +16,7 @@ import DashboardPage from './pages/DashboardPage'
 import RepoHomePage from './pages/RepoHomePage'
 import SettingsPage from './pages/SettingsPage'
 import FlowPage from './pages/FlowPage'
+import EndpointPage from './pages/EndpointPage'
 import TourPage from './pages/TourPage'
 
 const queryClient = new QueryClient({
@@ -107,7 +108,27 @@ export default function App() {
               <RepoHomePage
                 fixture="/fixture/repo_home.json"
                 flowPath="/flow-fixture"
+                endpointPath="/endpoint-fixture"
                 repo={fixtureAnalysis()?.repo}
+              />
+            }
+          />
+          <Route
+            path="/endpoint"
+            element={
+              <RequireAuth>
+                {analysis
+                  ? <EndpointPage repo={analysis.repo} />
+                  : <Navigate to="/" replace />}
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/endpoint-fixture"
+            element={
+              <EndpointPage
+                fixture="/fixture/endpoints/"
+                flowPath="/flow-fixture"
               />
             }
           />

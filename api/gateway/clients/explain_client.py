@@ -27,3 +27,20 @@ class ExplainClient:
                     raise
                 await asyncio.sleep(1)
         raise RuntimeError("Explain agent request failed unexpectedly")
+
+    async def contract(self, payload: dict) -> dict:
+        logger.info("Calling explain agent for contract")
+        for attempt in range(5):
+            try:
+                response = await self._http.post(
+                    f"{self._base_url}/contract",
+                    json=payload,
+                    timeout=60.0,
+                )
+                response.raise_for_status()
+                return response.json()
+            except httpx.ConnectError:
+                if attempt == 4:
+                    raise
+                await asyncio.sleep(1)
+        raise RuntimeError("Explain agent request failed unexpectedly")

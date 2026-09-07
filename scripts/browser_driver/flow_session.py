@@ -3,6 +3,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 from browser_driver.dev_server import DevServer
+from browser_driver.endpoint_probe import EndpointProbe
 from browser_driver.flow_probe_js import READ_DIMMED, READ_FLOWCHART, READ_ISOLATED, READ_STATE
 
 
@@ -25,6 +26,7 @@ class FlowSession:
         self._playwright = None
         self._browser = None
         self._page = None
+        self._endpoint = None
 
     def __enter__(self) -> "FlowSession":
         self._started = self._server.ensure_running()
@@ -35,6 +37,7 @@ class FlowSession:
             self._page.route("**/explain", lambda route: route.fulfill(json=self._explain_payload))
         self._page.goto(self._url, wait_until="networkidle")
         self._page.wait_for_selector(self._wait_selector, timeout=30000)
+        self._endpoint = EndpointProbe(self._page)
         return self
 
     def __exit__(self, *_: object) -> None:
@@ -70,9 +73,25 @@ class FlowSession:
         self._page.wait_for_timeout(250)
 
     def open_endpoint(self, slug: str) -> None:
-        self._page.click(f'[data-testid="endpoint-{slug}"]')
-        self._page.wait_for_selector(".react-flow__node", timeout=30000)
-        self._page.wait_for_timeout(600)
+        self._endpoint.open_endpoint(slug)
+
+    def endpoint_detail(self) -> dict:
+        return self._endpoint.detail()
+
+    def open_method(self, fqn: str) -> None:
+        self._endpoint.open_method(fqn)
+
+    def method_code(self) -> dict:
+        return self._endpoint.method_code()
+
+    def method_back(self) -> None:
+        self._endpoint.method_back()
+
+    def open_diagram(self) -> None:
+        self._endpoint.open_diagram()
+
+    def sidebar(self) -> dict:
+        return self._endpoint.sidebar()
 
     def press_button(self, text: str) -> None:
         self._page.click(f'header button:has-text("{text}")')

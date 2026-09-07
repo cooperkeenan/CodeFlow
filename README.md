@@ -4,9 +4,12 @@ Generates a **decision diagram** from a Python codebase: every point where the c
 by an LLM to the ones a human would actually put on a mental model of the system, rendered as a tree
 with `file:line` provenance on every node.
 
-You start at a repo's **endpoint list**, open one endpoint's diagram (2–19 nodes, mean 8 on the
-demo repo, with the rest behind `+N` controls), and follow **links on terminal nodes** into the diagram for whatever that path
-hands off to — another endpoint, or a shared helper's own diagram — with a breadcrumb back.
+You start at a repo's **endpoint list**, open one endpoint's **overview page** — parsed method/path,
+description, an API contract, and its key methods' source — then step from there into its diagram
+(2–19 nodes, mean 8 on the demo repo, with the rest behind `+N` controls). From the diagram you
+follow **links on terminal nodes** into whatever that path hands off to — another endpoint, or a
+shared helper's own diagram — with a breadcrumb back, and a left-rail sidebar for jumping straight to
+any other endpoint's diagram or overview.
 
 Static analysis owns the structure. The LLM only judges which forks are real decisions and writes
 their labels — it never adds, removes, merges or rewires a node or edge.

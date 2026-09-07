@@ -17,7 +17,10 @@ from gateway.deps.clients import (
     get_render_client,
     get_tracer_client,
 )
-from gateway.deps.endpoint_view import get_endpoint_view_service
+from gateway.deps.endpoint_view import (
+    get_endpoint_detail_service,
+    get_endpoint_view_service,
+)
 from gateway.deps.services import (
     get_analysis_service,
     get_ci_ingest_service,
@@ -50,6 +53,8 @@ __all__ = [
     "get_current_user",
     "get_diagram_edit_service",
     "get_diagram_edit_store",
+    "get_email_sender",
+    "get_endpoint_detail_service",
     "get_endpoint_view_cache",
     "get_endpoint_view_service",
     "get_explain_client",
@@ -63,7 +68,6 @@ __all__ = [
     "get_local_ci_service",
     "get_node_explain_service",
     "get_optional_user",
-    "get_email_sender",
     "get_password_auth_service",
     "get_password_hasher",
     "get_password_reset_service",

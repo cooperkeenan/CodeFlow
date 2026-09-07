@@ -43,6 +43,40 @@ def print_flowchart(session: FlowSession) -> None:
         print(f"    {a}  <->  {b}")
 
 
+def print_endpoint_detail(session: FlowSession) -> None:
+    info = session.endpoint_detail()
+    if not info.get("present"):
+        print("DETAIL: absent")
+        return
+    print(f"DETAIL: {info['method']} {info['path']}")
+    print(f"  title: {info['title']}")
+    print(f"  description: {info['description']}")
+    print(f"  contract: params={info['paramCount']} responses={info['responseCount']}")
+    print(f"  generated note: {info['generatedNote']!r}")
+    print(f"  key methods ({len(info['methodNames'])}): {', '.join(info['methodNames'])}")
+
+
+def print_method_code(session: FlowSession) -> None:
+    info = session.method_code()
+    if not info.get("present"):
+        print("METHOD-CODE: absent")
+        return
+    lines = info["text"].splitlines()
+    non_empty = any(line.strip() for line in lines)
+    print(f"METHOD-CODE: fqn={info['fqn']} lines={len(lines)} non_empty={non_empty}")
+    for line in lines[:8]:
+        print(f"  {line}")
+
+
+def print_sidebar(session: FlowSession) -> None:
+    info = session.sidebar()
+    if not info.get("present"):
+        print("SIDEBAR: absent")
+        return
+    for row in info["rows"]:
+        print(f"  [{row['active']}] {row['label']}  {row['testid']}")
+
+
 def _overlap_pairs(boxes: list[dict]) -> list[tuple[str, str]]:
     found: list[tuple[str, str]] = []
     for i in range(len(boxes)):

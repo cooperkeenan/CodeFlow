@@ -7,27 +7,32 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
-
-from render_repo import load_dotenv, read_python_sources
-from repo_map_saving.save_command import parse_save_flag, save_to_account
-from tracer.services.analysis.flow_pipeline import FlowPipeline
-from tracer.services.analysis.significance.factory import build_decision_judge
-from tracer.services.analysis.labelling.factory import build_flow_namer
-from tracer.services.analysis.labelling.factory import build_flow_reviewer
-from tracer.services.analysis.significance.heuristic_decision_judge import HeuristicDecisionJudge
-from tracer.services.analysis.labelling.heuristics import HeuristicFlowNamer
-from tracer.services.analysis.labelling.heuristics import HeuristicFlowReviewer
-from tracer.services.analysis.significance.site_classifier import SiteClassifier
-from tracer.services.analysis.effects.factory import build_effect_detector
-from tracer.services.analysis.stitch.factory import build_flow_stitcher
-from tracer.services.analysis.budget.factory import build_visibility_budgeter
-from tracer.services.analysis.indexing.factory import build_project_indexer
-from render.placement.flow_page_placer_factory import build_flow_page_placer
-
-from repo_home_fixture import write_repo_home_fixture
+sys.path.insert(0, str(REPO_ROOT / "agents" / "explain_agent"))
 
 from browser_driver.chrome_locator import ChromeLocator
 from browser_driver.dev_server_screenshotter import DevServerScreenshotter
+from render.placement.flow_page_placer_factory import build_flow_page_placer
+from render_repo import load_dotenv, read_python_sources
+from repo_home_fixture import write_repo_home_fixture
+from repo_map_saving.save_command import parse_save_flag, save_to_account
+from tracer.services.analysis.budget.factory import build_visibility_budgeter
+from tracer.services.analysis.effects.factory import build_effect_detector
+from tracer.services.analysis.flow_pipeline import FlowPipeline
+from tracer.services.analysis.indexing.factory import build_project_indexer
+from tracer.services.analysis.labelling.factory import (
+    build_flow_namer,
+    build_flow_reviewer,
+)
+from tracer.services.analysis.labelling.heuristics import (
+    HeuristicFlowNamer,
+    HeuristicFlowReviewer,
+)
+from tracer.services.analysis.significance.factory import build_decision_judge
+from tracer.services.analysis.significance.heuristic_decision_judge import (
+    HeuristicDecisionJudge,
+)
+from tracer.services.analysis.significance.site_classifier import SiteClassifier
+from tracer.services.analysis.stitch.factory import build_flow_stitcher
 
 FIXTURE_PATH = REPO_ROOT / "frontend" / "public" / "fixture" / "rendered_view.json"
 FLOW_URL = "http://localhost:5173/flow-fixture"
@@ -55,7 +60,7 @@ def _build_view(target: Path, no_llm: bool):
     return graph, view
 
 
-def _write_outputs(graph, view, out_dir: Path) -> None:
+def _write_outputs(graph, view, out_dir: Path, repo_path: Path | None = None) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     graph_json = graph.model_dump_json(indent=2)
     view_json = json.dumps(view.model_dump(), indent=2)
@@ -63,7 +68,7 @@ def _write_outputs(graph, view, out_dir: Path) -> None:
     (out_dir / "rendered_view.json").write_text(view_json, encoding="utf-8")
     FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
     FIXTURE_PATH.write_text(view_json, encoding="utf-8")
-    count = write_repo_home_fixture(graph, FIXTURE_PATH.parent)
+    count = write_repo_home_fixture(graph, FIXTURE_PATH.parent, repo_path)
     print(f"wrote repo home fixture with {count} entry points")
 
 
@@ -100,7 +105,7 @@ def main(argv: list[str]) -> int:
     out_dir = Path(positional[1]).resolve() if len(positional) > 1 else REPO_ROOT / "scratch_out"
 
     graph, view = _build_view(target, no_llm)
-    _write_outputs(graph, view, out_dir)
+    _write_outputs(graph, view, out_dir, target)
 
     png_path = out_dir / "flow.png"
     screenshotter = DevServerScreenshotter(

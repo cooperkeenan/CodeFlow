@@ -3,6 +3,7 @@ import json
 import re
 from pathlib import Path
 
+from endpoint_detail_fixture import EndpointDetailFixtureWriter
 from render.placement.flow_page_placer_factory import build_flow_page_placer
 
 from shared.flow_endpoints.endpoint_catalog import EndpointCatalog
@@ -42,15 +43,19 @@ def _write(target: Path, payload: dict) -> None:
     target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def write_repo_home_fixture(graph: FlowGraph, fixture_dir: Path) -> int:
+def write_repo_home_fixture(
+    graph: FlowGraph, fixture_dir: Path, repo_path: Path | None = None
+) -> int:
     catalog = EndpointCatalog()
     subgraph = EndpointSubgraph()
     owner_subgraph = OwnerSubgraph(subgraph)
     owner_index = SharedOwnerIndex()
     resolver = LinkResolver()
     placer = build_flow_page_placer()
+    detail_writer = EndpointDetailFixtureWriter(repo_path)
     items = catalog.items(graph)
     owners = owner_index.owners(graph)
+    nodes_by_id = {node.id: node for node in graph.nodes}
     home = {
         "repo": graph.repo,
         "title": graph.repo,
@@ -64,6 +69,9 @@ def write_repo_home_fixture(graph: FlowGraph, fixture_dir: Path) -> int:
     endpoint_dir.mkdir(parents=True, exist_ok=True)
     helper_targets: set[str] = set()
     for item in items:
+        node = nodes_by_id.get(item.id)
+        if node is not None:
+            detail_writer.write(graph, node, item.id, endpoint_dir / f"detail_{endpoint_slug(item.id)}.json")
         sliced = subgraph.slice(graph, item.id)
         if sliced is None:
             continue

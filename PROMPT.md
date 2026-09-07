@@ -29,7 +29,9 @@ Four deployable services plus an on-demand explain agent and a frontend:
   resolves the call graph, extracts forks, judges them, condenses to a `FlowGraph`.
 - **Render agent** (`agents/render_agent/`, package `render`, 8004) — deterministic React Flow geometry.
 - **Explain agent** (`agents/explain_agent/`, package `explain`, 8007) — on-demand per-node symbol
-  explanations. **Not part of the analyse pipeline**; reached only via `POST /repomaps/{repo}/explain`.
+  explanations, reached via `POST /repomaps/{repo}/explain`, and on-demand endpoint API contracts,
+  reached via `POST /contract` (offline `HeuristicContractWriter` fallback, no API key required).
+  **Neither is part of the analyse pipeline.**
 - **Frontend** (`frontend/`, Vite + React Flow) — thin renderer over backend-supplied positions.
 
 Each service directory is the Docker build context, with `main.py` at its root and all other code in
@@ -55,6 +57,9 @@ Read endpoints (`api/gateway/routers/repo_maps.py`), all ETag'd with `304` suppo
 `GET /repomaps/{repo}/flow?entry=<entry_id>` (one endpoint, sliced and rendered on demand) and
 `?helper=<owner_fqn>` (one shared function). Passing both `entry` and `helper` is a 400. The
 `entry`/`helper` responses carry a `links` map alongside `view`.
+`GET /repomaps/{repo}/endpoint?entry=<entry_id>` returns an `EndpointDetail`: parsed method/path,
+title, description, key methods with source, and an API contract (LLM-written at read time via the
+explain agent, cached in `explanations`, falling back to the heuristic writer on any failure).
 
 ## The tracer pipeline
 
@@ -226,10 +231,15 @@ python scripts/flow_agent.py <repo> "press:collapse all" state
 Actions: `state` (every visible node with position, label, `+N` control and a `[→]` marker for a
 cross-diagram link), `overlaps` (colliding node pairs — **0 is the goal**, and this is the check that
 catches bad layout), `toggle:<id>`, `link:<id>` (follow a link chip), `click:<id>`,
-`press:<button text>`, `key:<name>`, `fit`, `shot:<path>`, `endpoint:<entry_id>`. Flags `--entry
-<entry_id>` and `--home` open one endpoint's diagram or the repo home page instead of the whole map.
-`--rebuild` re-runs the pipeline first; without it the existing fixture is reused. Nested expansion works — toggle a revealed decision or a
-`more:` node to go deeper.
+`press:<button text>`, `key:<name>`, `fit`, `shot:<path>`, `endpoint:<entry_id>` (open that
+endpoint's overview page from the repo home list), `detail` (print the endpoint page as text:
+method, path, title, description, contract param/response counts, the `generated` note, and
+key-method names), `method:<fqn>` (click that key-method row, assert its code pane is non-empty),
+`back` (return from method code to the key-method list), `diagram` (press "view diagram" and wait
+for the canvas), `sidebar` (print every row of the `/flow` endpoint sidebar with its active flag).
+Flags `--entry <entry_id>` and `--home` open one endpoint's diagram or the repo home page instead of
+the whole map. `--rebuild` re-runs the pipeline first; without it the existing fixture is reused.
+Nested expansion works — toggle a revealed decision or a `more:` node to go deeper.
 
 This is also the **only** check that catches a frontend render loop — `vite build` passes happily
 while the page is unusable. Run it after any `frontend/src/` change.
@@ -242,11 +252,17 @@ the account by `github_login` or `email`.
 
 - **`/` dashboard** — repo list, GitHub repo picker, run analysis (local or GitHub), progress polling.
 - **`/repo` repo home** — the endpoint list (routes and service entry points) with the repo
-  description; picking one opens its diagram. This is the intended way in, not the whole-repo map.
-- **`/flow`** — the decision diagram. Progressive disclosure via `+` per branch, `show cross-links`,
-  `collapse all`, click-to-isolate a node into a code/flowchart view, provenance popovers. Arrow keys
-  pan both axes (60px, 240px with Shift), suppressed while focus is in a text field.
-  `?entry=` / `?helper=` render one endpoint or one shared function.
+  description; picking one opens its **endpoint overview page**, not the diagram directly. The
+  intended path in is list → endpoint overview → diagram.
+- **`/endpoint`** — one endpoint's overview: parsed method/path, title, description, an API contract
+  panel (params, responses, auth, examples — see `EndpointContract`), and a key-methods panel that
+  shows each method's source on click. A "view diagram" button opens `/flow?entry=<id>`.
+- **`/flow`** — the decision diagram. A left-rail `EndpointSidebar` lists every endpoint and entry
+  point (each with its own "overview" link back to `/endpoint`) alongside the canvas. Progressive
+  disclosure via `+` per branch, `show cross-links`, `collapse all`, click-to-isolate a node into a
+  code/flowchart view, provenance popovers. Arrow keys pan both axes (60px, 240px with Shift),
+  suppressed while focus is in a text field. `?entry=` / `?helper=` render one endpoint or one shared
+  function.
 - **Cross-diagram links** — a labelled `→ target` chip on a node opens that target's diagram. A
   breadcrumb (`← endpoints / forms.PublicTicketForm / Ticket.send / …`) shows how you got there; the
   arrow goes back one level, each ancestor is clickable. The trail lives in a `from` query param so

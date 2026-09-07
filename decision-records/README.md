@@ -10,3 +10,5 @@ worse than no record, because it will be trusted.
 
 - [node-labelling.md](node-labelling.md) — how the pipeline decides which nodes appear in a
   diagram and what each one is called.
+- [endpoint-overview.md](endpoint-overview.md) — why endpoint API contracts are written at read
+  time, not in the analyse pipeline, and where the caches sit.

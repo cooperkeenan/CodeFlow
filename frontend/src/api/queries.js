@@ -2,6 +2,7 @@ import { getFlowGraph } from './flow'
 import { getRepoHome, listRepoMaps } from './repomaps'
 import { getDiagramEdits } from './diagrams'
 import { explainNode } from './explain'
+import { getEndpointDetail } from './endpoints'
 
 export const flowQueryKey = (repo, fixtureUrl, entry, helper) => [
   'flow',
@@ -29,3 +30,13 @@ export const repoMapListQueryFn = () => () => listRepoMaps()
 export const explainQueryKey = (repo, nodeId) => ['explain', repo, nodeId]
 
 export const explainQueryFn = (repo, nodeId) => () => explainNode(repo, nodeId)
+
+export const endpointDetailQueryKey = (repo, fixtureUrl, entry) => [
+  'endpoint-detail',
+  repo,
+  fixtureUrl ?? null,
+  entry ?? null,
+]
+
+export const endpointDetailQueryFn = (repo, fixtureUrl, entry) => () =>
+  fixtureUrl ? fetch(fixtureUrl).then(res => res.json()) : getEndpointDetail(repo, entry)

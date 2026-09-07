@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+from explain.routers.contract import router as contract_router
 from explain.routers.explain import router as explain_router
 from fastapi import FastAPI
 
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title="Explain Agent", lifespan=lifespan)
     app.include_router(explain_router)
+    app.include_router(contract_router)
 
     @app.get("/health")
     async def health():
