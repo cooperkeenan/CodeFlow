@@ -37,7 +37,7 @@ export default function SignupPage() {
           <TextField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required fullWidth autoFocus />
           <TextField label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required fullWidth />
           <TextField label="Confirm password" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required fullWidth />
-          <Button type="submit" variant="contained" disabled={busy} fullWidth>Create account</Button>
+          <Button type="submit" variant="contained" color="success" disabled={busy} fullWidth>Create account</Button>
         </Stack>
       </Box>
       <Box sx={{ mt: 2, textAlign: 'center' }}>

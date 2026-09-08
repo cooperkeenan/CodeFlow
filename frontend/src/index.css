@@ -2,31 +2,35 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Colour tokens are injected onto :root by src/design/applyTokens.js — the single
+   source of truth is src/design/tokens.js. Do not redeclare a colour here. */
+
 :root {
-  --bg:                      #121212;
-  --surface:                 #1A1A1A;
-  --surface-2:               #1E1E1E;
-  --surface-3:               #242424;
-  --surface-4:               #2C2C2C;
-  --surface-5:               #333333;
-  --border:                  #242424;
-  --border-hi:               #333333;
-  --accent:                  #39FF14;
-  --accent2:                 #64B5F6;
-  --text:                    rgba(255,255,255,0.87);
-  --text-medium:             rgba(255,255,255,0.60);
-  --text-disabled:           rgba(255,255,255,0.38);
-  --muted:                   rgba(255,255,255,0.60);
-  --error:                   #FF6B6B;
-  --warning:                 #FFB84D;
-  --info:                    #64B5F6;
-  --success:                 #39FF14;
-  --primary-container:       #1A3A0A;
-  --primary-container-hover: #2D6614;
   --mono:                    'IBM Plex Mono', monospace;
   --sans:                    'Instrument Sans', sans-serif;
   --radius:                  4px;
   --transition:              120ms ease;
+}
+
+/* ── Wayfinding (Channel B) ───────────────────
+   --area is navigation chrome only: rail edge, active nav item, header rule,
+   back link. It must never colour content. -rim values clear 3:1 for borders
+   but not 4.5:1 for text — use them on rules, never on labels. */
+:root                    { --area: var(--blue);   --area-rim: var(--blue-rim);   --area-fill: var(--blue-fill); }
+:root[data-area="maps"]  { --area: var(--orange); --area-rim: var(--orange-rim); --area-fill: var(--orange-fill); }
+:root[data-area="tour"]  { --area: var(--green);  --area-rim: var(--green-rim);  --area-fill: var(--green-fill); }
+:root[data-area="plain"] { --area: var(--grey);   --area-rim: var(--grey-rim);   --area-fill: var(--grey-fill); }
+:root[data-mode="edit"]  { --area: var(--purple); --area-rim: var(--purple-rim); --area-fill: var(--purple-fill); }
+
+/* ── Area chrome ──────────────────────────────
+   The only surfaces allowed to carry --area. */
+.area-rail {
+  border-left: 2px solid var(--area);
+}
+
+.area-header {
+  border-bottom: 1px solid var(--area-rim);
+  padding-bottom: 0.7rem;
 }
 
 html, body, #root {
@@ -72,7 +76,7 @@ html, body, #root {
   line-height: 1;
 }
 
-.wordmark-slash { color: var(--accent); }
+.wordmark-slash { color: var(--accent); text-shadow: 0 0 12px var(--accent-glow), 0 0 30px var(--accent-glow); }
 .wordmark-name  { color: var(--text); margin-left: 0.25rem; }
 
 .wordmark-sub {
@@ -105,14 +109,14 @@ html, body, #root {
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: var(--bg);
-  border-color: var(--accent);
+  background: var(--action);
+  color: var(--on-action);
+  border-color: var(--action);
 }
 
 .btn-primary:hover {
   background: transparent;
-  color: var(--accent);
+  color: var(--action);
 }
 
 .btn-ghost {
@@ -148,7 +152,7 @@ html, body, #root {
   transition: color var(--transition);
 }
 
-.back:hover { color: var(--accent); }
+.back:hover { color: var(--area); }
 
 .page-title {
   font-family: var(--mono);
@@ -184,12 +188,12 @@ html, body, #root {
 
 .card:hover:not(:disabled) { border-color: var(--accent); }
 .card:disabled { opacity: 0.35; cursor: not-allowed; }
-.card--recommended { border-color: var(--warning); }
-.card--recommended:hover:not(:disabled) { border-color: var(--warning); }
+.card--recommended { border-color: var(--recommend); }
+.card--recommended:hover:not(:disabled) { border-color: var(--recommend); }
 
 .card-badge-hint {
-  color: var(--warning);
-  font-size: 0.55rem;
+  color: var(--recommend);
+  font-size: 0.72rem;
 }
 
 .card-badge {
@@ -236,7 +240,7 @@ html, body, #root {
   display: block;
   height: 100%;
   width: 45%;
-  background: var(--accent);
+  background: var(--action);
   animation: sweep 1.2s ease-in-out infinite;
 }
 

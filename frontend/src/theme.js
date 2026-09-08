@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles'
+import { ACCENT, ACTION, NEUTRAL, STATUS, TEXT } from './design/tokens'
 
 const MONO = "'IBM Plex Mono', monospace"
 const SANS = "'Instrument Sans', sans-serif"
@@ -6,18 +7,18 @@ const SANS = "'Instrument Sans', sans-serif"
 const theme = createTheme({
   palette: {
     mode: 'dark',
-    primary: { main: '#39FF14', contrastText: '#0A1F0D' },
-    secondary: { main: '#64B5F6' },
-    error: { main: '#FF6B6B' },
-    warning: { main: '#FFB84D' },
-    info: { main: '#64B5F6' },
-    success: { main: '#39FF14' },
-    background: { default: '#121212', paper: '#1A1A1A' },
-    divider: '#242424',
+    primary: { main: ACCENT, contrastText: NEUTRAL.onAccent },
+    secondary: { main: STATUS.info },
+    error: { main: STATUS.danger },
+    warning: { main: STATUS.warning },
+    info: { main: STATUS.info },
+    success: { main: ACTION, contrastText: NEUTRAL.onAction },
+    background: { default: NEUTRAL.bg, paper: NEUTRAL.surface },
+    divider: NEUTRAL.border,
     text: {
-      primary: 'rgba(255,255,255,0.87)',
-      secondary: 'rgba(255,255,255,0.60)',
-      disabled: 'rgba(255,255,255,0.38)',
+      primary: TEXT.primary,
+      secondary: TEXT.secondary,
+      disabled: TEXT.disabled,
     },
   },
   shape: { borderRadius: 4 },
@@ -36,7 +37,7 @@ const theme = createTheme({
   components: {
     MuiPaper: {
       styleOverrides: {
-        root: { backgroundImage: 'none', border: '1px solid #242424' },
+        root: { backgroundImage: 'none', border: `1px solid ${NEUTRAL.border}` },
       },
     },
     MuiButton: { defaultProps: { disableElevation: true } },

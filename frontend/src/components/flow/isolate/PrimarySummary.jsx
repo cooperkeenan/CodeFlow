@@ -1,13 +1,14 @@
-import { MONO, TEXT, TEXT_MUTED, KIND_ACCENT } from '../styles'
+import {MONO, TEXT, TEXT_MUTED} from '../styles'
+import { LINK } from '../../../design/tokens'
 
 const MARKER_STYLE = {
   fontSize: 9,
-  color: KIND_ACCENT.entry,
+  color: LINK,
   marginRight: 5,
   flexShrink: 0,
 }
 
-const NAME_STYLE = { color: KIND_ACCENT.entry }
+const NAME_STYLE = { color: LINK }
 
 export default function PrimarySummary({ primaryKind, primaryName, primarySummary, generated }) {
   if (!primaryName) return null

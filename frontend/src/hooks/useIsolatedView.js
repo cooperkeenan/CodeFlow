@@ -56,7 +56,7 @@ function otherNode(node, isolatedId, highlighted, offset, shift) {
   return {
     ...node,
     selected: false,
-    className: [dimmed ? 'rf-dim' : '', shift ? 'rf-shift' : ''].filter(Boolean).join(' ') || undefined,
+    className: [node.className ?? '', dimmed ? 'rf-dim' : '', shift ? 'rf-shift' : ''].filter(Boolean).join(' ') || undefined,
     position: offset
       ? { x: node.position.x + offset.dx, y: node.position.y + offset.dy }
       : node.position,
@@ -113,7 +113,7 @@ export function useIsolatedView(nodes, edges, selectedId, isolatedId, hoveredEdg
     }
     if (!isolation || !grown) {
       return nodes.map(n => (
-        { ...n, selected: n.id === selectedId && n.id !== isolatedId, className: isolatedId && n.id !== isolatedId ? 'rf-dim' : undefined, data: { ...n.data, highlighted: highlighted.has(n.id) } }
+        { ...n, selected: n.id === selectedId && n.id !== isolatedId, className: [n.className ?? '', isolatedId && n.id !== isolatedId ? 'rf-dim' : ''].filter(Boolean).join(' ') || undefined, data: { ...n.data, highlighted: highlighted.has(n.id) } }
       ))
     }
     const { rect, offsets } = isolation

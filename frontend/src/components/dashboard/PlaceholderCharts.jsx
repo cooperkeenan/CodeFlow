@@ -1,10 +1,11 @@
+import { HUE } from '../../design/tokens'
 import { Box, Paper, Typography } from '@mui/material'
 import { LineChart } from '@mui/x-charts/LineChart'
 import { BarChart } from '@mui/x-charts/BarChart'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-const ACCENT = '#39FF14'
-const BLUE = '#64B5F6'
+const ACCENT = HUE.blue.base
+const BLUE = HUE.teal.base
 
 function ChartCard({ title, children }) {
   return (

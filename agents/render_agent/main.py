@@ -4,10 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from render.routers.render import router as render_router
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+from shared.run_log.setup import configure_logging
+
+configure_logging("render")
 
 logger = logging.getLogger(__name__)
 

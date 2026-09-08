@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { MONO, TEXT_MUTED, KIND_ACCENT } from '../styles'
+import {MONO, TEXT_MUTED} from '../styles'
+import { LINK } from '../../../design/tokens'
 
 const PAGE_SIZE = 3
 const DEFAULT_MARKER = '▸'
@@ -10,7 +11,7 @@ const PAGER = { display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO,
 const ARROW_BASE = { cursor: 'pointer', userSelect: 'none', padding: '0 6px', fontSize: 16, lineHeight: 1 }
 const MARKER_STYLE = {
   fontSize: 8,
-  color: KIND_ACCENT.entry,
+  color: LINK,
   marginRight: 5,
   flexShrink: 0,
 }
@@ -25,7 +26,7 @@ const NAME_STYLE = {
   alignItems: 'center',
   fontFamily: MONO,
   fontSize: 11,
-  color: KIND_ACCENT.entry,
+  color: LINK,
 }
 
 const SUMMARY_STYLE = {

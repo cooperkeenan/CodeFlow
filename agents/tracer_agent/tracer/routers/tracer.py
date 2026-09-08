@@ -19,6 +19,7 @@ async def trace(
 
 @router.get("/progress")
 async def progress(
+    since: int = 0,
     reporter: StageReporter = Depends(get_stage_reporter),
 ) -> dict:
-    return reporter.snapshot()
+    return reporter.snapshot(since)

@@ -1,19 +1,14 @@
 import { alpha } from '@mui/material/styles'
+import { HUE, METHOD } from '../../design/tokens'
 
 const MONO = "'IBM Plex Mono', monospace"
 
-const METHOD_COLORS = {
-  GET: '#64B5F6',
-  HEAD: '#64B5F6',
-  POST: '#FFB84D',
-  PUT: '#B39DDB',
-  PATCH: '#B39DDB',
-  OPTIONS: '#B39DDB',
-  DELETE: '#FF6B6B',
+const STATUS_CLASS = {
+  2: HUE.green.base,
+  3: HUE.teal.base,
+  4: HUE.yellow.base,
+  5: HUE.red.base,
 }
-const UNKNOWN_METHOD = '#9E9E9E'
-const OK_STATUS = '#4DD0C7'
-const OTHER_STATUS = '#9E9E9E'
 
 function outlined(color) {
   return {
@@ -27,9 +22,9 @@ function outlined(color) {
 }
 
 export function methodChipSx(method) {
-  return outlined(METHOD_COLORS[String(method || '').toUpperCase()] || UNKNOWN_METHOD)
+  return outlined(METHOD[String(method || '').toUpperCase()] || METHOD.unknown)
 }
 
 export function statusChipSx(status) {
-  return outlined(String(status).startsWith('2') ? OK_STATUS : OTHER_STATUS)
+  return outlined(STATUS_CLASS[Math.floor(Number(status) / 100)] || METHOD.unknown)
 }

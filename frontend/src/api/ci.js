@@ -12,4 +12,4 @@ export const runGithubCi = (repoName) =>
     body: JSON.stringify({ repo_name: repoName }),
   })
 
-export const getProgress = () => request('/ci/progress')
+export const getProgress = (since = 0) => request(`/ci/progress?since=${since}`)

@@ -1,3 +1,4 @@
+import { NEUTRAL } from '../../design/tokens'
 import { useEffect, useMemo, useState } from 'react'
 import ReactFlow, { Background, Controls, MiniMap, ReactFlowProvider } from 'reactflow'
 import 'reactflow/dist/style.css'
@@ -19,7 +20,7 @@ import GroupBox from './nodes/GroupBox'
 import TextNode from '../diagram/nodes/TextNode'
 import FlowEdgeComponent from './FlowEdgeComponent'
 import CameraController from './CameraController'
-import { KIND_ACCENT, CANVAS, GRID } from './styles'
+import { KIND_ACCENT, CANVAS, GRID, SURFACE_2, BORDER } from './styles'
 import { useIsolatedView } from '../../hooks/useIsolatedView'
 import { useArrowKeyPan } from '../../hooks/useArrowKeyPan'
 
@@ -57,6 +58,7 @@ function FlowCanvasInner({
   nodes, edges, selectedId, isolatedId, onPaneClick, onNodeClick, revealTrigger, repo,
   focusIds = null, adjacentIds = null, packetIds = null, stepKey = 0, children = null,
   visibleIds = null, enteringIds = null, suppressSelfLabels = false, chrome = DEFAULT_CHROME,
+  fitOptions = FIT_OPTIONS,
   editMode = false, onInit = undefined, onConnect = undefined, onNodesDelete = undefined,
   onEdgesDelete = undefined, onNodeDragStop = undefined, onSelectionChange = undefined,
 }) {
@@ -146,7 +148,7 @@ function FlowCanvasInner({
       onNodeDragStop={onNodeDragStop}
       onSelectionChange={onSelectionChange}
       fitView
-      fitViewOptions={FIT_OPTIONS}
+      fitViewOptions={fitOptions}
       minZoom={0.1}
       nodesDraggable={editMode}
       nodesConnectable={editMode}
@@ -157,13 +159,13 @@ function FlowCanvasInner({
       {children}
       <Background color={GRID} gap={28} size={1} style={{ background: CANVAS }} />
       {chrome.controls && (
-        <Controls position="top-left" style={{ background: '#171C25', border: '1px solid #37415488', borderRadius: 3 }} />
+        <Controls position="top-left" style={{ background: SURFACE_2, border: `1px solid ${BORDER}88`, borderRadius: 3 }} />
       )}
       {chrome.minimap && nodes.length > MINIMAP_THRESHOLD && (
         <MiniMap
           className={isolatedId ? 'rf-minimap-behind' : undefined}
-          style={{ background: '#12161E', border: '1px solid #37415488' }}
-          nodeColor={n => KIND_ACCENT[n.data?.kind] ?? '#333333'}
+          style={{ background: NEUTRAL.surfaceSunken, border: `1px solid ${BORDER}88` }}
+          nodeColor={n => KIND_ACCENT[n.data?.kind] ?? NEUTRAL.borderHi}
           maskColor="#00000088"
         />
       )}

@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
             helperText={`At least ${MIN_LENGTH} characters`}
           />
           <TextField label="Confirm password" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required fullWidth />
-          <Button type="submit" variant="contained" disabled={busy} fullWidth>
+          <Button type="submit" variant="contained" color="success" disabled={busy} fullWidth>
             {busy ? 'Saving…' : 'Set new password'}
           </Button>
         </Stack>

@@ -5,6 +5,7 @@ import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from gateway.core.config import get_settings
+from gateway.core.log_filters import AccessLogFilter
 from gateway.routers.auth import router as auth_router
 from gateway.routers.ci import router as ci_router
 from gateway.routers.diagram_edits import router as diagram_edits_router
@@ -20,12 +21,13 @@ from shared.code_store.neon_code_store import NeonCodeStore
 from shared.diagram_edit_store.neon_diagram_edit_store import NeonDiagramEditStore
 from shared.explanation_store.neon_explanation_store import NeonExplanationStore
 from shared.repo_map_store.neon_repo_map_store import NeonRepoMapStore
+from shared.run_log.handler import EventLogHandler
+from shared.run_log.setup import configure_logging
 from shared.user_store.neon_user_store import NeonUserStore
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+configure_logging("gateway")
+
+logging.getLogger("uvicorn.access").addFilter(AccessLogFilter())
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,7 @@ async def lifespan(app: FastAPI):
     app.state.explanation_store = NeonExplanationStore(database_url)
     app.state.diagram_edit_store = NeonDiagramEditStore(database_url)
     app.state.progress_tracker = ProgressTracker()
+    logging.getLogger().addHandler(EventLogHandler(app.state.progress_tracker.sink, "gateway"))
     app.state.flow_graph_cache = FlowGraphCache()
     app.state.endpoint_view_cache = EndpointViewCache()
     await app.state.user_store.ensure_schema()

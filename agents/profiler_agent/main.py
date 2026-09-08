@@ -5,10 +5,9 @@ import httpx
 from fastapi import FastAPI
 from profiler.routers.profiler import router as profiler_router
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+from shared.run_log.setup import configure_logging
+
+configure_logging("profiler")
 
 logger = logging.getLogger(__name__)
 

@@ -8,6 +8,7 @@ import { getSessionToken, saveSession, saveGithubToken, saveUser } from './api/s
 import { exchangeCode, linkGithub } from './api/github'
 import { RepoMapsProvider } from './hooks/RepoMapsContext'
 import RequireAuth from './components/RequireAuth'
+import useAreaAttribute from './design/useAreaAttribute'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -38,6 +39,7 @@ function fixtureAnalysis() {
 
 export default function App() {
   const navigate = useNavigate()
+  useAreaAttribute()
   const { analysis, reset, show } = useAnalysis()
   const [oauthPending, setOauthPending] = useState(
     () => new URLSearchParams(window.location.search).has('code')

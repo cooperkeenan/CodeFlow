@@ -1,16 +1,15 @@
-import { KIND_ACCENT } from '../flow/styles'
 import { NARRATION_HEIGHT } from './NarrationPanel'
 
 const RAIL_LEFT = 20
 const RAIL_WIDTH = 3
 const SEGMENT_GAP = 6
 const CONTROLS_CLEARANCE = 64
-const ACCENT = KIND_ACCENT.card
+const ACCENT = 'var(--area)'
 
 const TRACK = {
   future: 'rgba(255,255,255,0.06)',
   done: 'rgba(255,255,255,0.18)',
-  current: ACCENT + '33',
+  current: 'var(--area-fill)',
 }
 
 function Segment({ chapter, state, position }) {

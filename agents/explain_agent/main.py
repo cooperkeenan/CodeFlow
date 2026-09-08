@@ -5,10 +5,9 @@ from explain.routers.contract import router as contract_router
 from explain.routers.explain import router as explain_router
 from fastapi import FastAPI
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+from shared.run_log.setup import configure_logging
+
+configure_logging("explain")
 
 logger = logging.getLogger(__name__)
 

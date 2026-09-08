@@ -3,6 +3,7 @@ from pathlib import Path
 
 from tracer.models.tracer_model import TracerResponse
 from tracer.services.analysis.flow_pipeline import FlowPipeline
+from tracer.services.analysis.stage_reporter import StageReporter
 from tracer.services.evidence.file_fetch_service import FileFetchService
 from tracer.services.source_persist_service import SourcePersistService
 
@@ -18,14 +19,24 @@ class TracerService:
         file_fetch_service: FileFetchService,
         source_persist: SourcePersistService,
         flow_pipeline: FlowPipeline,
+        stages: StageReporter,
     ) -> None:
         self._files = file_fetch_service
         self._source_persist = source_persist
         self._pipeline = flow_pipeline
+        self._stages = stages
 
     async def trace(self, request: TracerRequest) -> TracerResponse:
-        logger.info("Tracing repo: %s", request.repo_name)
+        self._stages.start(request.repo_name)
+        try:
+            return await self._trace(request)
+        except Exception as exc:
+            self._stages.fail(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)
+            raise
+
+    async def _trace(self, request: TracerRequest) -> TracerResponse:
         directories = self._minimal_dirs(request.blueprint)
+        self._stages.begin("fetch", f"{len(directories)} source directories")
         temp_dir, file_paths = await self._files.fetch_files(
             directories=directories,
             access_token=request.access_token,
@@ -35,14 +46,13 @@ class TracerService:
         )
         if not file_paths:
             raise ValueError("No source files fetched for tracing")
+        self._stages.begin("read", f"{len(file_paths)} files")
         await self._source_persist.persist(request.repo_name, temp_dir, file_paths)
         files = self._read_files(file_paths, Path(temp_dir))
         graph = self._pipeline.run(request.repo_name, files)
-        logger.info(
-            "Flow: lanes=%d nodes=%d edges=%d",
-            len(graph.lanes),
-            len(graph.nodes),
-            len(graph.edges),
+        self._stages.note(
+            f"flow: {len(graph.lanes)} lane(s), {len(graph.nodes)} node(s), "
+            f"{len(graph.edges)} edge(s)"
         )
         return TracerResponse(flow_graph=graph)
 

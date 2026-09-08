@@ -1,4 +1,5 @@
-import { MONO, SURFACE_2, BORDER, TEXT, TEXT_MUTED, KIND_ACCENT } from './styles'
+import {MONO, SURFACE_2, BORDER, TEXT, TEXT_MUTED} from './styles'
+import { LINK } from '../../design/tokens'
 
 const HEAD = { fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_MUTED, margin: '12px 0 5px' }
 
@@ -39,8 +40,8 @@ export default function ProvenancePopover({ node, repoUrl, onClose }) {
         const href = blobUrl(repoUrl, ref)
         const text = `${ref.file}:${ref.line}`
         return href
-          ? <a key={i} href={href} target="_blank" rel="noreferrer" style={{ display: 'block', fontFamily: MONO, fontSize: 10, color: KIND_ACCENT.entry, lineHeight: 1.7, wordBreak: 'break-all' }}>{text}</a>
-          : <div key={i} style={{ fontFamily: MONO, fontSize: 10, color: KIND_ACCENT.entry, lineHeight: 1.7, wordBreak: 'break-all' }}>{text}</div>
+          ? <a key={i} href={href} target="_blank" rel="noreferrer" style={{ display: 'block', fontFamily: MONO, fontSize: 10, color: LINK, lineHeight: 1.7, wordBreak: 'break-all' }}>{text}</a>
+          : <div key={i} style={{ fontFamily: MONO, fontSize: 10, color: LINK, lineHeight: 1.7, wordBreak: 'break-all' }}>{text}</div>
       }) : (
         <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED }}>no source refs</div>
       )}

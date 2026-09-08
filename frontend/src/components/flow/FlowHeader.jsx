@@ -23,7 +23,7 @@ export default function FlowHeader({
   }
 
   return (
-    <header style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
+    <header className="area-header" style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
       {inEndpointView ? (
         <Breadcrumb trail={trail} currentTitle={pageTitle} home={home} onBack={onBack} onNavigate={onNavigate} />
       ) : (

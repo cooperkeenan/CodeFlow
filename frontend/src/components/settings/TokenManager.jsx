@@ -34,7 +34,7 @@ export default function TokenManager() {
       )}
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         <TextField size="small" placeholder="Token name (e.g. ci)" value={name} onChange={e => setName(e.target.value)} />
-        <Button variant="contained" onClick={create}>Create token</Button>
+        <Button variant="contained" color="success" onClick={create}>Create token</Button>
       </Stack>
       <Stack spacing={1}>
         {tokens.map(t => (

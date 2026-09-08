@@ -26,7 +26,8 @@ export default function Sidebar({ section, onSelect }) {
             key={item.id}
             selected={section === item.id}
             onClick={() => onSelect(item.id)}
-            sx={{ borderRadius: 1, mb: 0.5 }}
+            aria-current={section === item.id ? 'page' : undefined}
+            sx={{ borderRadius: 1, mb: 0.5, borderLeft: '2px solid transparent', '&.Mui-selected': { borderLeftColor: 'var(--area)', color: 'var(--area)' } }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
             <ListItemText primaryTypographyProps={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }} primary={item.label} />

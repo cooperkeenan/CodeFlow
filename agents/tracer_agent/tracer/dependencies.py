@@ -80,5 +80,6 @@ def get_tracer_service(
     file_fetch_service: FileFetchService = Depends(get_file_fetch_service),
     source_persist: SourcePersistService = Depends(get_source_persist_service),
     flow_pipeline: FlowPipeline = Depends(get_flow_pipeline),
+    stages: StageReporter = Depends(get_stage_reporter),
 ) -> TracerService:
-    return TracerService(file_fetch_service, source_persist, flow_pipeline)
+    return TracerService(file_fetch_service, source_persist, flow_pipeline, stages)

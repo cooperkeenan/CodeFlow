@@ -1,0 +1,4 @@
+.react-flow__node.rf-happy > div {
+  border-color: #C6F135 !important;
+  box-shadow: 0 0 0 2px rgba(198, 241, 53, 0.28), 0 0 24px 4px rgba(198, 241, 53, 0.35) !important;
+}

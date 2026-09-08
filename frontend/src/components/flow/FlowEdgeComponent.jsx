@@ -1,9 +1,11 @@
+import { EDGE } from '../../design/tokens'
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, getSmoothStepPath } from 'reactflow'
 import { MONO, SURFACE_2, TEXT_MUTED } from './styles'
 
-const NORMAL = '#6C7689'
-const STITCH = '#8A93A6'
-const FLOW = '#39FF14'
+const NORMAL = EDGE.normal
+const STITCH = EDGE.stitch
+const FLOW = EDGE.flow
+const HAPPY = '#C6F135'
 
 export default function FlowEdgeComponent({
   id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, label,
@@ -16,11 +18,11 @@ export default function FlowEdgeComponent({
     : getBezierPath({ ...geom, curvature: 0.18 })
 
   const scale = d.scale ?? 1
-  const stroke = d.highlighted ? '#ffffff' : stitch ? STITCH : NORMAL
+  const stroke = d.happy ? HAPPY : d.highlighted ? EDGE.highlighted : stitch ? STITCH : NORMAL
   const dashArray = stitch ? '2 5' : d.dashed ? '6 4' : undefined
-  const width = (d.highlighted ? 2.4 : d.secondary ? 1 : 1.6) * scale
+  const width = (d.happy ? 2.6 : d.highlighted ? 2.4 : d.secondary ? 1 : 1.6) * scale
   const base = d.confidence === 'inferred' ? 0.6 : 1
-  const opacity = d.secondary ? base * 0.25 : base
+  const opacity = d.happy ? 1 : d.muted ? base * 0.18 : d.secondary ? base * 0.25 : base
   const markerId = `arrowhead-${id}`
   const markerSize = Math.max(5, Math.round(7 * scale))
   const canDraw = d.justRevealed && !stitch && !d.dashed
@@ -94,7 +96,7 @@ export default function FlowEdgeComponent({
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              color: d.highlighted ? '#ffffff' : TEXT_MUTED,
+              color: d.highlighted ? EDGE.highlighted : TEXT_MUTED,
               background: SURFACE_2,
               padding: `${Math.round(1 * scale)}px ${Math.round(4 * scale)}px`,
               borderRadius: 2,

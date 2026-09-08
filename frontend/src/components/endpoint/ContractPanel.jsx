@@ -30,7 +30,7 @@ function CopyOpenApiButton({ contracts, title }) {
   )
 }
 
-export default function ContractPanel({ contracts, title }) {
+export default function ContractPanel({ contracts, title, selectedKey = null, onSelect = null }) {
   const routes = (contracts || []).filter(Boolean)
   if (!routes.length) return null
   return (
@@ -46,9 +46,26 @@ export default function ContractPanel({ contracts, title }) {
         <CopyOpenApiButton contracts={routes} title={title} />
       </Stack>
       <Stack spacing={2}>
-        {routes.map(contract => (
-          <ContractRoute key={`${contract.method}:${contract.path}`} contract={contract} />
-        ))}
+        {routes.map(contract => {
+          const key = `${contract.method}:${contract.path}`
+          return (
+            <Box
+              key={key}
+              data-testid={`contract-card-${key}`}
+              data-selected={key === selectedKey ? 'true' : 'false'}
+              onClick={() => onSelect?.(key === selectedKey ? null : key)}
+              sx={{
+                cursor: onSelect ? 'pointer' : 'default',
+                borderRadius: 1,
+                outline: key === selectedKey ? '1px solid #C6F135' : '1px solid transparent',
+                boxShadow: key === selectedKey ? '0 0 18px -4px rgba(198,241,53,0.45)' : 'none',
+                transition: 'outline-color 160ms ease, box-shadow 160ms ease',
+              }}
+            >
+              <ContractRoute contract={contract} />
+            </Box>
+          )
+        })}
       </Stack>
     </Box>
   )

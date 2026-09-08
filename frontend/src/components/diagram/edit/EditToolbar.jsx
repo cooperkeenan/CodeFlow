@@ -1,3 +1,4 @@
+import { HUE } from '../../../design/tokens'
 import { Panel } from 'reactflow'
 import NearMeIcon from '@mui/icons-material/NearMe'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
@@ -6,7 +7,7 @@ import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt'
 import RemoveIcon from '@mui/icons-material/Remove'
 import CallMadeIcon from '@mui/icons-material/CallMade'
 
-const TEXT_COLORS = ['#ffffff', '#39FF14', '#64B5F6', '#FF6B6B', '#FFD166']
+const TEXT_COLORS = ['#ffffff', HUE.blue.base, HUE.teal.base, HUE.red.base, HUE.yellow.base]
 
 const pill = (active, disabled = false) => ({
   display: 'inline-flex',
@@ -18,9 +19,9 @@ const pill = (active, disabled = false) => ({
   letterSpacing: '0.08em',
   padding: '3px 9px',
   borderRadius: 3,
-  border: active ? '1px solid var(--accent)' : '1px solid var(--border-hi)',
-  background: active ? 'rgba(57,255,20,0.12)' : 'transparent',
-  color: disabled ? 'var(--text-disabled)' : active ? 'var(--accent)' : 'var(--text-medium)',
+  border: active ? '1px solid var(--area)' : '1px solid var(--border-hi)',
+  background: active ? 'var(--area-fill)' : 'transparent',
+  color: disabled ? 'var(--text-disabled)' : active ? 'var(--area)' : 'var(--text-medium)',
   cursor: disabled ? 'not-allowed' : 'pointer',
   userSelect: 'none',
 })

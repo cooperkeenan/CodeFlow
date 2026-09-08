@@ -16,6 +16,7 @@ from gateway.models.auth_model import AuthUser
 from gateway.services.ci_ingest_service import CiIngestService
 from gateway.services.github_ci_service import GitHubCiService
 from gateway.services.local_ci_service import LocalCiService
+from gateway.services.progress_plan import TRACER_KEY
 from gateway.services.progress_tracker import ProgressTracker
 from pydantic import BaseModel
 
@@ -43,17 +44,25 @@ async def ci_analyse(
 
 @router.get("/progress")
 async def ci_progress(
+    since: int = 0,
     progress: ProgressTracker = Depends(get_progress_tracker),
     tracer: TracerClient = Depends(get_tracer_client),
 ) -> dict:
-    snapshot = progress.snapshot()
-    if not snapshot["active"] or snapshot["current"] != "tracer":
-        return snapshot
-    stages = await tracer.progress()
-    if stages and stages.get("active"):
-        progress.track(stages.get("stage", ""), stages.get("completed", 0), stages.get("total", 0))
-        return progress.snapshot()
-    return snapshot
+    if progress.active and progress.current_stage == TRACER_KEY:
+        stages = await tracer.progress(progress.tracer_seq)
+        if stages:
+            progress.merge_events(stages.get("events", []))
+            if stages.get("active"):
+                progress.track(
+                    _tracer_detail(stages), stages.get("completed", 0), stages.get("labels", [])
+                )
+    return progress.snapshot(since)
+
+
+def _tracer_detail(stages: dict) -> str:
+    label = stages.get("stage_label") or stages.get("stage") or ""
+    detail = stages.get("detail") or ""
+    return f"{label} — {detail}" if label and detail else label or detail
 
 
 @router.post("/analyse/local")
@@ -68,9 +77,9 @@ async def ci_analyse_local(
     path = request.path or settings.LOCAL_REPO_PATH
     if not path or not Path(path).is_dir():
         raise HTTPException(status_code=400, detail=f"Local path not found: {path}")
-    if progress.snapshot()["active"]:
+    if progress.active:
         return {"started": False, "busy": True}
-    progress.start()
+    progress.start(Path(path).name)
     http_request.app.state.analysis_task = asyncio.create_task(service.run_background(user.id, path))
     return {"started": True}
 
@@ -83,9 +92,9 @@ async def ci_analyse_github(
     service: GitHubCiService = Depends(get_github_ci_service),
     progress: ProgressTracker = Depends(get_progress_tracker),
 ) -> dict:
-    if progress.snapshot()["active"]:
+    if progress.active:
         return {"started": False, "busy": True}
-    progress.start()
+    progress.start(request.repo_name)
     http_request.app.state.analysis_task = asyncio.create_task(
         service.run_background(user.id, request.repo_name)
     )

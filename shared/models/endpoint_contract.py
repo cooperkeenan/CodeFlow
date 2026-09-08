@@ -26,6 +26,7 @@ class EndpointContract(BaseModel):
     request_body: str = ""
     responses: list[ContractResponse] = Field(default_factory=list)
     auth: str = ""
+    handler_fqn: str = ""
     example_request: str = ""
     example_response: str = ""
     generated: bool = False

@@ -49,7 +49,34 @@ The live entry points are `POST /ci/analyse/local` and `POST /ci/analyse/github`
 plus `POST /ci/analyse` for the published GitHub Action's archive upload. All are in
 `api/gateway/routers/ci.py`. There is no `POST /analyse` — that router was removed as dead.
 
-`AnalysisService.analyse` → profiler → tracer → render → persist. Progress is polled at `GET /ci/progress`.
+`AnalysisService.analyse` → profiler → tracer → render → persist. Progress is polled at
+`GET /ci/progress?since=<seq>`.
+
+## Run logging and progress
+
+One call site produces both the terminal log line and the browser's progress detail, so the two can
+never drift. `shared/run_log/` holds the primitives: `Console` (docker-style `[n/total]` stage lines,
+grey sub-steps, green `OK`, yellow `WARN`, red `FAIL`), `EventLog` (a 500-entry ring buffer of
+`LogEvent{seq, ts, level, stage, message}`), `RunFormatter`/`configure_logging(service)` (the shared
+`HH:MM:SS service │ message` format, installed by every `main.py` and by the dev scripts) and
+`EventLogHandler` (funnels any WARNING+ from anywhere in the process into the event log, so real
+warnings reach the UI).
+
+The gateway's `ProgressTracker` owns a `StagePlan` (`progress_plan.py`: profiler 15 / tracer 60 /
+render 15 / save 10 by weight), an `EventLog` and a `Console`. `begin`/`step`/`complete`/`warn`/`fail`
+each log **and** move the bar. The tracer's `StageReporter` does the same for its 15 stages
+(`stage_names.py`), and `/ci/progress` merges the tracer's events into the gateway's log by `seq`, so
+the browser sees one continuous stream. `snapshot(since)` returns `percent`, `percent_ceiling` (the
+top of the current stage — drawn as the striped region), `phases` (the 4 top-level phases with
+`done`/`active`/`pending`/`failed`), `points` (18 tick marks, each with the `at` percent it sits at,
+the tracer expanded inline) and `events` after `since`. `fail()` records `failed_stage` alongside the
+message; `failure_message.describe_failure` turns httpx errors into something readable
+(`/trace returned 500 — ValueError: …`) rather than a bare exception class.
+
+Frontend: `useCiProgress` polls with the last seen `seq` and accumulates events (deduped by `seq`,
+reset if the server's sequence goes backwards). `RunProgress` renders the phase row, the bar with its
+notches, the grey detail line, an error panel naming the failed stage, and `RunLogTerminal` — a
+collapsible monospace log that opens automatically on failure.
 
 Read endpoints (`api/gateway/routers/repo_maps.py`), all ETag'd with `304` support:
 `GET /repomaps/{repo}/home` (endpoint list + description, no render call),
@@ -330,6 +357,9 @@ it is **not** gated on CI, and the frontend is not in the pipeline (served via `
 - Geometry: `agents/render_agent/render/placement/{flow_page_placer,tree_layout,tree_structure,flow_emit,vertical_stretcher}.py`
 - Endpoint slicing, links, helper diagrams: `shared/flow_endpoints/`
 - Read-path caching: `shared/caching/lru_cache.py`, `api/gateway/services/{flow_graph_cache,endpoint_view_cache,etag}.py`
+- Run logging and progress: `shared/run_log/`, `api/gateway/services/{progress_plan,progress_tracker,failure_message}.py`,
+  `agents/tracer_agent/tracer/services/analysis/{stage_reporter,stage_names}.py`,
+  `frontend/src/components/dashboard/Run{Progress,ProgressBar,Phases,LogTerminal}.jsx`
 - Subsystem write-ups: `decision-records/` (tracked, commit-pinned)
 - Frontend flow page: `frontend/src/pages/FlowPage.jsx`, `hooks/{useGraphTransform,useFlowEditing,useArrowKeyPan}.js`,
   `components/flow/{FlowCanvas,FlowHeader,Breadcrumb,LinkChip,NodeChrome,ProvenancePopover}.jsx`

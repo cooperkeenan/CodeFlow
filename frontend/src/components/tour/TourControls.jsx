@@ -1,4 +1,4 @@
-import { MONO, SURFACE_2, BORDER, TEXT, TEXT_MUTED, KIND_ACCENT } from '../flow/styles'
+import { MONO, SURFACE_2, BORDER, TEXT, TEXT_MUTED } from '../flow/styles'
 import { STEP_MS } from '../../hooks/useTourPlayback'
 
 const RING = 56.5
@@ -9,7 +9,7 @@ function ProgressRing({ index, playing, dwellMs }) {
       <circle cx="11" cy="11" r="9" fill="none" stroke="#2a2a2a" strokeWidth="2" />
       <circle
         key={index}
-        cx="11" cy="11" r="9" fill="none" stroke={KIND_ACCENT.entry} strokeWidth="2"
+        cx="11" cy="11" r="9" fill="none" stroke="var(--area)" strokeWidth="2"
         strokeDasharray={RING} strokeDashoffset={RING} strokeLinecap="round"
         transform="rotate(-90 11 11)"
         style={{
@@ -57,7 +57,7 @@ export default function TourControls({ index, count, playing, onPrev, onNext, on
             style={{
               width: i === index ? 20 : 8, height: 4, borderRadius: 2, border: 'none', padding: 0,
               cursor: 'pointer', transition: 'width 220ms ease, background 220ms ease',
-              background: i === index ? KIND_ACCENT.entry : i < index ? '#4a4a4a' : '#2a2a2a',
+              background: i === index ? 'var(--area)' : i < index ? '#4a4a4a' : '#2a2a2a',
             }}
           />
         ))}

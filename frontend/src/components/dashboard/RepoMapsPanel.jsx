@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Typography } from '@mui/material'
+import { Alert, Box, Button, Chip, Paper, Stack, Typography } from '@mui/material'
 import { useQueryClient } from '@tanstack/react-query'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import GitHubIcon from '@mui/icons-material/GitHub'
@@ -10,17 +10,11 @@ import { useRepoMaps } from '../../hooks/RepoMapsContext'
 import { useCiProgress } from '../../hooks/useCiProgress'
 import GithubLinkPrompt from './GithubLinkPrompt'
 import GithubRepoPicker from './GithubRepoPicker'
-
-function progressLabel(progress) {
-  const step = progress.substeps
-    ? ` · ${progress.detail || 'working'} (${progress.substep}/${progress.substeps})`
-    : ''
-  return `${progress.current}${step} — ${progress.percent}%`
-}
+import RunProgress from './RunProgress'
 
 export default function RepoMapsPanel({ onOpenMap }) {
   const { maps, error: listError, signedOut, refresh } = useRepoMaps()
-  const { running, progress, error, setError, startRun, startGithubRun } = useCiProgress(refresh)
+  const { running, progress, events, error, setError, startRun, startGithubRun } = useCiProgress(refresh)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [openError, setOpenError] = useState(null)
   const githubLinked = Boolean(getUser()?.github_login)
@@ -58,18 +52,13 @@ export default function RepoMapsPanel({ onOpenMap }) {
           >
             Select GitHub Repo
           </Button>
-          <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={startRun} disabled={running}>
+          <Button variant="contained" color="success" startIcon={<PlayArrowIcon />} onClick={startRun} disabled={running}>
             {running ? 'Running…' : 'Run Local CI'}
           </Button>
         </Stack>
       </Stack>
-      {running && (
-        <Box sx={{ mb: 2 }}>
-          <LinearProgress variant="determinate" value={progress?.percent ?? 0} sx={{ mb: 0.5 }} />
-          <Typography variant="caption" color="text.secondary">
-            {progress ? progressLabel(progress) : 'starting…'}
-          </Typography>
-        </Box>
+      {(running || error) && (
+        <RunProgress progress={progress} events={events} error={error} />
       )}
       {signedOut && (
         <Alert
@@ -86,8 +75,8 @@ export default function RepoMapsPanel({ onOpenMap }) {
           handle are not shown here and GitHub repos cannot be selected.
         </GithubLinkPrompt>
       )}
-      {(error || openError || listError) && (
-        <Alert severity="error" sx={{ mb: 2 }}>{error || openError || listError}</Alert>
+      {(openError || listError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>{openError || listError}</Alert>
       )}
       {maps.length === 0 && githubLinked && !signedOut && (
         <Typography color="text.secondary">No saved RepoMaps yet. Run Local CI to generate one.</Typography>

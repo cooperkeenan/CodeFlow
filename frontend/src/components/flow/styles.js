@@ -1,25 +1,17 @@
+import { KIND, NEUTRAL, TEXT as TOKEN_TEXT, alphaHex } from '../../design/tokens'
+
 export const MONO = 'IBM Plex Mono, monospace'
 
-export const CANVAS = '#0F1218'
-export const GRID = '#232A36'
+export const CANVAS = NEUTRAL.bg
+export const GRID = NEUTRAL.border
 
-export const KIND_ACCENT = {
-  entry: '#39FF14',
-  step: '#64B5F6',
-  decision: '#FFB84D',
-  pipeline: '#FFB84D',
-  parallel: '#CE93D8',
-  effect: '#4DD0E1',
-  outcome: '#9E9E9E',
-  card: '#39FF14',
-  snippet: '#64B5F6',
-}
+export const KIND_ACCENT = KIND
 
-export const SURFACE = '#232B3A'
-export const SURFACE_2 = '#171C25'
-export const BORDER = '#374154'
-export const TEXT = 'rgba(237,242,249,0.94)'
-export const TEXT_MUTED = 'rgba(226,232,240,0.62)'
+export const SURFACE = NEUTRAL.surface2
+export const SURFACE_2 = NEUTRAL.surfaceSunken
+export const BORDER = NEUTRAL.canvasBorder
+export const TEXT = TOKEN_TEXT.canvas
+export const TEXT_MUTED = TOKEN_TEXT.canvasMuted
 
 export const LABEL_STYLE = {
   fontFamily: MONO,
@@ -98,15 +90,15 @@ export function shellStyle(
   { selected, highlighted, dashed, isolated, focused, dimmed, adjacent, entering = false, enterDelay = 0 },
 ) {
   const lit = highlighted || focused
-  const ring = lit ? accent : adjacent ? accent + 'AA' : selected ? accent : accent + '66'
+  const ring = lit ? accent : adjacent ? alphaHex(accent, 'AA') : selected ? accent : alphaHex(accent, '66')
   const focusAnim = [
     entering ? `armIn 420ms cubic-bezier(.22,.9,.28,1) ${enterDelay}ms both` : null,
     'nodeSettle 420ms cubic-bezier(.22,.9,.28,1) both',
     'nodeBreathe 2800ms 420ms ease-in-out infinite',
   ].filter(Boolean).join(', ')
   const glow = focused
-    ? `0 0 0 4px ${accent}44, 0 0 28px 3px ${accent}55`
-    : adjacent ? `0 0 0 2px ${accent}22` : highlighted ? `0 0 0 3px ${accent}33` : null
+    ? `0 0 0 4px ${alphaHex(accent, '44')}, 0 0 28px 3px ${alphaHex(accent, '55')}`
+    : adjacent ? `0 0 0 2px ${alphaHex(accent, '22')}` : highlighted ? `0 0 0 3px ${alphaHex(accent, '33')}` : null
   const shadows = [glow, isolated ? FRAME_SHADOW : null].filter(Boolean)
   return {
     ...base,

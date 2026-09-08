@@ -1,11 +1,12 @@
-import { MONO, KIND_ACCENT } from './styles'
+import { MONO } from './styles'
+import { LINK } from '../../design/tokens'
 import { shortName } from './linkLabels'
 
 const HIT_FLOOR = 0.72
 
 export default function LinkChip({ link, onLink, nodeId, scale = 1 }) {
   const s = Math.max(scale, HIT_FLOOR)
-  const accent = KIND_ACCENT[link.kind === 'helper' ? 'step' : 'entry']
+  const accent = LINK
   return (
     <span
       role="button"

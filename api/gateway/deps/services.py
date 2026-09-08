@@ -94,12 +94,14 @@ def get_ci_ingest_service(
     analysis_service: AnalysisService = Depends(get_analysis_service),
     repo_map_service: RepoMapService = Depends(get_repo_map_service),
     settings: Settings = Depends(get_settings),
+    progress: ProgressTracker = Depends(get_progress_tracker),
 ) -> CiIngestService:
     return CiIngestService(
         analysis_service,
         repo_map_service,
         ArchiveExtractor(),
         settings.CI_MAX_UPLOAD_MB * 1024 * 1024,
+        progress,
     )
 
 

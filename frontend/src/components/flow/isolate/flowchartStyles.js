@@ -1,21 +1,17 @@
-import { KIND_ACCENT, SURFACE_2, TEXT_MUTED } from '../styles'
+import { KIND, STATUS, alphaHex } from '../../../design/tokens'
+import { SURFACE_2, TEXT_MUTED } from '../styles'
 
-function tint(hex, alpha) {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
+const FILL = '29'
 
 export const FLOWCHART_KIND_STYLE = {
-  start: { fill: tint(KIND_ACCENT.entry, 0.16), stroke: KIND_ACCENT.entry, shape: 'pill' },
-  end: { fill: tint(KIND_ACCENT.entry, 0.16), stroke: KIND_ACCENT.entry, shape: 'pill' },
-  call: { fill: tint(KIND_ACCENT.step, 0.16), stroke: KIND_ACCENT.step, shape: 'rect' },
-  effect: { fill: tint(KIND_ACCENT.effect, 0.16), stroke: KIND_ACCENT.effect, shape: 'rect' },
-  decision: { fill: tint(KIND_ACCENT.decision, 0.16), stroke: KIND_ACCENT.decision, shape: 'diamond' },
-  loop: { fill: tint(KIND_ACCENT.parallel, 0.16), stroke: KIND_ACCENT.parallel, shape: 'rect' },
-  return: { fill: tint(KIND_ACCENT.outcome, 0.16), stroke: KIND_ACCENT.outcome, shape: 'pill' },
-  raise: { fill: tint(KIND_ACCENT.outcome, 0.16), stroke: KIND_ACCENT.outcome, shape: 'pill' },
+  start: { fill: alphaHex(KIND.entry, FILL), stroke: KIND.entry, shape: 'pill' },
+  end: { fill: alphaHex(KIND.outcome, FILL), stroke: KIND.outcome, shape: 'pill' },
+  call: { fill: alphaHex(KIND.step, FILL), stroke: KIND.step, shape: 'rect' },
+  effect: { fill: alphaHex(KIND.effect, FILL), stroke: KIND.effect, shape: 'rect' },
+  decision: { fill: alphaHex(KIND.decision, FILL), stroke: KIND.decision, shape: 'diamond' },
+  loop: { fill: alphaHex(KIND.loop, FILL), stroke: KIND.loop, shape: 'rect' },
+  return: { fill: alphaHex(KIND.outcome, FILL), stroke: KIND.outcome, shape: 'pill' },
+  raise: { fill: alphaHex(STATUS.danger, FILL), stroke: STATUS.danger, shape: 'notch' },
   more: { fill: 'transparent', stroke: TEXT_MUTED, shape: 'rect' },
 }
 

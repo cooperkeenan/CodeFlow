@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDiagramEdits } from './useDiagramEdits'
 import { applyEdits } from './graph/applyEdits'
 import { useEditableCanvas } from '../components/diagram/edit/useEditableCanvas'
@@ -9,6 +9,12 @@ const NOOP = () => {}
 
 export function useFlowEditing(repo, baseNodes, baseEdges) {
   const [editMode, setEditMode] = useState(false)
+
+  useEffect(() => {
+    if (!editMode) return undefined
+    document.documentElement.dataset.mode = 'edit'
+    return () => { delete document.documentElement.dataset.mode }
+  }, [editMode])
   const diagramEdits = useDiagramEdits(repo)
   const rfInstance = useRef(null)
 

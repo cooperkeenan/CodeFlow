@@ -8,6 +8,10 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(ROOT / "agents" / "tracer_agent"))
 
+from shared.run_log.setup import configure_logging
+
+configure_logging("selfrun")
+
 from tracer.services.analysis.config import BudgetConfig
 from tracer.services.analysis.contracts import DecisionJudge
 from tracer.services.analysis.significance.factory import build_decision_judge

@@ -83,7 +83,12 @@ class EndpointDetailFixtureWriter:
     def _named(self, contract: EndpointContract, handler_fqn: str) -> EndpointContract:
         if not handler_fqn:
             return contract
-        return contract.model_copy(update={"name": self._handler_name.humanize(handler_fqn)})
+        return contract.model_copy(
+            update={
+                "name": self._handler_name.humanize(handler_fqn),
+                "handler_fqn": handler_fqn,
+            }
+        )
 
     def _sources_for(self, fqns: list[str], symbol_context: dict) -> dict[str, str]:
         functions = symbol_context.get("functions", {})

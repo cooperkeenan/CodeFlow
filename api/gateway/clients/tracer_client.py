@@ -31,9 +31,11 @@ class TracerClient:
 
         raise RuntimeError("Tracer agent request failed unexpectedly")
 
-    async def progress(self) -> dict | None:
+    async def progress(self, since: int = 0) -> dict | None:
         try:
-            response = await self._http.get(f"{self._base_url}/progress", timeout=5.0)
+            response = await self._http.get(
+                f"{self._base_url}/progress", params={"since": since}, timeout=5.0
+            )
             response.raise_for_status()
             return response.json()
         except (httpx.HTTPError, ValueError):

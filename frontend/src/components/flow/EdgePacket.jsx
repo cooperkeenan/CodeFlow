@@ -1,6 +1,7 @@
+import { EDGE } from '../../design/tokens'
 import { MONO, SURFACE_2 } from './styles'
 
-const PACKET = '#39FF14'
+const PACKET = EDGE.packet
 const TRAIL = [0, 90, 180]
 
 export default function EdgePacket({ path, scale = 1, duration = 2400 }) {

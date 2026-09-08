@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Mapping
 
 from tracer.models.naming import ReviewFinding
@@ -21,17 +20,15 @@ from tracer.services.analysis.resolve.indexes import ComponentIndex
 from tracer.services.analysis.routes.entry_finder import EntryFinder
 from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
 from tracer.services.analysis.routes.route_handler_locator import RouteHandlerLocator
-from tracer.services.analysis.stage_reporter import StageReporter
 from tracer.services.analysis.significance.factory import (
     build_significance_filter,
 )
+from tracer.services.analysis.stage_reporter import StageReporter
 from tracer.services.analysis.stitch.flow_stitcher import FlowStitcher
 from tracer.services.analysis.symbols.symbol_context_builder import SymbolContextBuilder
 from tracer.services.analysis.symbols.symbol_source_reader import SymbolSourceReader
 
 from shared.models.flow_graph import FlowGraph
-
-logger = logging.getLogger(__name__)
 
 
 class FlowPipeline:
@@ -74,7 +71,7 @@ class FlowPipeline:
         return self._last_review
 
     def run(self, repo: str, files: Mapping[str, str]) -> FlowGraph:
-        self._stages.start(repo)
+        self._stages.ensure_started(repo)
         self._stages.begin("index", f"{len(files)} files")
         index = self._indexer.index(files)
         self._stages.begin("resolve", f"{len(index.functions)} functions")
@@ -110,10 +107,9 @@ class FlowPipeline:
         named = budgeted if self._namer is None else self._namer.name(budgeted)
         self._last_pre_review = named
         if index.unparsed:
-            logger.warning(
-                "%d file(s) could not be parsed and are missing from the graph: %s",
-                len(index.unparsed),
-                ", ".join(index.unparsed[:5]),
+            self._stages.warn(
+                f"{len(index.unparsed)} file(s) could not be parsed and are missing "
+                f"from the graph: {', '.join(index.unparsed[:5])}"
             )
         self._stages.begin("review")
         reader = SymbolSourceReader(index.sources) if self._embed_sources else None

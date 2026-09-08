@@ -34,6 +34,10 @@ from tracer.services.analysis.significance.heuristic_decision_judge import (
 from tracer.services.analysis.significance.site_classifier import SiteClassifier
 from tracer.services.analysis.stitch.factory import build_flow_stitcher
 
+from shared.run_log.setup import configure_logging
+
+configure_logging("screenshot_flow")
+
 FIXTURE_PATH = REPO_ROOT / "frontend" / "public" / "fixture" / "rendered_view.json"
 FLOW_URL = "http://localhost:5173/flow-fixture"
 DEV_PORT = 5173

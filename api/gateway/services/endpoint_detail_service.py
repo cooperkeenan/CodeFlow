@@ -82,7 +82,10 @@ class EndpointDetailService:
             )
             if route.handler_fqn:
                 contract = contract.model_copy(
-                    update={"name": self._handler_name.humanize(route.handler_fqn)}
+                    update={
+                        "name": self._handler_name.humanize(route.handler_fqn),
+                        "handler_fqn": route.handler_fqn,
+                    }
                 )
             contracts.append(contract)
         detail = self._builder.build(node, contracts, method_fqns, symbol_context, sources)

@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
             <TextField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required fullWidth autoFocus />
-            <Button type="submit" variant="contained" disabled={busy} fullWidth>
+            <Button type="submit" variant="contained" color="success" disabled={busy} fullWidth>
               {busy ? 'Sending…' : 'Send reset link'}
             </Button>
           </Stack>

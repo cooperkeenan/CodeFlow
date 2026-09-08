@@ -64,6 +64,8 @@ def node_data(
         "backing": list(node.backing),
         "refs": [{"file": ref.file, "line": ref.line} for ref in node.refs],
     }
+    if node.owner_fqn:
+        data["ownerFqn"] = node.owner_fqn
     if node.refs:
         data["provenance"] = f"{basename(node.refs[0].file)}:{node.refs[0].line}"
     if linear:

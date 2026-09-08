@@ -1,8 +1,11 @@
+import re
+
 from shared.flow_endpoints.endpoint_items import EndpointItem
 from shared.models.flow_graph import FlowGraph, FlowNode
 
 _ENTRY_PREFIX = "entry:"
 _NON_ROUTE_PREFIXES = ("entry:seed:", "entry:trivial:")
+_ROUTE_COUNT_SUFFIX = re.compile(r"\s*[·•]\s*\d+\s+routes?(,.*)?$")
 
 
 class EndpointCatalog:
@@ -14,14 +17,14 @@ class EndpointCatalog:
         ]
         return sorted(
             (self._item(node) for node in entries),
-            key=lambda item: (not item.is_route, item.label.lower(), item.id),
+            key=lambda item: (not item.is_route, item.title.lower(), item.id),
         )
 
     def _item(self, node: FlowNode) -> EndpointItem:
         ref = node.refs[0] if node.refs else None
         return EndpointItem(
             id=node.id,
-            label=node.label,
+            label=self._label(node.label),
             title=node.llm_label or node.label,
             one_liner=node.one_liner,
             is_route=self._is_route(node.id),
@@ -29,6 +32,9 @@ class EndpointCatalog:
             file=ref.file if ref else "",
             line=ref.line if ref else 0,
         )
+
+    def _label(self, label: str) -> str:
+        return _ROUTE_COUNT_SUFFIX.sub("", label).strip() or label
 
     def _is_route(self, node_id: str) -> bool:
         return not node_id.startswith(_NON_ROUTE_PREFIXES)

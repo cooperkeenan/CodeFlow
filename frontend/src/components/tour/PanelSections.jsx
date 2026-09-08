@@ -1,4 +1,5 @@
-import { MONO, TEXT, TEXT_MUTED, KIND_ACCENT } from '../flow/styles'
+import {MONO, TEXT, TEXT_MUTED} from '../flow/styles'
+import { LINK } from '../../design/tokens'
 
 const SANS = 'Instrument Sans, sans-serif'
 const HEAD = {
@@ -46,8 +47,8 @@ export function Branches({ branches }) {
           <span
             style={{
               fontFamily: MONO, fontSize: 9, padding: '2px 6px', borderRadius: 2, flexShrink: 0,
-              color: branch.terminal ? TEXT_MUTED : KIND_ACCENT.entry,
-              border: `1px solid ${branch.terminal ? 'rgba(255,255,255,0.14)' : KIND_ACCENT.entry + '55'}`,
+              color: branch.terminal ? TEXT_MUTED : LINK,
+              border: `1px solid ${branch.terminal ? 'rgba(255,255,255,0.14)' : LINK + '55'}`,
             }}
           >
             {branch.terminal ? 'stops' : 'rejoins'}
@@ -71,7 +72,7 @@ export function Refs({ refs, repoUrl }) {
     const text = `${item.file}:${item.line}`
     const href = repoUrl ? `${repoUrl.replace(/\/$/, '')}/${item.file}#L${item.line}` : null
     const style = {
-      display: 'block', fontFamily: MONO, fontSize: 10, color: KIND_ACCENT.entry,
+      display: 'block', fontFamily: MONO, fontSize: 10, color: LINK,
       lineHeight: 1.8, wordBreak: 'break-all', textDecoration: 'none',
     }
     return href

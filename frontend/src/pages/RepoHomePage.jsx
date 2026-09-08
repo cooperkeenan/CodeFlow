@@ -12,13 +12,13 @@ export default function RepoHomePage({ repo, fixture, onBack, flowPath = '/flow'
   const openEndpoint = id => navigate(`${endpointPath}?entry=${encodeURIComponent(id)}`)
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box className="area-rail" sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Stack
         component="header"
         direction="row"
         alignItems="center"
         spacing={2}
-        sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}
+        sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderColor: 'var(--area-rim)' }}
       >
         {onBack && <button className="back" onClick={onBack}>← repos</button>}
         <Typography sx={{ fontFamily: MONO, fontSize: '1.1rem', fontWeight: 600 }}>
@@ -50,6 +50,7 @@ export default function RepoHomePage({ repo, fixture, onBack, flowPath = '/flow'
               onOpen={openEndpoint}
               repo={repo}
               canPrefetch={!fixture}
+              onOverview={() => {}}
             />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0, overflowY: 'auto', p: 4 }}>

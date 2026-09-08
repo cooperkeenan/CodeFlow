@@ -1,27 +1,18 @@
 import logging
 import time
 
-logger = logging.getLogger(__name__)
+from tracer.services.analysis.stage_names import STAGE_NAMES, label_for
 
-STAGE_NAMES = [
-    "index",
-    "resolve",
-    "forks",
-    "effects",
-    "judge",
-    "condense",
-    "entries",
-    "stitch",
-    "rank",
-    "budget",
-    "name",
-    "review",
-    "symbols",
-]
+from shared.run_log.console import Console
+from shared.run_log.event_log import EventLog
+
+logger = logging.getLogger("codeflow.trace")
 
 
 class StageReporter:
     def __init__(self) -> None:
+        self._events = EventLog()
+        self._console = Console(logger, self._events)
         self._current = ""
         self._detail = ""
         self._index = 0
@@ -36,7 +27,12 @@ class StageReporter:
         self._detail = ""
         self._run_started = time.monotonic()
         self._stage_started = self._run_started
-        logger.info("[trace] %s: %d stages", repo, len(STAGE_NAMES))
+        self._events.clear()
+        self._console.stage(0, len(STAGE_NAMES), "start", f"tracing {repo} — {len(STAGE_NAMES)} stages")
+
+    def ensure_started(self, repo: str) -> None:
+        if not self._active:
+            self.start(repo)
 
     def begin(self, name: str, detail: str = "") -> None:
         self._close()
@@ -44,25 +40,41 @@ class StageReporter:
         self._detail = detail
         self._index = STAGE_NAMES.index(name) + 1 if name in STAGE_NAMES else self._index
         self._stage_started = time.monotonic()
-        logger.info("[trace] %d/%d %s starting", self._index, len(STAGE_NAMES), name)
+        title = f"{label_for(name)}{f' — {detail}' if detail else ''}"
+        self._console.stage(self._index, len(STAGE_NAMES), name, title)
 
     def note(self, detail: str) -> None:
         self._detail = detail
-        logger.info("[trace] %s: %s", self._current or "stage", detail)
+        self._console.step(detail)
+
+    def warn(self, detail: str) -> None:
+        self._console.warn(detail)
 
     def finish(self, detail: str = "") -> None:
         self._close(detail)
         self._active = False
-        logger.info("[trace] complete in %.1fs", time.monotonic() - self._run_started)
+        self._console.done(f"trace complete in {time.monotonic() - self._run_started:.1f}s")
 
-    def snapshot(self) -> dict:
+    def fail(self, message: str) -> None:
+        self._active = False
+        self._console.failed(f"{self._current or 'trace'} — {message}")
+
+    @property
+    def sink(self) -> EventLog:
+        return self._events
+
+    def snapshot(self, since: int = 0) -> dict:
         return {
             "active": self._active,
             "stage": self._current,
+            "stage_label": label_for(self._current),
             "detail": self._detail,
             "completed": self._index,
             "total": len(STAGE_NAMES),
             "stages": list(STAGE_NAMES),
+            "labels": [label_for(name) for name in STAGE_NAMES],
+            "events": [event.as_dict() for event in self._events.since(since)],
+            "event_seq": self._events.latest_seq(),
             "elapsed": round(time.monotonic() - self._run_started, 1) if self._active else 0.0,
         }
 
@@ -71,11 +83,6 @@ class StageReporter:
             return
         elapsed = time.monotonic() - self._stage_started
         suffix = detail or self._detail
-        logger.info(
-            "[trace] %d/%d %s done in %.1fs%s",
-            self._index,
-            len(STAGE_NAMES),
-            self._current,
-            elapsed,
-            f" ({suffix})" if suffix else "",
+        self._console.done(
+            f"{label_for(self._current)} in {elapsed:.1f}s{f' ({suffix})' if suffix else ''}"
         )

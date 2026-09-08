@@ -36,7 +36,7 @@ export default function LoginPage() {
           {error && <Alert severity="error">{error}</Alert>}
           <TextField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required fullWidth autoFocus />
           <TextField label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required fullWidth />
-          <Button type="submit" variant="contained" disabled={busy} fullWidth>Sign in</Button>
+          <Button type="submit" variant="contained" color="success" disabled={busy} fullWidth>Sign in</Button>
           <Box sx={{ textAlign: 'right' }}>
             <Link component={RouterLink} to="/forgot-password" color="text.secondary" variant="body2">
               Forgot password?

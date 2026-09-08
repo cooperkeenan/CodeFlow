@@ -34,6 +34,15 @@ function outline(node) {
     const { x, y, w, h } = node
     return <polygon points={`${x + w / 2},${y} ${x + w},${y + h / 2} ${x + w / 2},${y + h} ${x},${y + h / 2}`} />
   }
+  if (node.shape === 'notch') {
+    const { x, y, w, h } = node
+    const c = Math.min(h / 2, 12)
+    return (
+      <polygon
+        points={`${x + c},${y} ${x + w - c},${y} ${x + w},${y + h / 2} ${x + w - c},${y + h} ${x + c},${y + h} ${x},${y + h / 2}`}
+      />
+    )
+  }
   const rx = node.shape === 'pill' ? node.h / 2 : 6
   return <rect x={node.x} y={node.y} width={node.w} height={node.h} rx={rx} />
 }

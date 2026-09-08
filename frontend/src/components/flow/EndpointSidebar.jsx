@@ -13,13 +13,14 @@ function Row({ item, active, onOpen, onOverview }) {
       data-active={active ? 'true' : 'false'}
       selected={active}
       onClick={() => onOpen(item.id)}
-      sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1.5 }}
+      sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1.5, borderLeft: '2px solid transparent', '&.Mui-selected': { borderLeftColor: 'var(--area)' }, '&:hover .endpoint-label': { color: 'var(--link)' } }}
     >
       <Typography
+        className="endpoint-label"
+        title={item.label}
         sx={{
-          fontFamily: MONO,
           fontSize: 13,
-          color: active ? 'primary.light' : 'primary.main',
+          color: active ? 'var(--area)' : 'text.primary',
           flexGrow: 1,
           minWidth: 0,
           overflow: 'hidden',
@@ -27,7 +28,7 @@ function Row({ item, active, onOpen, onOverview }) {
           whiteSpace: 'nowrap',
         }}
       >
-        {item.label}
+        {item.title}
       </Typography>
       <Typography
         component="span"

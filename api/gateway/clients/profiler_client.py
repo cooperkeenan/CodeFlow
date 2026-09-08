@@ -8,6 +8,8 @@ from shared.models.profiler_response import ProfileResponse
 
 logger = logging.getLogger(__name__)
 
+_PROFILE_TIMEOUT_S = 600.0
+
 
 class ProfilerClient:
     def __init__(self, http_client: httpx.AsyncClient, base_url: str):
@@ -21,7 +23,7 @@ class ProfilerClient:
                 response = await self._http.post(
                     f"{self._base_url}/profile",
                     json=request.model_dump(),
-                    timeout=60.0,
+                    timeout=_PROFILE_TIMEOUT_S,
                 )
                 response.raise_for_status()
                 return ProfileResponse.model_validate(response.json())

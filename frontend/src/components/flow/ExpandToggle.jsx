@@ -1,3 +1,4 @@
+import { HUE, KIND } from '../../design/tokens'
 const HIT_FLOOR = 0.72
 
 const BASE = {
@@ -8,9 +9,9 @@ const BASE = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  border: '1px solid #C98A3A',
-  background: '#2A1F12',
-  color: '#E5A44E',
+  border: `1px solid ${HUE.yellow.rim}`,
+  background: HUE.yellow.fill,
+  color: KIND.decision,
 }
 
 export default function ExpandToggle({ expanded, count, onToggle, nodeId, scale = 1 }) {

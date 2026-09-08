@@ -1,3 +1,4 @@
+import { CANVAS, GRID } from '../components/flow/styles'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { endpointFixtureUrl, helperFixtureUrl } from '../api/flow'
@@ -75,7 +76,7 @@ export default function FlowPage({ analysis, onBack, fixture }) {
   }, [isolated])
 
   return (
-    <main style={{ height: '100vh', display: 'flex', boxSizing: 'border-box' }}>
+    <main className="area-rail" style={{ height: '100vh', display: 'flex', boxSizing: 'border-box' }}>
       <EndpointSidebar
         repo={repo}
         fixture={fixture}
@@ -106,7 +107,7 @@ export default function FlowPage({ analysis, onBack, fixture }) {
           error={error}
         />
 
-        <div style={{ position: 'relative', flex: 1, minHeight: 0, border: '1px solid #232A36', borderRadius: 3, overflow: 'hidden', background: '#0F1218' }}>
+        <div style={{ position: 'relative', flex: 1, minHeight: 0, border: `1px solid ${GRID}`, borderRadius: 3, overflow: 'hidden', background: CANVAS }}>
           {error && <div style={{ ...MUTED, padding: '1rem' }}>failed to load flow: {error}</div>}
           {!error && loading && <div style={{ ...MUTED, padding: '1rem' }}>loading flow…</div>}
           {!error && !loading && !nodes.length && <div style={{ ...MUTED, padding: '1rem' }}>no flow data.</div>}

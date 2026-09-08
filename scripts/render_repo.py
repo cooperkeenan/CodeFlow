@@ -8,6 +8,10 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "render_agent"))
 sys.path.insert(0, str(REPO_ROOT / "agents" / "tracer_agent"))
 
+from shared.run_log.setup import configure_logging
+
+configure_logging("render_repo")
+
 from tracer.services.analysis.flow_pipeline import FlowPipeline
 from tracer.services.analysis.significance.factory import build_decision_judge
 from tracer.services.analysis.labelling.factory import build_flow_namer

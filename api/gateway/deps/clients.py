@@ -1,4 +1,3 @@
-import inspect
 import logging
 
 import httpx
@@ -43,11 +42,6 @@ def get_tracer_client(
     http_client: httpx.AsyncClient = Depends(get_http_client),
     settings: Settings = Depends(get_settings),
 ) -> TracerClient:
-    logger.info(
-        "Creating TracerClient from %s with trace signature %s",
-        inspect.getfile(TracerClient),
-        inspect.signature(TracerClient.trace),
-    )
     return TracerClient(http_client, settings.TRACER_AGENT_URL)
 
 
