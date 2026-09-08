@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
 
-from naming.contracts import Probe
+from naming.banks import Bank
+from naming.contracts import CandidateSource, Probe
 from naming.dns_probe import DnsProbe
 from naming.dns_resolver import DnsResolver
 from naming.github_probe import GithubRepoProbe
@@ -32,16 +33,22 @@ def build_pipeline(
     db_path: Path,
     store: NameStore,
     rdap_base: str,
+    bank: Bank,
     batch_size: int = 8,
     workers: int = 4,
     pause_s: float = 0.0,
     verbose: bool = False,
+    use_variants: bool = True,
 ) -> NameSearchPipeline:
     http = HttpClient()
     probes = build_probes(http, rdap_base, os.environ.get("GITHUB_TOKEN", ""))
     prober = CandidateProber(probes, VerdictAggregator(), workers)
+    sources: tuple[CandidateSource, ...] = (SeedSource(bank.seeds),)
+    if use_variants:
+        sources += (VariantSource(store),)
+    sources += (MorphemeGenerator(bank.roots, bank.suffixes),)
     return NameSearchPipeline(
-        sources=(SeedSource(), VariantSource(store), MorphemeGenerator()),
+        sources=sources,
         prober=prober,
         store=store,
         reporter=ConsoleReporter(verbose),

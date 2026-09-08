@@ -5,6 +5,7 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
+from naming.banks import BANKS, DEFAULT_BANK
 from naming.factory import build_pipeline
 from naming.rdap_probe import BOOTSTRAP_RDAP, VERISIGN_COM_RDAP
 from naming.statuses import VERDICT_CHECK, VERDICT_STRONG
@@ -28,12 +29,15 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--pause", type=float, default=1.0)
     run.add_argument("--verbose", action="store_true")
     run.add_argument("--bootstrap-rdap", action="store_true", help="use rdap.org instead of Verisign")
+    run.add_argument("--bank", choices=sorted(BANKS), default=DEFAULT_BANK)
+    run.add_argument("--no-variants", action="store_true", help="skip get/use/HQ shapes of rejected names")
 
     check = subparsers.add_parser("check", help="check names given on the command line")
     check.add_argument("names", nargs="+")
     check.add_argument("--workers", type=int, default=4)
     check.add_argument("--verbose", action="store_true")
     check.add_argument("--bootstrap-rdap", action="store_true")
+    check.add_argument("--bank", choices=sorted(BANKS), default=DEFAULT_BANK)
 
     top = subparsers.add_parser("top", help="print the best stored candidates")
     top.add_argument("--limit", type=int, default=25)
@@ -66,10 +70,12 @@ def main(argv: list[str]) -> int:
             db_path=args.db,
             store=store,
             rdap_base=rdap_base,
+            bank=BANKS[args.bank],
             batch_size=getattr(args, "batch", 8),
             workers=args.workers,
             pause_s=getattr(args, "pause", 0.0),
             verbose=args.verbose,
+            use_variants=not getattr(args, "no_variants", False),
         )
         if args.command == "check":
             pipeline.check_names(args.names)
