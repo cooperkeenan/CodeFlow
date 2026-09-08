@@ -41,7 +41,7 @@ class LlmSymbolExplainer:
         response = self._llm.messages.create(
             model=_MODEL,
             max_tokens=4000,
-            temperature=0,
+            extra_body={"temperature": 0},
             system=EXPLAIN_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": build_explain_evidence(request)}],
         )

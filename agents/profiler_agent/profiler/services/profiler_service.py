@@ -75,7 +75,7 @@ class ProfilerService:
         response = await self._llm.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=4000,
-            temperature=0,
+            extra_body={"temperature": 0},
             system=PROFILER_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}],
         )

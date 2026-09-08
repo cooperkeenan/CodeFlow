@@ -56,7 +56,7 @@ class FlowReviewer:
         response = self._llm.messages.create(
             model=_MODEL,
             max_tokens=4000,
-            temperature=0,
+            extra_body={"temperature": 0},
             system=FLOW_REVIEW_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": content}],
         )
