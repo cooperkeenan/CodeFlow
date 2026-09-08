@@ -22,11 +22,7 @@ def get_file_tree_service(
 def get_anthropic_client(
     settings: Settings = Depends(get_settings),
 ) -> anthropic.AsyncAnthropic:
-    http_client = httpx.AsyncClient(verify=False)
-    return anthropic.AsyncAnthropic(
-        api_key=settings.ANTHROPIC_API_KEY,
-        http_client=http_client,
-    )
+    return anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
 def get_repo_map_service() -> RepoMapService:
