@@ -7,6 +7,8 @@ from shared.models.tracer_request import TracerRequest
 
 logger = logging.getLogger(__name__)
 
+_TRACE_TIMEOUT_S = 3600.0
+
 
 class TracerClient:
     def __init__(self, http_client: httpx.AsyncClient, base_url: str):
@@ -20,7 +22,7 @@ class TracerClient:
                 response = await self._http.post(
                     f"{self._base_url}/trace",
                     json=request.model_dump(),
-                    timeout=900.0,
+                    timeout=_TRACE_TIMEOUT_S,
                 )
                 response.raise_for_status()
                 return response.json()
