@@ -71,5 +71,7 @@ class TracerService:
         return files
 
     def _minimal_dirs(self, blueprint: RepoBlueprint) -> list[str]:
-        dirs = sorted({d for m in blueprint.modules for z in m.zones for d in z.directories})
-        return [d for d in dirs if not any(o != d and d.startswith(o) for o in dirs)]
+        dirs = sorted({d.rstrip("/") for m in blueprint.modules for z in m.zones for d in z.directories})
+        if any(d in ("", ".") for d in dirs):
+            return [""]
+        return [d for d in dirs if not any(o != d and d.startswith(o + "/") for o in dirs)]

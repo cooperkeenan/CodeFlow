@@ -63,6 +63,7 @@ class GitHubFileFetcher:
         self, tree_items: list[dict], directories: list[str]
     ) -> list[dict]:
         norm_dirs = [d.rstrip("/") for d in directories]
+        whole_repo = any(d in ("", ".") for d in norm_dirs)
         results = []
         for item in tree_items:
             if item["type"] != "blob":
@@ -75,7 +76,7 @@ class GitHubFileFetcher:
                 continue
             if any(ex in parts for ex in EXCLUDED_DIRS):
                 continue
-            if any(path == d or path.startswith(d + "/") for d in norm_dirs):
+            if whole_repo or any(path == d or path.startswith(d + "/") for d in norm_dirs):
                 results.append(item)
         return results
 
