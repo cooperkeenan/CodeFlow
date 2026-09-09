@@ -1,7 +1,7 @@
-import { Box, Button, Chip, Container, Paper, Stack, Toolbar, Typography } from '@mui/material'
+import { Alert, Box, Button, Chip, Container, Paper, Stack, Toolbar, Typography } from '@mui/material'
 import GitHubIcon from '@mui/icons-material/GitHub'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import TopBar from '../components/dashboard/TopBar'
 import TokenManager from '../components/settings/TokenManager'
 import { startGithubOAuth } from '../api/github'
@@ -9,6 +9,7 @@ import { getUser } from '../api/session'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
+  const linkError = useLocation().state?.linkError ?? null
   const user = getUser()
   const linked = Boolean(user?.github_login)
 
@@ -22,6 +23,9 @@ export default function SettingsPage() {
 
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" gutterBottom>GitHub</Typography>
+          {linkError && (
+            <Alert severity="error" data-testid="link-error" sx={{ mb: 2 }}>{linkError}</Alert>
+          )}
           <Stack direction="row" alignItems="center" spacing={2}>
             {linked
               ? <Chip color="success" variant="outlined" label={`Linked as ${user.github_login}`} />

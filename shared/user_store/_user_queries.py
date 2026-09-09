@@ -57,6 +57,12 @@ FROM users
 WHERE id = %s
 """
 
+SELECT_BY_GITHUB_ID = """
+SELECT id, github_id, github_login, name, avatar_url, email
+FROM users
+WHERE github_id = %s
+"""
+
 SELECT_BY_EMAIL = """
 SELECT id, github_id, github_login, name, avatar_url, email, password_hash
 FROM users

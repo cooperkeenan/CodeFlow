@@ -1,5 +1,6 @@
 import logging
 
+from fastapi import HTTPException
 from gateway.models.auth_model import AuthUser, SignInResponse
 from gateway.services.github_service import GitHubService
 from gateway.services.token_hasher import TokenHasher
@@ -42,6 +43,15 @@ class AuthService:
     async def link_github(self, user: AuthUser, code: str) -> AuthUser:
         github_token = await self._github.exchange_code_for_token(code)
         identity = await self._github.get_identity(github_token)
+        owner = await self._users.get_by_github_id(identity["id"])
+        if owner is not None and owner["id"] != user.id:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"GitHub account {identity['login']} is already linked to another "
+                    "CodeFlow account. Sign in with GitHub instead, or unlink it there first."
+                ),
+            )
         await self._users.link_github(
             user.id,
             identity["id"],

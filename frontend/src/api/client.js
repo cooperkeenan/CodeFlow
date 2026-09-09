@@ -13,8 +13,11 @@ export async function request(path, options = {}) {
   })
   if (!res.ok) {
     const text = await res.text()
-    const error = new Error(`${res.status}: ${text}`)
+    let detail = null
+    try { detail = JSON.parse(text)?.detail ?? null } catch { detail = null }
+    const error = new Error(detail || `${res.status}: ${text}`)
     error.status = res.status
+    error.detail = detail
     throw error
   }
   if (res.status === 204) return null

@@ -49,11 +49,15 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
     const code = params.get('code')
     if (!code) return
-    const finish = (path) => { window.history.replaceState({}, '', '/'); setOauthPending(false); navigate(path) }
+    const finish = (path, state) => {
+      window.history.replaceState({}, '', '/')
+      setOauthPending(false)
+      navigate(path, state ? { state } : undefined)
+    }
     if (getSessionToken()) {
       linkGithub(code)
         .then(user => { saveUser(user); finish('/settings') })
-        .catch(() => finish('/settings'))
+        .catch(err => finish('/settings', { linkError: err.message || 'Could not link GitHub.' }))
     } else {
       exchangeCode(code)
         .then(d => { saveSession(d.session_token, d.user); saveGithubToken(d.github_access_token); finish('/') })
