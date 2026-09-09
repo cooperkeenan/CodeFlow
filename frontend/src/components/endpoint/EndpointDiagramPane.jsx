@@ -28,6 +28,7 @@ export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen
   const path = useMemo(
     () => happyPath(baseNodes, baseEdges, handlerFqn), [baseNodes, baseEdges, handlerFqn]
   )
+  const fitNodeIds = useMemo(() => (path ? [...path.nodeIds] : null), [path])
   const nodes = useMemo(() => (
     path
       ? baseNodes.map(n => (
@@ -86,6 +87,7 @@ export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen
             revealTrigger={expansion.lastReveal}
             repo={repo}
             fitOptions={FIT_OPTIONS}
+            fitNodeIds={fitNodeIds}
           />
         )}
       </Box>

@@ -34,7 +34,7 @@ export default function ContractPanel({ contracts, title, selectedKey = null, on
   const routes = (contracts || []).filter(Boolean)
   if (!routes.length) return null
   return (
-    <Box data-testid="contract-panel" sx={{ maxWidth: 720 }}>
+    <Box data-testid="contract-panel" sx={{ maxWidth: '100%' }}>
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
         <Typography variant="h6" sx={{ fontFamily: MONO, fontSize: 16 }}>API Contract</Typography>
         {routes.length > 1 && (

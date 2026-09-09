@@ -6,6 +6,9 @@ import { cssFrameProgress } from './cameraEasing'
 const DURATION = 360
 const ISOLATE_DURATION = 760
 const FIT_OPTIONS = { padding: 0.25, duration: 360 }
+const FOCUS_MIN_ZOOM = 0.5
+const FOCUS_MAX_ZOOM = 1.2
+const FOCUS_PADDING_PX = 160
 
 function boundsOf(nodes) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
@@ -39,7 +42,7 @@ function makeInterpolate(matchFrame) {
   }
 }
 
-export default function CameraController({ revealTrigger, isolateCenter = null }) {
+export default function CameraController({ revealTrigger, isolateCenter = null, fitNodeIds = null }) {
   const { getNode, getViewport, setViewport, fitView } = useReactFlow()
   const width = useStore(s => s.width)
   const height = useStore(s => s.height)
@@ -50,6 +53,36 @@ export default function CameraController({ revealTrigger, isolateCenter = null }
   useEffect(() => {
     if (d3Zoom) d3Zoom.interpolate(makeInterpolate(matchFrame))
   }, [d3Zoom])
+
+  const fitKey = fitNodeIds?.length ? fitNodeIds.join('|') : ''
+  const previousFitKey = useRef(null)
+  useEffect(() => {
+    const previous = previousFitKey.current
+    previousFitKey.current = fitKey
+    if (!fitKey && previous === null) return undefined
+    const frame = requestAnimationFrame(() => {
+      if (!fitKey) return fitView(FIT_OPTIONS)
+      const focused = fitKey.split('|').map(getNode).filter(Boolean)
+      if (!focused.length || !width || !height) return
+      const b = boundsOf(focused)
+      const zoom = Math.min(
+        FOCUS_MAX_ZOOM,
+        Math.max(FOCUS_MIN_ZOOM, Math.min(
+          width / (b.maxX - b.minX + FOCUS_PADDING_PX),
+          height / (b.maxY - b.minY + FOCUS_PADDING_PX),
+        )),
+      )
+      setViewport(
+        {
+          x: width / 2 - ((b.minX + b.maxX) / 2) * zoom,
+          y: height / 2 - ((b.minY + b.maxY) / 2) * zoom,
+          zoom,
+        },
+        { duration: DURATION },
+      )
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [fitKey, fitView, getNode, setViewport, width, height])
 
   useEffect(() => {
     if (!revealTrigger) return

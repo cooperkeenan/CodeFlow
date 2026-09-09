@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Box, Chip, CircularProgress, Stack, Typography } from '@mui/material'
+import { Box, CircularProgress, Stack, Typography } from '@mui/material'
 import { useEndpointDetail } from '../hooks/useEndpointDetail'
 import { useRepoHome } from '../hooks/useRepoHome'
-import EndpointList from '../components/repo/EndpointList'
+import EndpointRail from '../components/endpoint/EndpointRail'
+import EndpointHeader from '../components/endpoint/EndpointHeader'
 import { endpointDetailFixtureUrl } from '../api/endpoints'
 import { flowQueryFn, flowQueryKey } from '../api/queries'
 import ContractPanel from '../components/endpoint/ContractPanel'
-import { methodChipSx } from '../components/endpoint/contractChips'
 import KeyMethodPanel from '../components/endpoint/KeyMethodPanel'
 import EndpointDiagramPane from '../components/endpoint/EndpointDiagramPane'
 
-const MONO = "'IBM Plex Mono', monospace"
 const REPO_HOME_FIXTURE = '/fixture/repo_home.json'
 
 export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack }) {
@@ -24,6 +23,7 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
   const { detail, loading, error } = useEndpointDetail(repo, fixtureUrl, entry)
   const { home } = useRepoHome(repo, fixture ? REPO_HOME_FIXTURE : null)
   const [selectedRoute, setSelectedRoute] = useState(null)
+  const [railOpen, setRailOpen] = useState(true)
   useEffect(() => { setSelectedRoute(null) }, [entry])
   const selectEndpoint = id => setParams({ entry: id })
 
@@ -46,58 +46,28 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
 
   return (
     <Box data-testid="endpoint-page" className="area-rail" sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Stack
-        component="header"
-        direction="row"
-        alignItems="center"
-        spacing={2}
-        sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderColor: 'var(--area-rim)' }}
-      >
-        <button className="back" onClick={backToList}>← endpoints</button>
-        {detail && (
-          <>
-            {detail.method && (
-              <Chip
-                label={detail.method}
-                size="small"
-                variant="outlined"
-                sx={methodChipSx(detail.method)}
-              />
-            )}
-            <Typography sx={{ fontFamily: MONO, fontSize: 13 }}>{detail.path}</Typography>
-            <Typography sx={{ fontFamily: MONO, fontSize: '1.1rem', fontWeight: 600 }}>
-              {detail.title}
-            </Typography>
-          </>
-        )}
-      </Stack>
+      <EndpointHeader
+        detail={detail}
+        railOpen={railOpen}
+        onToggleRail={() => setRailOpen(open => !open)}
+        onBack={backToList}
+      />
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-        {home?.endpoints?.length > 0 && (
-          <Box
-            sx={{
-              width: 320,
-              flexShrink: 0,
-              overflowY: 'auto',
-              borderRight: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <EndpointList
-              endpoints={home.endpoints}
-              onOpen={selectEndpoint}
-              repo={repo}
-              canPrefetch={!fixture}
-              activeId={entry}
-              onOverview={backToList}
-            />
-          </Box>
-        )}
+        <EndpointRail
+          endpoints={home?.endpoints}
+          open={railOpen}
+          onOpen={selectEndpoint}
+          onOverview={backToList}
+          repo={repo}
+          canPrefetch={!fixture}
+          activeId={entry}
+        />
 
         <Box
           sx={{
-            flex: '0 1 760px',
-            minWidth: 0,
+            flex: '1 1 45%',
+            minWidth: 320,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -117,7 +87,7 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
           )}
 
           {detail && (
-            <Stack spacing={4} sx={{ maxWidth: 720, p: 4 }}>
+            <Stack spacing={4} sx={{ p: 3 }}>
               {description && <Typography color="text.secondary">{description}</Typography>}
               <ContractPanel
                 contracts={contracts}
@@ -133,8 +103,8 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
         {detail && (
           <Box
             sx={{
-              flex: 1,
-              minWidth: 420,
+              flex: '1 1 55%',
+              minWidth: 320,
               borderLeft: '1px solid',
               borderColor: 'divider',
               p: 2.5,
