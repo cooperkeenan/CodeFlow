@@ -80,9 +80,10 @@ class TreeLayout:
         leaf_roots = [r for r in secondary_roots if not forest.children.get(r)]
         branch_roots = [r for r in secondary_roots if forest.children.get(r)]
         if leaf_roots:
-            for slot, root_id in enumerate(leaf_roots):
-                positions[root_id] = (row_cursor, float(slot))
-            row_cursor += 1 + cfg.subtree_gap_rows
+            columns = min(cfg.leaf_root_columns, len(leaf_roots))
+            for index, root_id in enumerate(leaf_roots):
+                positions[root_id] = (row_cursor + index // columns, float(index % columns))
+            row_cursor += -(-len(leaf_roots) // columns) + cfg.subtree_gap_rows
         for root_id in branch_roots:
             row_cursor = self._place_subtree(root_id, forest.children, row_cursor, positions)
             row_cursor += cfg.subtree_gap_rows

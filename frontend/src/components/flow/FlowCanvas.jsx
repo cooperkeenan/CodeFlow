@@ -20,6 +20,7 @@ import GroupBox from './nodes/GroupBox'
 import TextNode from '../diagram/nodes/TextNode'
 import FlowEdgeComponent from './FlowEdgeComponent'
 import CameraController from './CameraController'
+import NodeActionToolbar from './NodeActionToolbar'
 import { KIND_ACCENT, CANVAS, GRID, SURFACE_2, BORDER } from './styles'
 import { useIsolatedView } from '../../hooks/useIsolatedView'
 import { useArrowKeyPan } from '../../hooks/useArrowKeyPan'
@@ -63,6 +64,7 @@ function FlowCanvasInner({
   onEdgesDelete = undefined, onNodeDragStop = undefined, onSelectionChange = undefined,
 }) {
   const [hoveredEdge, setHoveredEdge] = useState(null)
+  const [picked, setPicked] = useState(null)
   useArrowKeyPan()
   const { rfNodes, rfEdges, isolateCenter } = useIsolatedView(
     nodes, edges, selectedId, isolatedId, hoveredEdge, repo,
@@ -137,8 +139,14 @@ function FlowCanvasInner({
       edges={stagedEdges}
       nodeTypes={NODE_TYPES}
       edgeTypes={EDGE_TYPES}
-      onPaneClick={onPaneClick}
-      onNodeClick={onNodeClick}
+      onPaneClick={event => {
+        setPicked(null)
+        onPaneClick?.(event)
+      }}
+      onNodeClick={(event, node) => {
+        setPicked(node.id)
+        onNodeClick?.(event, node)
+      }}
       onEdgeMouseEnter={(_, edge) => setHoveredEdge(edge.id)}
       onEdgeMouseLeave={() => setHoveredEdge(null)}
       onInit={onInit}
@@ -156,6 +164,11 @@ function FlowCanvasInner({
       proOptions={{ hideAttribution: true }}
     >
       <CameraController revealTrigger={revealTrigger} isolateCenter={isolateCenter} fitNodeIds={fitNodeIds} />
+      <NodeActionToolbar
+        nodeId={picked}
+        isolated={picked === isolatedId}
+        onIsolate={nodes.find(n => n.id === picked)?.data?.onIsolate}
+      />
       {children}
       <Background color={GRID} gap={28} size={1} style={{ background: CANVAS }} />
       {chrome.controls && (

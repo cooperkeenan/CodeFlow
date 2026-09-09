@@ -13,6 +13,7 @@ class FlowGridConfig:
     lane_padding: int = 40
     lane_header_gutter: int = 24
     subtree_gap_rows: int = 0
+    leaf_root_columns: int = 4
 
     @property
     def lane_header_width(self) -> int:
