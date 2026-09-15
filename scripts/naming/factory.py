@@ -8,6 +8,7 @@ from naming.domain_namer import DomainNamer
 from naming.dns_resolver import DnsResolver
 from naming.github_probe import GithubRepoProbe
 from naming.http_client import HttpClient
+from naming.monosyllable_generator import MonosyllableGenerator
 from naming.morpheme_generator import MorphemeGenerator
 from naming.pipeline import NameSearchPipeline
 from naming.prober import CandidateProber
@@ -40,16 +41,20 @@ def build_pipeline(
     pause_s: float = 0.0,
     verbose: bool = False,
     use_variants: bool = True,
+    mono: bool = False,
 ) -> NameSearchPipeline:
     http = HttpClient()
     namer = DomainNamer(tld)
     rdap_base = VERISIGN_COM_RDAP if namer.tld == "com" else BOOTSTRAP_RDAP
     probes = build_probes(http, rdap_base, os.environ.get("GITHUB_TOKEN", ""))
     prober = CandidateProber(probes, VerdictAggregator(), workers)
-    sources: tuple[CandidateSource, ...] = (SeedSource(bank.seeds, namer),)
-    if use_variants:
-        sources += (VariantSource(store, namer=namer),)
-    sources += (MorphemeGenerator(bank.roots, bank.suffixes, namer=namer),)
+    if mono:
+        sources: tuple[CandidateSource, ...] = (MonosyllableGenerator(namer=namer),)
+    else:
+        sources = (SeedSource(bank.seeds, namer),)
+        if use_variants:
+            sources += (VariantSource(store, namer=namer),)
+        sources += (MorphemeGenerator(bank.roots, bank.suffixes, namer=namer),)
     return NameSearchPipeline(
         sources=sources,
         prober=prober,

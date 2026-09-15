@@ -30,6 +30,7 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--bank", choices=sorted(BANKS), default=DEFAULT_BANK)
     run.add_argument("--no-variants", action="store_true", help="skip get/use/HQ shapes of rejected names")
     run.add_argument("--tld", default="com")
+    run.add_argument("--mono", action="store_true", help="generate one-syllable coinages only")
 
     check = subparsers.add_parser("check", help="check names given on the command line")
     check.add_argument("names", nargs="+")
@@ -74,6 +75,7 @@ def main(argv: list[str]) -> int:
             pause_s=getattr(args, "pause", 0.0),
             verbose=args.verbose,
             use_variants=not getattr(args, "no_variants", False),
+            mono=getattr(args, "mono", False),
         )
         if args.command == "check":
             pipeline.check_names(args.names)
