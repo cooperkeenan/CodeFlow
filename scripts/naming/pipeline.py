@@ -1,6 +1,7 @@
 import time
 
 from naming.contracts import CandidateSource
+from naming.domain_namer import DomainNamer
 from naming.models import Candidate
 from naming.prober import CandidateProber
 from naming.reporter import ConsoleReporter
@@ -15,6 +16,7 @@ class NameSearchPipeline:
         store: NameStore,
         reporter: ConsoleReporter,
         db_label: str,
+        namer: DomainNamer | None = None,
         batch_size: int = 8,
         pause_s: float = 0.0,
     ) -> None:
@@ -23,6 +25,7 @@ class NameSearchPipeline:
         self._store = store
         self._reporter = reporter
         self._db_label = db_label
+        self._namer = namer or DomainNamer()
         self._batch_size = max(1, batch_size)
         self._pause_s = pause_s
 
@@ -44,7 +47,7 @@ class NameSearchPipeline:
 
     def check_names(self, names: list[str]) -> int:
         batch = [
-            Candidate(name=name, domain=f"{name.lower()}.com", origin="manual")
+            Candidate(name=name, domain=self._namer.domain_for(name), origin="manual")
             for name in names
         ]
         self._reporter.round_start(1, 1, len(batch))

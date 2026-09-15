@@ -1,3 +1,4 @@
+from naming.domain_namer import DomainNamer
 from naming.models import Candidate
 from naming.statuses import VERDICT_REJECT
 from naming.store import NameStore
@@ -17,8 +18,10 @@ class VariantSource:
         modifiers: tuple[tuple[str, str], ...] = DEFAULT_MODIFIERS,
         origins: tuple[str, ...] = ("seed",),
         pool_limit: int = 400,
+        namer: DomainNamer | None = None,
     ) -> None:
         self._store = store
+        self._namer = namer or DomainNamer()
         self._modifiers = modifiers
         self._origins = origins
         self._pool_limit = pool_limit
@@ -39,7 +42,7 @@ class VariantSource:
             batch.append(
                 Candidate(
                     name=name,
-                    domain=f"{name.lower()}.com",
+                    domain=self._namer.domain_for(name),
                     origin=self.source_name,
                     rationale=rationale,
                 )

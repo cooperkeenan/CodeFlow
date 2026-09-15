@@ -1,5 +1,6 @@
 import random
 
+from naming.domain_namer import DomainNamer
 from naming.models import Candidate
 from naming.morphemes import MAX_NAME_LENGTH, ROOTS, SUFFIXES
 
@@ -10,7 +11,9 @@ class MorphemeGenerator:
         roots: tuple[str, ...] = ROOTS,
         suffixes: tuple[str, ...] = SUFFIXES,
         seed: int = 1729,
+        namer: DomainNamer | None = None,
     ) -> None:
+        self._namer = namer or DomainNamer()
         self._pool = self._build_pool(roots, suffixes, seed)
         self._cursor = 0
 
@@ -28,7 +31,7 @@ class MorphemeGenerator:
             batch.append(
                 Candidate(
                     name=name,
-                    domain=f"{name.lower()}.com",
+                    domain=self._namer.domain_for(name),
                     origin=self.source_name,
                     rationale="generated from the structure and clarity word banks",
                 )

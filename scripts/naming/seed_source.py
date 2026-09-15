@@ -1,10 +1,16 @@
+from naming.domain_namer import DomainNamer
 from naming.models import Candidate
 from naming.seed_names import SEED_NAMES
 
 
 class SeedSource:
-    def __init__(self, entries: tuple[tuple[str, str], ...] = SEED_NAMES) -> None:
+    def __init__(
+        self,
+        entries: tuple[tuple[str, str], ...] = SEED_NAMES,
+        namer: DomainNamer | None = None,
+    ) -> None:
         self._entries = entries
+        self._namer = namer or DomainNamer()
         self._cursor = 0
 
     @property
@@ -21,7 +27,7 @@ class SeedSource:
             batch.append(
                 Candidate(
                     name=name,
-                    domain=f"{name.lower()}.com",
+                    domain=self._namer.domain_for(name),
                     origin=self.source_name,
                     rationale=rationale,
                 )
