@@ -19,11 +19,14 @@ from naming.seed_source import SeedSource
 from naming.store import NameStore
 from naming.variant_source import VariantSource
 from naming.verdict import VerdictAggregator
+from naming.whois_client import WhoisClient
+from naming.whois_probe import WhoisProbe
 
 
 def build_probes(http: HttpClient, rdap_base: str, github_token: str) -> tuple[Probe, ...]:
     return (
         RdapProbe(http, rdap_base),
+        WhoisProbe(WhoisClient()),
         DnsProbe(DnsResolver()),
         PackageRegistryProbe("pypi", PYPI_URL, http),
         PackageRegistryProbe("npm", NPM_URL, http),

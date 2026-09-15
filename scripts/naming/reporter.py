@@ -3,7 +3,7 @@ from naming.statuses import VERDICT_ORDER
 
 _MARKS = {
     "strong": "STRONG",
-    "check": "CHECK ",
+    "check": "VERIFY",
     "unknown": "UNSURE",
     "reject": "TAKEN ",
 }

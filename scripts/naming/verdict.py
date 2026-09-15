@@ -1,6 +1,7 @@
 from naming.models import Signal
 from naming.statuses import (
-    DOMAIN_FREE_STATUSES,
+    DOMAIN_AVAILABLE,
+    DOMAIN_LIKELY_AVAILABLE,
     DOMAIN_TAKEN,
     DOMAIN_UNKNOWN,
     KIND_DOMAIN,
@@ -11,7 +12,7 @@ from naming.statuses import (
     VERDICT_UNKNOWN,
 )
 
-_DEFAULT_AUTHORITY = ("rdap", "dns")
+_DEFAULT_AUTHORITY = ("rdap", "whois", "dns")
 
 
 class VerdictAggregator:
@@ -36,6 +37,8 @@ class VerdictAggregator:
     def _verdict(self, domain_status: str, hits: int) -> str:
         if domain_status == DOMAIN_TAKEN:
             return VERDICT_REJECT
-        if domain_status not in DOMAIN_FREE_STATUSES:
+        if domain_status == DOMAIN_LIKELY_AVAILABLE:
+            return VERDICT_CHECK
+        if domain_status != DOMAIN_AVAILABLE:
             return VERDICT_UNKNOWN
         return VERDICT_STRONG if hits == 0 else VERDICT_CHECK
