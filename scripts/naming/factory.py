@@ -14,6 +14,8 @@ from naming.pipeline import NameSearchPipeline
 from naming.prober import CandidateProber
 from naming.rdap_probe import BOOTSTRAP_RDAP, VERISIGN_COM_RDAP, RdapProbe
 from naming.registry_probe import NPM_URL, PYPI_URL, PackageRegistryProbe
+from naming.respelling_generator import RespellingGenerator
+from naming.respellings import WORD_SOUNDS
 from naming.reporter import ConsoleReporter
 from naming.seed_source import SeedSource
 from naming.store import NameStore
@@ -45,14 +47,19 @@ def build_pipeline(
     verbose: bool = False,
     use_variants: bool = True,
     mono: bool = False,
+    respell: str = "",
 ) -> NameSearchPipeline:
     http = HttpClient()
     namer = DomainNamer(tld)
     rdap_base = VERISIGN_COM_RDAP if namer.tld == "com" else BOOTSTRAP_RDAP
     probes = build_probes(http, rdap_base, os.environ.get("GITHUB_TOKEN", ""))
     prober = CandidateProber(probes, VerdictAggregator(), workers)
-    if mono:
-        sources: tuple[CandidateSource, ...] = (MonosyllableGenerator(namer=namer),)
+    if respell:
+        sources: tuple[CandidateSource, ...] = (
+            RespellingGenerator(respell, WORD_SOUNDS[respell], namer),
+        )
+    elif mono:
+        sources = (MonosyllableGenerator(namer=namer),)
     else:
         sources = (SeedSource(bank.seeds, namer),)
         if use_variants:

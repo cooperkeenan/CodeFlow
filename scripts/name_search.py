@@ -6,6 +6,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from naming.banks import BANKS, DEFAULT_BANK
+from naming.respellings import WORD_SOUNDS
 from naming.factory import build_pipeline
 from naming.statuses import VERDICT_CHECK, VERDICT_STRONG
 from naming.store import NameStore
@@ -31,6 +32,12 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--no-variants", action="store_true", help="skip get/use/HQ shapes of rejected names")
     run.add_argument("--tld", default="com")
     run.add_argument("--mono", action="store_true", help="generate one-syllable coinages only")
+    run.add_argument(
+        "--respell",
+        choices=sorted(WORD_SOUNDS),
+        default="",
+        help="generate names that sound like this word, spelled differently",
+    )
 
     check = subparsers.add_parser("check", help="check names given on the command line")
     check.add_argument("names", nargs="+")
@@ -76,6 +83,7 @@ def main(argv: list[str]) -> int:
             verbose=args.verbose,
             use_variants=not getattr(args, "no_variants", False),
             mono=getattr(args, "mono", False),
+            respell=getattr(args, "respell", ""),
         )
         if args.command == "check":
             pipeline.check_names(args.names)
