@@ -38,6 +38,11 @@ def _parser() -> argparse.ArgumentParser:
         default="",
         help="generate names that sound like this word, spelled differently",
     )
+    run.add_argument(
+        "--twist",
+        action="store_true",
+        help="respell the codeflow word list with orthographic tricks (x for cks, k for c, y for i)",
+    )
 
     check = subparsers.add_parser("check", help="check names given on the command line")
     check.add_argument("names", nargs="+")
@@ -84,6 +89,7 @@ def main(argv: list[str]) -> int:
             use_variants=not getattr(args, "no_variants", False),
             mono=getattr(args, "mono", False),
             respell=getattr(args, "respell", ""),
+            twist=getattr(args, "twist", False),
         )
         if args.command == "check":
             pipeline.check_names(args.names)

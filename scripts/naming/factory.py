@@ -19,6 +19,7 @@ from naming.respellings import WORD_SOUNDS
 from naming.reporter import ConsoleReporter
 from naming.seed_source import SeedSource
 from naming.store import NameStore
+from naming.trick_generator import TrickGenerator
 from naming.variant_source import VariantSource
 from naming.verdict import VerdictAggregator
 from naming.whois_client import WhoisClient
@@ -48,14 +49,17 @@ def build_pipeline(
     use_variants: bool = True,
     mono: bool = False,
     respell: str = "",
+    twist: bool = False,
 ) -> NameSearchPipeline:
     http = HttpClient()
     namer = DomainNamer(tld)
     rdap_base = VERISIGN_COM_RDAP if namer.tld == "com" else BOOTSTRAP_RDAP
     probes = build_probes(http, rdap_base, os.environ.get("GITHUB_TOKEN", ""))
     prober = CandidateProber(probes, VerdictAggregator(), workers)
-    if respell:
-        sources: tuple[CandidateSource, ...] = (
+    if twist:
+        sources: tuple[CandidateSource, ...] = (TrickGenerator(namer=namer),)
+    elif respell:
+        sources = (
             RespellingGenerator(respell, WORD_SOUNDS[respell], namer),
         )
     elif mono:
