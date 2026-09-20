@@ -1,7 +1,11 @@
 from shared.models.flow_graph import FlowEdge, FlowGraph, FlowNode, Lane
-
-from tour import beats_delivery, beats_gateway, beats_tracer_judge, beats_tracer_output
-from tour import beats_tracer_static
+from tour import (
+    beats_delivery,
+    beats_gateway,
+    beats_tracer_judge,
+    beats_tracer_output,
+    beats_tracer_static,
+)
 from tour.tour_beat import Beat
 from tour.tour_builders import node, ref
 
@@ -25,10 +29,6 @@ def build_beat_groups() -> list[tuple[str, list[Beat]]]:
         ("beats_tracer_output", beats_tracer_output.beats()),
         ("beats_delivery", beats_delivery.beats()),
     ]
-
-
-def build_beats() -> list[Beat]:
-    return [beat for _, beats in build_beat_groups() for beat in beats]
 
 
 def _beat_node(beat: Beat) -> FlowNode:

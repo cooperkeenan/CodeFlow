@@ -1,5 +1,5 @@
-from shared.models.diagram_template import RenderedView
 from shared.models.flow_graph import FlowGraph
+from shared.models.rendered_view import RenderedView
 from shared.models.repo_blueprint import RepoBlueprint
 from shared.repo_map_store.repo_map_store import RepoMapStore
 

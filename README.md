@@ -19,7 +19,7 @@ their labels — it never adds, removes, merges or rewires a node or edge.
 ```bash
 # Python 3.10 exactly — a newer interpreter changes ast.unparse and breaks determinism
 python3.10 -m venv venv
-venv/bin/python -m pip install -r requirements-dev.txt
+venv/bin/python -m pip install -r requirements.txt
 cp .env.example .env          # ANTHROPIC_API_KEY, DATABASE_URL, LOCAL_REPO_PATH, GitHub OAuth
 
 # render any local repo to a PNG — no API, DB or login needed

@@ -63,7 +63,7 @@ resolves to Homebrew 3.14, and that silently breaks two things:
   `TypeVar`/`Generic`. This has already broken the tracer once.
 
 If the venv is missing, rebuild it with `/opt/homebrew/bin/python3.10 -m venv venv` and
-`venv/bin/python -m pip install -r requirements-dev.txt ruff`, then re-run the golden diff to confirm
+`venv/bin/python -m pip install -r requirements.txt ruff`, then re-run the golden diff to confirm
 the environment is faithful before trusting any other result.
 
 ## Restart Services After Changing `shared/`

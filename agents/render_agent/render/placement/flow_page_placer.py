@@ -11,9 +11,9 @@ from render.placement.spine_router import SpineRouter
 from render.placement.tree_layout import TreeLayout
 from render.placement.vertical_stretcher import VerticalStretcher
 
-from shared.models.diagram_template import RenderedView
 from shared.models.flow_graph import FlowGraph, FlowNode
 from shared.models.node_geometry import geometry_payload
+from shared.models.rendered_view import RenderedView
 
 
 class FlowPagePlacer:

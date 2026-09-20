@@ -2,10 +2,10 @@ import asyncio
 import os
 
 from repo_map_saving.repo_map_saver import RepoMapSaver
-from shared.models.diagram_template import RenderedView
-from shared.models.flow_graph import FlowGraph
-from shared.repo_map_store.neon_repo_map_store import NeonRepoMapStore
 from repo_map_saving.user_handle_resolver import UserHandleResolver
+from shared.models.flow_graph import FlowGraph
+from shared.models.rendered_view import RenderedView
+from shared.repo_map_store.neon_repo_map_store import NeonRepoMapStore
 
 _SAVE_SOURCE = "ci-local"
 

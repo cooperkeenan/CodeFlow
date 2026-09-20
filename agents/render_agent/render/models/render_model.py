@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from shared.models.diagram_template import RenderedView
 from shared.models.flow_graph import FlowGraph
+from shared.models.rendered_view import RenderedView
 
 
 class RenderRequest(BaseModel):

@@ -19,13 +19,6 @@ NODE_GEOMETRY: dict[str, NodeGeometry] = {
 }
 
 
-def geometry_for(shape: str) -> NodeGeometry:
-    geometry = NODE_GEOMETRY.get(shape)
-    if geometry is None:
-        raise KeyError(f"no geometry registered for shape {shape!r}")
-    return geometry
-
-
 def geometry_payload() -> dict[str, dict[str, int]]:
     return {
         shape: {"width": geometry.width, "height": geometry.height}

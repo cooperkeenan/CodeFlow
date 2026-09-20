@@ -7,37 +7,31 @@ venv*/
 *.egg-info/
 dist/
 build/
+.mypy_cache/
+.ruff_cache/
 
 # Environment
 .env
 .env.*
+!.env.example
+frontend/.env.local
 
 # Project runtime
 .pids
+.tunnel/
+outputs/
 
 # Node
 node_modules/
-dist/
-.DS_Store
-
-# Vite
 frontend/dist/
 
-# IDE
-#.vscode/
-.idea/
+# OS
+.DS_Store
 
 # Misc
 *.log
 .pytest_cache/
 .coverage
-
-# Agent run outputs
-outputs/
-
-# Task
-.vscode/ 
-frontend/.env.local
 
 # Local diagram renders
 scratch_out/

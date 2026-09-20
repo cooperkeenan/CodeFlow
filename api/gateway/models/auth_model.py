@@ -60,10 +60,6 @@ class GitHubCallbackRequest(BaseModel):
     code: str
 
 
-class GitHubCallbackResponse(BaseModel):
-    access_token: str
-
-
 class RepositoryResponse(BaseModel):
     name: str
     full_name: str

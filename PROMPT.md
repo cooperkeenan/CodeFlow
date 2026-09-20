@@ -245,7 +245,7 @@ python scripts/dump_explain.py <out_dir> --list   # explain-agent payload for a 
 
 ### `flow_agent.py` — drive the diagram without a human relaying screenshots
 
-Playwright (dev-only, `requirements-dev.txt`; uses the installed Chrome via `channel="chrome"`, so
+Playwright (`requirements.txt`; uses the installed Chrome via `channel="chrome"`, so
 no browser download) opens the real `FlowPage` and runs a sequence of actions. It reports the
 rendered page **as text**, so state can be asserted rather than eyeballed.
 
