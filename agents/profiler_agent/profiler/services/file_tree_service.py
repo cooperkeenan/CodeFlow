@@ -14,23 +14,22 @@ MANIFEST_FILES = {
 }
 _API_URL = "https://api.github.com"
 
-_EMBED_MANIFESTS = frozenset({"requirements.txt", "pyproject.toml", "go.mod", "Cargo.toml"})
-_EMBED_DEPLOY = frozenset({"Dockerfile", "docker-compose.yml", "docker-compose.yaml"})
 
-
-def _embedded_repo_dirs(paths: list[str]) -> set[str]:
-    by_dir: dict[str, set[str]] = {}
-    for path in paths:
+def _nested_repo_dirs(raw_paths: list[str]) -> set[str]:
+    dirs = set()
+    for path in raw_paths:
         parts = path.split("/")
-        if len(parts) > 1:
-            top, filename = parts[0], parts[-1]
-            by_dir.setdefault(top, set()).add(filename)
-    embedded = set()
-    for dir_name, filenames in by_dir.items():
-        if filenames & _EMBED_MANIFESTS and filenames & _EMBED_DEPLOY:
-            embedded.add(dir_name)
-            logger.info("Excluding embedded repo directory: %s", dir_name)
-    return embedded
+        if ".git" in parts:
+            idx = parts.index(".git")
+            if idx > 0:
+                dir_name = "/".join(parts[:idx])
+                dirs.add(dir_name)
+                logger.info("Excluding nested git repo directory: %s", dir_name)
+    return dirs
+
+
+def _within_any(path: str, dirs: set[str]) -> bool:
+    return any(path == d or path.startswith(d + "/") for d in dirs)
 
 
 class FileTreeService:
@@ -51,19 +50,19 @@ class FileTreeService:
             if access_token is None or repo_name is None:
                 raise ValueError("access_token and repo_name required for GitHub tree")
             raw_paths = await self._github_tree(access_token, repo_name)
+        nested_repos = _nested_repo_dirs(raw_paths)
         paths = [p for p in raw_paths if not any(ex in p.split("/") for ex in EXCLUDED)]
-        embedded = _embedded_repo_dirs(paths)
-        result = [p for p in paths if not embedded or p.split("/")[0] not in embedded]
-        logger.info("Found %d files (%d embedded dirs excluded)", len(result), len(embedded))
+        result = [p for p in paths if not _within_any(p, nested_repos)]
+        logger.info("Found %d files (%d nested repo dirs excluded)", len(result), len(nested_repos))
         return result
 
     def _local_tree(self, local_path: str) -> list[str]:
         root = Path(local_path)
-        return [
-            p.relative_to(root).as_posix()
-            for p in root.rglob("*")
-            if p.is_file()
-        ]
+        result = []
+        for p in root.rglob("*"):
+            if p.is_file() or (p.is_dir() and p.name == ".git"):
+                result.append(p.relative_to(root).as_posix())
+        return result
 
     async def _github_tree(self, access_token: str, repo_name: str) -> list[str]:
         owner, repo = repo_name.split("/")

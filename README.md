@@ -48,8 +48,9 @@ frontend/               Vite + React + React Flow
 Each service directory is its Docker build context, with `main.py` at the root and everything else in
 a uniquely-named package inside it.
 
-See `PROMPT.md` for the architecture and pipeline, `CLAUDE.md` for the engineering rules, and
-`decision-records/` for commit-pinned write-ups of how individual subsystems work.
+See `.claude/skills/codeflow/` for the engineering rules (`SKILL.md`) and the architecture and
+pipeline (`reference/architecture.md`), and `decision-records/` for commit-pinned write-ups of how
+individual subsystems work.
 
 ## Verifying a change
 

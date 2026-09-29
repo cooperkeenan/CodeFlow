@@ -39,3 +39,7 @@ frontend/public/fixture/
 
 # Decision verdict cache
 .cache/
+
+# Claude Code files (local only)
+.claude/
+CLAUDE.md

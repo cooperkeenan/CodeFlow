@@ -94,7 +94,7 @@ def build_tour_graph(beats: list[Beat]) -> FlowGraph:
     ordered = _ordered_ids(beats)
     root = node(
         ROOT_ID, "entry", ROOT_ID, REPO, "The whole pipeline, end to end.",
-        (ref("PROMPT.md", 1),), level=0, children=ordered,
+        (ref(".claude/skills/codeflow/reference/architecture.md", 1),), level=0, children=ordered,
         body_kind="flow", body_head=beats[0].id, body_tails=[beats[-1].id],
     )
     nodes = [root]

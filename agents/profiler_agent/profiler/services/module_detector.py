@@ -20,6 +20,7 @@ class ModuleDetector:
         qualifying = {d for d in entry_dirs if not self._enclosed(d, package_roots)}
         roots = self._drop_ancestors(package_roots | qualifying)
         roots |= self._library_roots(paths, roots)
+        roots |= self._coverage_roots(paths, roots)
         ordered = sorted(roots, key=lambda r: (r.count("/"), r))
         logger.info("Detected %d module roots: %s", len(ordered), ordered)
         return ordered
@@ -59,6 +60,43 @@ class ModuleDetector:
             if any(self._is_source(p) for p in top_paths):
                 extra.add(top)
         return extra
+
+    def _coverage_roots(self, paths: list[str], roots: set[str]) -> set[str]:
+        if "" in roots:
+            return set()
+        if any(self._is_source(p) and "/" not in p for p in paths):
+            return {""}
+        directories = sorted({
+            "/".join(p.split("/")[:-1])
+            for p in paths
+            if self._is_source(p) and "/" in p
+        })
+        extra: set[str] = set()
+        all_roots = set(roots)
+        for directory in directories:
+            if self._covered(directory, all_roots):
+                continue
+            ancestor = self._shallowest_new_ancestor(directory, all_roots)
+            extra.add(ancestor)
+            all_roots.add(ancestor)
+        return extra
+
+    def _covered(self, directory: str, roots: set[str]) -> bool:
+        return any(
+            directory == root or directory.startswith(root + "/")
+            for root in roots
+        )
+
+    def _shallowest_new_ancestor(self, directory: str, roots: set[str]) -> str:
+        parts = directory.split("/")
+        for i in range(1, len(parts) + 1):
+            candidate = "/".join(parts[:i])
+            if candidate in roots:
+                continue
+            if any(r.startswith(candidate + "/") for r in roots):
+                continue
+            return candidate
+        return directory
 
     def service_roots(self, paths: list[str], roots: list[str]) -> set[str]:
         dir_files = self._dir_files(paths)
