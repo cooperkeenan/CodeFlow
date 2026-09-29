@@ -6,5 +6,8 @@ from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
 def build_flow_condenser(
     service_hints: frozenset[str] | None = None,
     source_roots: frozenset[str] = frozenset(),
+    app_roots: frozenset[str] = frozenset(),
 ) -> FlowCondenser:
-    return FlowCondenser(ServiceRootResolver(service_hints, source_roots), LabelSynthesizer())
+    return FlowCondenser(
+        ServiceRootResolver(service_hints, source_roots, app_roots), LabelSynthesizer()
+    )

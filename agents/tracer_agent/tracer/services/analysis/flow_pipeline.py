@@ -12,6 +12,7 @@ from tracer.services.analysis.effects.effect_detector import EffectDetector
 from tracer.services.analysis.forks.factory import (
     build_dispatch_extractor,
 )
+from tracer.services.analysis.indexing.app_root_deriver import AppRootDeriver
 from tracer.services.analysis.indexing.project_indexer import ProjectIndexer
 from tracer.services.analysis.indexing.service_root_resolver import ServiceRootResolver
 from tracer.services.analysis.ranking.pillar_ranker import PillarRanker
@@ -85,15 +86,16 @@ class FlowPipeline:
             callsites, dispatch
         )
         self._last_significance = significance
+        app_roots = AppRootDeriver().derive(index)
         self._stages.begin("condense")
-        graph = build_flow_condenser(self._hints, index.source_roots).condense(
+        graph = build_flow_condenser(self._hints, index.source_roots, app_roots).condense(
             repo, index, callsites, dispatch, effects, significance
         )
         self._stages.begin("entries", f"{len(graph.nodes)} nodes")
         entries = EntryFinder(
             index,
             RouteHandlerLocator(index),
-            ServiceRootResolver(self._hints, index.source_roots),
+            ServiceRootResolver(self._hints, index.source_roots, app_roots),
             LabelSynthesizer(),
         ).find(dispatch)
         self._stages.begin("stitch", f"{len(entries)} entries")
@@ -114,7 +116,7 @@ class FlowPipeline:
         self._stages.begin("review")
         reader = SymbolSourceReader(index.sources) if self._embed_sources else None
         symbol_context = SymbolContextBuilder(
-            index, callsites, ServiceRootResolver(self._hints, index.source_roots), reader
+            index, callsites, ServiceRootResolver(self._hints, index.source_roots, app_roots), reader
         )
         if self._reviewer is None:
             self._stages.begin("symbols")
