@@ -12,3 +12,5 @@ worse than no record, because it will be trusted.
   diagram and what each one is called.
 - [endpoint-overview.md](endpoint-overview.md) — why endpoint API contracts are written at read
   time, not in the analyse pipeline, and where the caches sit.
+- [happy-path.md](happy-path.md) — how each route's statically derived happy path is chosen, carried
+  through the budget stage, and drawn as a per-route diagram.

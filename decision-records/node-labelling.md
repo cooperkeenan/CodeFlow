@@ -1,9 +1,8 @@
 # Node Selection and Labelling
 
 **Status:** accepted
-**Recorded against:** commit `94449d21` (2026-09-05) plus the uncommitted cross-link and caching
-work on branch `feature/separate-endpoints`. Re-pin this line to the merge commit when the branch
-lands.
+**Recorded against:** commit `ace1548d` (2026-10-06) on branch `feature/static-happy-path`
+(previously `94449d21`). Re-pin this line to the merge commit when the branch lands.
 
 This record describes how CodeFlow decides *which* nodes appear in a diagram and *what each one
 is called*. It exists because that logic is spread across roughly thirty files in three packages
@@ -162,6 +161,18 @@ miss, a live call, different labels, and a broken golden diff.
 
 ---
 
+## 5a. Route terminals, decorators and arm indices
+
+Every route handler (and the function it delegates to) gets a `ret:` outcome node per arm that
+returns or raises, plus an owner-qualified `Completes` terminal when the body falls through
+(`condense/terminal_node_builder.py`, `route_terminal_builder.py`). Their static label is
+`<Class.method>: <full return expression>`; that text is the `FlowNamer` fingerprint evidence, so it
+must stay specific — a bare `return 302` once made seven redirects share one cached LLM label.
+`DjangoViewResolver` peels decorator calls around a view (`protect_view(X.as_view())`) to the inner
+view and records project decorators as `Arm.wrappers`, so they no longer produce a bogus `ANY`
+endpoint. Arm edges carry `FlowEdge.arm_index`, the index of the `Arm` they came from, which survives
+LLM relabelling. See `happy-path.md` for how these feed the per-route happy path.
+
 ## 6. Choosing what appears in one endpoint's diagram
 
 `shared/flow_endpoints/` slices a single endpoint out of the whole graph at read time.
@@ -204,6 +215,11 @@ visible. The promoter therefore walks the assigned levels and pulls any sole hid
 `keep`, re-assigning levels until none remain (bounded at 4 rounds). The cost is a few nodes over
 budget; the benefit is that no endpoint view renders an auto-revealed expansion box at all. This is
 the reason the observed maximum is 19 visible nodes rather than 16.
+
+A single route can also be sliced on its own (`RouteSubgraph`, `?entry=…&route=<handler_fqn>`): the
+same elider runs with the route's happy path pinned, and each helper call collapses to one linkable
+`helper:` node with no `+N`. Pinned path nodes are exempt from demotion and capping. See
+`happy-path.md` §7.
 
 ---
 
@@ -292,6 +308,6 @@ reaching its target) improved while the picture got worse — judge it by openin
 - `VerdictCache` lives in `labelling/` although its only consumer is `significance/`.
 - Three separate `_KIND_RANK` dictionaries exist — identical ones in `endpoint_ranker.py` and
   `fanout_capper.py`, and a different one in `budget/skeleton_reducer.py`.
-- The endpoint view re-derives its own elision at budget 50, while the whole-repo budget stage
+- The endpoint view re-derives its own elision at budget 16, while the whole-repo budget stage
   works to `skeleton_budget = 15` / `node_budget = 40`. These are separate tuning surfaces and
   changing one does not affect the other.
