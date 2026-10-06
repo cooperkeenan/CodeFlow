@@ -1,4 +1,5 @@
 from browser_driver.flow_session import FlowSession
+from browser_driver.overlap_pairs import overlap_pairs
 
 
 def print_state(session: FlowSession) -> None:
@@ -37,7 +38,7 @@ def print_flowchart(session: FlowSession) -> None:
         print("  HORIZONTAL OVERFLOW: True — LAYOUT FAILURE, the chart must not grow sideways")
     else:
         print("  horizontal overflow: False")
-    pairs = _overlap_pairs(info["boxes"])
+    pairs = overlap_pairs(info["boxes"])
     print(f"  overlapping node-box pairs: {len(pairs)} (must be 0)")
     for a, b in pairs:
         print(f"    {a}  <->  {b}")
@@ -81,16 +82,14 @@ def print_sidebar(session: FlowSession) -> None:
         print(f"  [{row['active']}] {row['label']}  {row['testid']}")
 
 
-def _overlap_pairs(boxes: list[dict]) -> list[tuple[str, str]]:
-    found: list[tuple[str, str]] = []
-    for i in range(len(boxes)):
-        for j in range(i + 1, len(boxes)):
-            a, b = boxes[i], boxes[j]
-            if (
-                a["x"] < b["x"] + b["w"]
-                and b["x"] < a["x"] + a["w"]
-                and a["y"] < b["y"] + b["h"]
-                and b["y"] < a["y"] + a["h"]
-            ):
-                found.append((a["id"], b["id"]))
-    return sorted(found)
+def print_happy(session: FlowSession) -> None:
+    info = session.route.happy()
+    for node in info["happy"]:
+        print(f"  happy node {node['id']}  on_screen={node['onScreen']}  height={node['height']}px")
+    source = "class/data-happy" if info["edgesByClass"] else "stroke-width heuristic"
+    for edge_id in info["happyEdges"]:
+        print(f"  happy edge {edge_id}  ({source})")
+    print(f"  non-happy visible nodes: {info['other']}")
+    on_screen = sum(1 for node in info["happy"] if node["onScreen"])
+    print(f"happy: {len(info['happy'])} nodes, {on_screen} on screen")
+

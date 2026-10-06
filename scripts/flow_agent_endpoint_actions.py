@@ -1,5 +1,6 @@
 from browser_driver.flow_reports import (
     print_endpoint_detail,
+    print_happy,
     print_method_code,
     print_sidebar,
 )
@@ -12,6 +13,8 @@ USAGE = """  endpoint:<entry_id>  click that endpoint link on the repo home page
   method:<fqn>         click that key-method row, assert its code pane is non-empty
   back                 go back from method code to the key-method list
   diagram              press "view diagram" and wait for the canvas
+  route:<handler_fqn>  click that route's contract card (data-handler, else member-index fallback)
+  happy                print rf-happy nodes (on-screen, height px), happy edges, "happy: N nodes, M on screen"
   sidebar              print every row of the /flow endpoint sidebar with its active flag
 """
 
@@ -31,6 +34,10 @@ def run_endpoint_action(session: FlowSession, verb: str, arg: str) -> bool:
     elif verb == "diagram":
         session.open_diagram()
         print("opened diagram")
+    elif verb == "route":
+        print(f"selected route {arg} via {session.route.select_route(arg)}")
+    elif verb == "happy":
+        print_happy(session)
     elif verb == "sidebar":
         print_sidebar(session)
     else:

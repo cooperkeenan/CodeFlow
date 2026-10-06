@@ -4,7 +4,14 @@ from playwright.sync_api import sync_playwright
 
 from browser_driver.dev_server import DevServer
 from browser_driver.endpoint_probe import EndpointProbe
-from browser_driver.flow_probe_js import READ_DIMMED, READ_FLOWCHART, READ_ISOLATED, READ_STATE
+from browser_driver.flow_probe_js import (
+    READ_DIMMED,
+    READ_FLOWCHART,
+    READ_ISOLATED,
+    READ_STATE,
+)
+from browser_driver.overlap_pairs import overlap_pairs
+from browser_driver.route_probe import RouteProbe
 
 
 class FlowSession:
@@ -17,6 +24,7 @@ class FlowSession:
         repo: str | None = None,
         wait_selector: str = ".react-flow__node",
     ) -> None:
+        self._frontend_dir = frontend_dir
         self._server = DevServer(frontend_dir, port)
         joiner = "&" if "?" in url else "?"
         self._url = f"{url}{joiner}repo={repo}" if repo else url
@@ -38,6 +46,8 @@ class FlowSession:
         self._page.goto(self._url, wait_until="networkidle")
         self._page.wait_for_selector(self._wait_selector, timeout=30000)
         self._endpoint = EndpointProbe(self._page)
+        fixtures = self._frontend_dir / "public" / "fixture" / "endpoints"
+        self.route = RouteProbe(self._page, fixtures)
         return self
 
     def __exit__(self, *_: object) -> None:
@@ -132,15 +142,4 @@ class FlowSession:
             for n in self.state()["nodes"]
             if n["x"] is not None and not (n["id"] or "").startswith("box:")
         ]
-        found: list[tuple[str, str]] = []
-        for i in range(len(nodes)):
-            for j in range(i + 1, len(nodes)):
-                a, b = nodes[i], nodes[j]
-                if (
-                    a["x"] < b["x"] + b["w"]
-                    and b["x"] < a["x"] + a["w"]
-                    and a["y"] < b["y"] + b["h"]
-                    and b["y"] < a["y"] + a["h"]
-                ):
-                    found.append((a["id"], b["id"]))
-        return sorted(found)
+        return overlap_pairs(nodes)
