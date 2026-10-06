@@ -8,9 +8,11 @@ from tracer.services.analysis.condense.chain_builder import ChainBuilder
 from tracer.services.analysis.condense.drafts import CollectedEvents
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
 from tracer.services.analysis.condense.labels import DecisionLabeler, OutcomeLabeler
+from tracer.services.analysis.condense.terminal_node_builder import TerminalNodeBuilder
 from tracer.services.analysis.graph_ops import dedup
 
 _Path = tuple[tuple[str, int], ...]
+_CLOSING = frozenset({"returns", "raises"})
 _BuildRegion = Callable[[str, CollectedEvents, _Path, str], tuple[str | None, list[str]]]
 
 
@@ -21,11 +23,13 @@ class DecisionProjector:
         acc: GraphAccumulator,
         decision_labels: DecisionLabeler,
         outcome_labels: OutcomeLabeler,
+        terminals: TerminalNodeBuilder,
     ) -> None:
         self._anchors = anchors
         self._acc = acc
         self._decision_labels = decision_labels
         self._outcome_labels = outcome_labels
+        self._terminals = terminals
 
     def handle(
         self,
@@ -54,7 +58,11 @@ class DecisionProjector:
                     self._emit_outcome(chain.lane, node_id, fqn, prefix, site, arm, verdict)
             else:
                 self._acc.connect(node_id, ahead, "arm", arm_label, site.id, arm_index=arm.index)
-                tails.extend(atails or [ahead])
+                closed = arm.terminal in _CLOSING and self._terminals.close_arm(
+                    fqn, arm.terminal_line, atails or [ahead]
+                )
+                if not closed:
+                    tails.extend(atails or [ahead])
         chain.fan_out(node_id, dedup(tails))
 
     def _emit_outcome(

@@ -12,7 +12,10 @@ from tracer.services.analysis.syntax.arm_outcome import classify_outcome
 from tracer.services.analysis.syntax.block_walker import walk_statements
 from tracer.services.analysis.syntax.call_expr_split import truncated_source
 from tracer.services.analysis.syntax.selector_reads_extractor import selector_reads
-from tracer.services.analysis.syntax.terminal_classifier import classify_terminal
+from tracer.services.analysis.syntax.terminal_classifier import (
+    classify_terminal,
+    terminal_line,
+)
 
 from shared.models.flow_graph import SourceRef
 
@@ -69,6 +72,7 @@ class BranchDetector:
                 label_source=label,
                 callsites=arm_index.callsites_for(site_id, f03_index),
                 terminal=classify_terminal(body),
+                terminal_line=terminal_line(body),
                 outcome=classify_outcome(body),
             )
             for i, (site_id, f03_index, body, label) in enumerate(chain)

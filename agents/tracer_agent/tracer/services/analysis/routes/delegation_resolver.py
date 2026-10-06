@@ -1,4 +1,5 @@
 import ast
+from collections.abc import Iterable
 
 from tracer.models.index_records import ProjectIndex
 from tracer.services.analysis.resolve.module_scope_resolver import ModuleScopeResolver
@@ -30,6 +31,15 @@ class DelegationResolver:
         if target is None or target == handler_fqn or target not in self._index.functions:
             return None
         return target
+
+    def effective_handlers(self, handlers: Iterable[str]) -> frozenset[str]:
+        found: set[str] = set()
+        for handler in handlers:
+            found.add(handler)
+            delegate = self.resolve(handler)
+            if delegate is not None:
+                found.add(delegate)
+        return frozenset(found)
 
     def _sole_return_call(self, body: list[ast.stmt]) -> ast.Call | None:
         stmts = list(body)

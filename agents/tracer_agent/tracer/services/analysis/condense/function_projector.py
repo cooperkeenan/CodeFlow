@@ -9,6 +9,7 @@ from tracer.services.analysis.condense.decision_projector import DecisionProject
 from tracer.services.analysis.condense.drafts import CollectedEvents, FlowEvent
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
 from tracer.services.analysis.condense.labels import DecisionLabeler, OutcomeLabeler
+from tracer.services.analysis.condense.terminal_node_builder import TerminalNodeBuilder
 from tracer.services.analysis.graph_ops import dedup
 from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
 
@@ -25,6 +26,7 @@ class FunctionProjector:
         acc: GraphAccumulator,
         labels: LabelSynthesizer,
         summarize: Callable[[str], FlowSummary],
+        terminals: TerminalNodeBuilder,
     ) -> None:
         self._index = index
         self._anchors = anchors
@@ -32,7 +34,7 @@ class FunctionProjector:
         self._labels = labels
         self._summarize = summarize
         self._decisions = DecisionProjector(
-            anchors, acc, DecisionLabeler(labels), OutcomeLabeler()
+            anchors, acc, DecisionLabeler(labels), OutcomeLabeler(), terminals
         )
 
     def project(self, fqn: str, events: CollectedEvents, lane: str) -> FlowSummary:

@@ -8,7 +8,10 @@ from tracer.services.analysis.resolve.indexes import CallSiteArmIndex
 from tracer.services.analysis.syntax.block_walker import walk_statements
 from tracer.services.analysis.syntax.call_expr_split import truncated_source
 from tracer.services.analysis.syntax.selector_reads_extractor import selector_reads
-from tracer.services.analysis.syntax.terminal_classifier import classify_terminal
+from tracer.services.analysis.syntax.terminal_classifier import (
+    classify_terminal,
+    terminal_line,
+)
 
 from shared.models.flow_graph import SourceRef
 
@@ -34,6 +37,7 @@ class MatchDetector:
                 label_source=self._case_label(case)[:120],
                 callsites=arm_index.callsites_for(site_id, i),
                 terminal=classify_terminal(case.body),
+                terminal_line=terminal_line(case.body),
             )
             for i, case in enumerate(node.cases)
         )

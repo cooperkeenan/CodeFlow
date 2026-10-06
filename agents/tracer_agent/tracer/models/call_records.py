@@ -40,3 +40,4 @@ class Arm:
     handler_fqn: str | None = None
     outcome: Outcome = "continue"
     wrappers: tuple[str, ...] = ()
+    terminal_line: int = 0

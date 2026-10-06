@@ -26,3 +26,14 @@ def _classify_stmt(stmt: ast.stmt) -> Terminal:
         if then_terminal == else_terminal and then_terminal != "falls_through":
             return then_terminal
     return "falls_through"
+
+
+def terminal_line(body: list[ast.stmt]) -> int:
+    if not body:
+        return 0
+    last = body[-1]
+    if isinstance(last, (ast.Return, ast.Raise)):
+        return last.lineno
+    if isinstance(last, _TRIVIAL_WRAPPERS):
+        return terminal_line(last.body)
+    return 0

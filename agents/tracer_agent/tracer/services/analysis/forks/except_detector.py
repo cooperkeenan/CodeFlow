@@ -7,7 +7,10 @@ from tracer.services.analysis.contracts import DispatchDetectionContext
 from tracer.services.analysis.resolve.indexes import CallSiteArmIndex
 from tracer.services.analysis.syntax.arm_outcome import classify_outcome
 from tracer.services.analysis.syntax.block_walker import walk_statements
-from tracer.services.analysis.syntax.terminal_classifier import classify_terminal
+from tracer.services.analysis.syntax.terminal_classifier import (
+    classify_terminal,
+    terminal_line,
+)
 
 from shared.models.flow_graph import SourceRef
 
@@ -35,6 +38,7 @@ class ExceptDetector:
                 label_source="try",
                 callsites=arm_index.callsites_for(site_id, 0),
                 terminal=classify_terminal(node.body),
+                terminal_line=terminal_line(node.body),
                 outcome=classify_outcome(node.body),
             )
         ]
@@ -45,6 +49,7 @@ class ExceptDetector:
                     label_source=self._handler_label(handler),
                     callsites=arm_index.callsites_for(site_id, i + 1),
                     terminal=classify_terminal(handler.body),
+                    terminal_line=terminal_line(handler.body),
                     outcome="failure",
                 )
             )

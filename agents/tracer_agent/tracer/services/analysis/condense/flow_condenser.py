@@ -19,6 +19,7 @@ from tracer.services.analysis.condense.route_terminal_builder import (
     RouteTerminalBuilder,
 )
 from tracer.services.analysis.condense.step_merger import StepMerger
+from tracer.services.analysis.condense.terminal_node_builder import TerminalNodeBuilder
 from tracer.services.analysis.condense.trivial_entry_folder import TrivialEntryFolder
 from tracer.services.analysis.indexing.service_root_resolver import ServiceRootResolver
 from tracer.services.analysis.resolve.call_ancestry_resolver import CallAncestryResolver
@@ -52,16 +53,20 @@ class FlowCondenser:
             index, components, significance, callsites, dispatch_sites, effects, parallel_sites
         )
         acc = GraphAccumulator()
-        summarizer = FunctionSummarizer(
-            index, anchors, EventCollector(index, anchors), acc, self._labels, self._roots
-        )
         entries = EntryFinder(
             index, RouteHandlerLocator(index), self._roots, self._labels
         ).find(dispatch_sites)
+        delegates = DelegationResolver(index, MroMethodFinder(index))
+        route_fqns = delegates.effective_handlers(
+            member.handler_fqn for entry in entries for member in entry.route_members
+        )
+        terminal_nodes = TerminalNodeBuilder(index, acc, self._roots, route_fqns)
+        summarizer = FunctionSummarizer(
+            index, anchors, EventCollector(index, anchors), acc, self._labels, self._roots,
+            terminal_nodes,
+        )
         assembler = RouteAssembler(
-            index, acc, summarizer,
-            RouteTerminalBuilder(index, acc, self._labels, self._roots),
-            DelegationResolver(index, MroMethodFinder(index)),
+            index, acc, summarizer, RouteTerminalBuilder(index, acc, terminal_nodes), delegates
         )
         entries = assembler.assemble(entries)
         entries = TrivialEntryFolder(self._labels, ContainerRepointer()).fold(acc, entries)

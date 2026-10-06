@@ -4,6 +4,7 @@ from tracer.services.analysis.condense.anchor_index import AnchorIndex
 from tracer.services.analysis.condense.event_collector import EventCollector
 from tracer.services.analysis.condense.function_projector import FunctionProjector
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
+from tracer.services.analysis.condense.terminal_node_builder import TerminalNodeBuilder
 from tracer.services.analysis.indexing.service_root_resolver import ServiceRootResolver
 from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
 
@@ -17,13 +18,14 @@ class FunctionSummarizer:
         acc: GraphAccumulator,
         labels: LabelSynthesizer,
         roots: ServiceRootResolver,
+        terminals: TerminalNodeBuilder,
     ) -> None:
         self._index = index
         self._collector = collector
         self._roots = roots
         self._memo: dict[str, FlowSummary] = {}
         self._stack: set[str] = set()
-        self._projector = FunctionProjector(index, anchors, acc, labels, self.summarize)
+        self._projector = FunctionProjector(index, anchors, acc, labels, self.summarize, terminals)
 
     def summarize(self, fqn: str) -> FlowSummary:
         if fqn in self._memo:
