@@ -20,6 +20,7 @@ from gateway.deps.clients import (
 from gateway.deps.endpoint_view import (
     get_endpoint_detail_service,
     get_endpoint_view_service,
+    get_flow_payload_service,
 )
 from gateway.deps.services import (
     get_analysis_service,
@@ -60,6 +61,7 @@ __all__ = [
     "get_explain_client",
     "get_explanation_store",
     "get_flow_graph_cache",
+    "get_flow_payload_service",
     "get_github_ci_service",
     "get_github_client",
     "get_github_repo_service",

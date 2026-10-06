@@ -3,6 +3,7 @@ from gateway.deps import (
     get_current_user,
     get_endpoint_detail_service,
     get_endpoint_view_service,
+    get_flow_payload_service,
     get_node_explain_service,
     get_repo_map_service,
 )
@@ -16,6 +17,7 @@ from gateway.models.repo_map_model import (
 from gateway.services.endpoint_detail_service import EndpointDetailService
 from gateway.services.endpoint_view_service import EndpointViewService
 from gateway.services.etag import ETag
+from gateway.services.flow_payload_service import FlowPayloadService
 from gateway.services.node_explain_service import NodeExplainService
 from gateway.services.repo_map_service import RepoMapService
 
@@ -59,48 +61,18 @@ async def get_repo_flow(
     response: Response,
     entry: str | None = None,
     helper: str | None = None,
+    route: str | None = None,
     user: AuthUser = Depends(get_current_user),
-    service: RepoMapService = Depends(get_repo_map_service),
-    endpoints: EndpointViewService = Depends(get_endpoint_view_service),
+    flows: FlowPayloadService = Depends(get_flow_payload_service),
 ) -> dict | Response:
     if entry and helper:
         raise HTTPException(status_code=400, detail="Provide either entry or helper, not both")
-    view = await _flow_payload(repo, entry, helper, user, service, endpoints)
+    view = await flows.payload(user.id, repo, entry, helper, route)
     etag = ETag(view)
     if etag.not_modified(request):
         return Response(status_code=304)
     etag.apply(response)
     return view
-
-
-async def _flow_payload(
-    repo: str,
-    entry: str | None,
-    helper: str | None,
-    user: AuthUser,
-    service: RepoMapService,
-    endpoints: EndpointViewService,
-) -> dict:
-    if helper:
-        view = await endpoints.helper_view(user.id, repo, helper)
-        if view is None:
-            raise HTTPException(status_code=404, detail="Helper not found")
-        return view
-    if entry:
-        view = await endpoints.view(user.id, repo, entry)
-        if view is None:
-            raise HTTPException(status_code=404, detail="Endpoint not found")
-        return view
-    detail = await service.get(user.id, repo)
-    if detail is None:
-        raise HTTPException(status_code=404, detail="Repo map not found")
-    flow_graph = detail.map.trace.get("flow_graph", {})
-    return {
-        "page_title": flow_graph.get("page_title", repo),
-        "repo": repo,
-        "repo_url": "",
-        "view": detail.map.diagram.get("view", {}),
-    }
 
 
 @router.get("/{repo:path}/endpoint", response_model=None)
