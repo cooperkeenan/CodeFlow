@@ -24,7 +24,11 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
   const { home } = useRepoHome(repo, fixture ? REPO_HOME_FIXTURE : null)
   const [selectedRoute, setSelectedRoute] = useState(null)
   const [railOpen, setRailOpen] = useState(true)
+  const contracts = detail?.contracts ?? (detail?.contract ? [detail.contract] : [])
   useEffect(() => { setSelectedRoute(null) }, [entry])
+  useEffect(() => {
+    if (contracts.length === 1) setSelectedRoute(`${contracts[0].method}:${contracts[0].path}`)
+  }, [detail])
   const selectEndpoint = id => setParams({ entry: id })
 
   const backToList = () => {
@@ -40,7 +44,6 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
     })
   }
 
-  const contracts = detail?.contracts ?? (detail?.contract ? [detail.contract] : [])
   const description = detail?.description || contracts[0]?.summary || ''
   const selectedContract = contracts.find(c => `${c.method}:${c.path}` === selectedRoute) ?? null
 
@@ -116,7 +119,7 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
               fixture={fixture}
               entry={entry}
               onFullScreen={openDiagram}
-              handlerFqn={selectedContract?.handler_fqn ?? ''}
+              route={selectedContract?.handler_fqn ?? ''}
             />
           </Box>
         )}

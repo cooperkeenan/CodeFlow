@@ -52,6 +52,7 @@ export default function ContractPanel({ contracts, title, selectedKey = null, on
             <Box
               key={key}
               data-testid={`contract-card-${key}`}
+              data-handler={contract.handler_fqn}
               data-selected={key === selectedKey ? 'true' : 'false'}
               onClick={() => onSelect?.(key === selectedKey ? null : key)}
               sx={{
