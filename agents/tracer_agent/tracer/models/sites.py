@@ -51,11 +51,17 @@ class FlowEntry:
     members: tuple[str, ...] = field(default_factory=tuple)
     routes: tuple[RouteMember, ...] = field(default_factory=tuple)
     route_count: int = 1
+    wrappers: tuple[str, ...] = ()
 
     @property
     def route_members(self) -> tuple[RouteMember, ...]:
         if self.routes:
             return self.routes
         return (
-            RouteMember(handler_fqn=self.handler_fqn, method=self.method, path=self.path),
+            RouteMember(
+                handler_fqn=self.handler_fqn,
+                method=self.method,
+                path=self.path,
+                wrappers=list(self.wrappers),
+            ),
         )

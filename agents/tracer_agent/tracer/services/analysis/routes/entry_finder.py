@@ -59,7 +59,9 @@ class EntryFinder:
             service_root=head.service_root,
             members=tuple(m.handler_fqn for m in members),
             routes=tuple(
-                RouteMember(handler_fqn=m.handler_fqn, method=m.method, path=m.path)
+                RouteMember(
+                    handler_fqn=m.handler_fqn, method=m.method, path=m.path, wrappers=list(m.wrappers)
+                )
                 for m in members
             ),
             route_count=len(members),
@@ -77,6 +79,7 @@ class EntryFinder:
             service_root=self._roots.root_of(handler),
             method=method,
             path=path,
+            wrappers=arm.wrappers,
         )
 
     def _handler_fqn(self, site: DispatchSite, arm: Arm, method: str, path: str) -> str | None:

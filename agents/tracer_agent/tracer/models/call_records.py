@@ -39,3 +39,4 @@ class Arm:
     terminal: Terminal
     handler_fqn: str | None = None
     outcome: Outcome = "continue"
+    wrappers: tuple[str, ...] = ()
