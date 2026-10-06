@@ -5,8 +5,6 @@ from shared.models.flow_graph import (
     Badge,
     EdgeKind,
     EffectKind,
-    FlowEdge,
-    FlowNode,
     NodeKind,
     RouteMember,
     SourceRef,
@@ -102,12 +100,15 @@ class GraphAccumulator:
         arm_label: str = "",
         group_id: str = "",
         confidence: str = "resolved",
+        arm_index: int = -1,
     ) -> None:
         if source == target:
             return
         key = (source, target, arm_label)
         if key not in self._edges:
-            self._edges[key] = _EdgeDraft(source, target, kind, arm_label, group_id, confidence)
+            self._edges[key] = _EdgeDraft(
+                source, target, kind, arm_label, group_id, confidence, arm_index
+            )
 
     def nodes(self) -> dict[str, _NodeDraft]:
         return self._nodes
@@ -126,37 +127,3 @@ class GraphAccumulator:
             for fqn in draft.backing:
                 index.setdefault(fqn, draft.id)
         return index
-
-    def to_flow_nodes(self) -> list[FlowNode]:
-        return [
-            FlowNode(
-                id=d.id,
-                kind=d.kind,
-                lane=d.lane,
-                label=d.label,
-                backing=list(d.backing),
-                refs=list(d.refs),
-                badges=sorted(d.badges),
-                effect_kind=d.effect_kind,
-                effect_target=d.effect_target,
-                folded_count=d.folded_count,
-                members=list(d.members),
-                owner_fqn=d.owner_fqn,
-                arm_path=list(d.arm_path),
-                containers=sorted(d.containers),
-            )
-            for d in self._nodes.values()
-        ]
-
-    def to_flow_edges(self) -> list[FlowEdge]:
-        return [
-            FlowEdge(
-                source=e.source,
-                target=e.target,
-                kind=e.kind,
-                arm_label=e.arm_label,
-                group_id=e.group_id,
-                confidence=e.confidence,
-            )
-            for e in self._edges.values()
-        ]

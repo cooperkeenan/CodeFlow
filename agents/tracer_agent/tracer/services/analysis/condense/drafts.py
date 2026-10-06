@@ -62,3 +62,4 @@ class _EdgeDraft:
     arm_label: str = ""
     group_id: str = ""
     confidence: str = "resolved"
+    arm_index: int = -1

@@ -37,13 +37,18 @@ class SliceGraph:
         self.nodes[node.id] = node
         self.keep.add(node.id)
 
-    def add_edge(self, source: str, target: str, kind: str = "sequence", arm_label: str = "") -> None:
+    def add_edge(
+        self, source: str, target: str, kind: str = "sequence", arm_label: str = "", arm_index: int = -1
+    ) -> None:
         if source == target:
             return
         for edge in self.edges:
             if edge.source == source and edge.target == target:
                 return
-        self.edges.append(FlowEdge(source=source, target=target, kind=kind, arm_label=arm_label))
+        self.edges.append(FlowEdge(
+                source=source, target=target, kind=kind, arm_label=arm_label, arm_index=arm_index
+            )
+        )
 
     def absorb(self, members: set[str], host_id: str) -> None:
         inner = members - {host_id}
@@ -55,12 +60,12 @@ class SliceGraph:
             self.keep.discard(member_id)
 
     def drop(self, node_id: str) -> None:
-        incoming = [(e.source, e.kind, e.arm_label) for e in self.edges if e.target == node_id]
+        incoming = [(e.source, e.kind, e.arm_label, e.arm_index) for e in self.edges if e.target == node_id]
         outgoing = sorted({e.target for e in self.edges if e.source == node_id})
         self.edges = [e for e in self.edges if e.source != node_id and e.target != node_id]
-        for source, kind, arm_label in sorted(incoming):
+        for source, kind, arm_label, arm_index in sorted(incoming):
             for target in outgoing:
-                self.add_edge(source, target, kind, arm_label)
+                self.add_edge(source, target, kind, arm_label, arm_index)
         parent = self.nodes[node_id].containers[0] if self.nodes[node_id].containers else ""
         self.nodes.pop(node_id, None)
         self.keep.discard(node_id)

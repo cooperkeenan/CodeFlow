@@ -53,7 +53,7 @@ class DecisionProjector:
                     self._acc.add_badge(node_id, "guarded")
                     self._emit_outcome(chain.lane, node_id, fqn, prefix, site, arm, verdict)
             else:
-                self._acc.connect(node_id, ahead, "arm", arm_label, site.id)
+                self._acc.connect(node_id, ahead, "arm", arm_label, site.id, arm_index=arm.index)
                 tails.extend(atails or [ahead])
         chain.fan_out(node_id, dedup(tails))
 
@@ -73,4 +73,4 @@ class DecisionProjector:
         self._acc.set_owner(
             outcome_id, fqn, [f"{s}#{i}" for s, i in prefix] + [f"{site.id}#{arm.index}"]
         )
-        self._acc.connect(node_id, outcome_id, "arm", label, site.id)
+        self._acc.connect(node_id, outcome_id, "arm", label, site.id, arm_index=arm.index)

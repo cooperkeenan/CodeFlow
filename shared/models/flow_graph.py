@@ -16,10 +16,19 @@ class SourceRef(BaseModel):
     end_line: int
 
 
+class HappyPath(BaseModel):
+    node_ids: list[str] = []
+    hops: list[str] = []
+    ends_in_failure: bool = False
+
+
 class RouteMember(BaseModel):
     handler_fqn: str
     method: str = ""
     path: str = ""
+    wrappers: list[str] = []
+    head: str = ""
+    happy: HappyPath | None = None
 
 
 class FlowNode(BaseModel):
@@ -51,6 +60,7 @@ class FlowEdge(BaseModel):
     target: str
     kind: EdgeKind
     arm_label: str = ""
+    arm_index: int = -1
     llm_label: str | None = None
     group_id: str = ""
     confidence: Confidence = "resolved"

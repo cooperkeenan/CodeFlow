@@ -28,12 +28,16 @@ class BudgetWorkGraph:
     def arm_edges(self, node_id: str) -> list[FlowEdge]:
         return [e for e in self.edges.values() if e.source == node_id and e.kind == "arm"]
 
-    def add_edge(self, source: str, target: str, kind: EdgeKind, arm_label: str = "") -> None:
+    def add_edge(
+        self, source: str, target: str, kind: EdgeKind, arm_label: str = "", arm_index: int = -1
+    ) -> None:
         if source == target:
             return
         key = (source, target, kind, arm_label)
         if key not in self.edges:
-            self.edges[key] = FlowEdge(source=source, target=target, kind=kind, arm_label=arm_label)
+            self.edges[key] = FlowEdge(
+                source=source, target=target, kind=kind, arm_label=arm_label, arm_index=arm_index
+            )
 
     def upsert_hidden_edge(self, edge: FlowEdge) -> None:
         key = self._key(edge)

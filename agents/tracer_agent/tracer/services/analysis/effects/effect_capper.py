@@ -39,9 +39,9 @@ class EffectCapper:
         for other in ids[1:]:
             keeper.folded_count += graph.nodes[other].folded_count + 1
             for edge in graph.in_edges(other):
-                graph.add_edge(edge.source, keep, edge.kind, edge.arm_label)
+                graph.add_edge(edge.source, keep, edge.kind, edge.arm_label, edge.arm_index)
             for edge in graph.out_edges(other):
-                graph.add_edge(keep, edge.target, edge.kind, edge.arm_label)
+                graph.add_edge(keep, edge.target, edge.kind, edge.arm_label, edge.arm_index)
             self._repointer.repoint(graph.nodes, keep, other)
             graph.remove_node(other)
         if fold:

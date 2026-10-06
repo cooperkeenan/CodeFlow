@@ -7,6 +7,7 @@ from tracer.services.analysis.condense.anchor_index import AnchorIndex
 from tracer.services.analysis.condense.anchor_resolver import AnchorResolver
 from tracer.services.analysis.condense.container_assigner import ContainerAssigner
 from tracer.services.analysis.condense.decision_seeder import DecisionSeeder
+from tracer.services.analysis.condense.draft_exporter import DraftExporter
 from tracer.services.analysis.condense.event_collector import EventCollector
 from tracer.services.analysis.condense.function_summarizer import FunctionSummarizer
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
@@ -62,11 +63,12 @@ class FlowCondenser:
         lanes = LaneBuilder(self._roots, self._labels).build(
             entries + seeded + islanded, dispatch_sites, significance
         )
+        exporter = DraftExporter()
         return FlowGraph(
             repo=repo,
             lanes=lanes,
-            nodes=acc.to_flow_nodes(),
-            edges=acc.to_flow_edges(),
+            nodes=exporter.nodes(list(acc.nodes().values())),
+            edges=exporter.edges(list(acc.edges().values())),
             meta={"entries": len(entries), "lanes": len(lanes)},
         )
 

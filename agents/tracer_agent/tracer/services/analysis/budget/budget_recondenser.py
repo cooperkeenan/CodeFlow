@@ -37,7 +37,7 @@ class BudgetRecondenser:
         head.badges = sorted(set(head.badges) | set(tail.badges))
         head.folded_count += tail.folded_count
         for edge in graph.out_edges(target):
-            graph.add_edge(source, edge.target, edge.kind, edge.arm_label)
+            graph.add_edge(source, edge.target, edge.kind, edge.arm_label, edge.arm_index)
         self._repointer.repoint(graph.nodes, source, target)
         graph.remove_node(target)
         if head.backing:
