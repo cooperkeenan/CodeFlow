@@ -6,6 +6,7 @@ from shared.flow_endpoints.run_collapser import RunCollapser
 from shared.flow_endpoints.shared_helper_collapser import SharedHelperCollapser
 from shared.flow_endpoints.sole_child_promoter import SoleChildPromoter
 from shared.flow_endpoints.level_assigner import LevelAssigner
+from shared.flow_endpoints.path_compressor import PathCompressor
 from shared.flow_endpoints.slice_graph import SliceGraph
 from shared.flow_endpoints.terminal_closer import TerminalCloser
 
@@ -23,6 +24,7 @@ class EndpointElider:
         runs: RunCollapser | None = None,
         helpers: SharedHelperCollapser | None = None,
         promoter: SoleChildPromoter | None = None,
+        compressor: PathCompressor | None = None,
         budget: int = DEFAULT_BUDGET,
     ) -> None:
         self._dissolver = dissolver
@@ -32,6 +34,7 @@ class EndpointElider:
         self._runs = runs or RunCollapser()
         self._helpers = helpers or SharedHelperCollapser()
         self._promoter = promoter or SoleChildPromoter()
+        self._compressor = compressor or PathCompressor(self._runs)
         self._budget = budget
 
     def elide(
@@ -39,11 +42,16 @@ class EndpointElider:
         graph: SliceGraph,
         exclusivity: dict[str, int],
         closer: TerminalCloser,
+        pins: list[str] | None = None,
     ) -> None:
+        graph.set_pins(pins or [])
         self._dissolver.dissolve(graph)
         self._helpers.collapse(graph, exclusivity)
         self._runs.collapse(graph)
+        if graph.pinned:
+            self._compressor.compress(graph, self._budget)
         self._reduce(graph, exclusivity, closer)
+        graph.visible_before_promote = len(graph.keep)
         self._promoter.promote(graph, self._levels)
 
     def _reduce(

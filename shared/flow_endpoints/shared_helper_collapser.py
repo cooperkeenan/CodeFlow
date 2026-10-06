@@ -14,19 +14,19 @@ class SharedHelperCollapser:
         groups: dict[str, list[str]] = {}
         for node_id in sorted(graph.keep):
             owner = graph.nodes[node_id].owner_fqn
-            if not owner or node_id == graph.root_id:
+            if not owner or node_id == graph.root_id or node_id in graph.pinned:
                 continue
             if exclusivity.get(owner, 0) < self._min_shared:
                 continue
             groups.setdefault(owner, []).append(node_id)
         for owner, members in sorted(groups.items()):
-            if len(members) < 2:
+            if len(members) < 2 or f"{HELPER_PREFIX}{owner}" in graph.nodes:
                 continue
             if len(graph.keep) - len(members) + 1 < self._floor:
                 continue
-            self._fold(graph, owner, members)
+            self.fold(graph, owner, members)
 
-    def _fold(self, graph: SliceGraph, owner: str, members: list[str]) -> None:
+    def fold(self, graph: SliceGraph, owner: str, members: list[str]) -> None:
         member_set = set(members)
         heads = [
             member

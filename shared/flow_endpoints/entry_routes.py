@@ -11,3 +11,6 @@ class EntryRoutes:
             return sorted(node.members, key=lambda m: (m.path, m.method, m.handler_fqn))
         method, path = self._route_label.parse(node.label)
         return [RouteMember(handler_fqn="", method=method, path=path)]
+
+    def member(self, node: FlowNode, handler_fqn: str) -> RouteMember | None:
+        return next((m for m in node.members if m.handler_fqn == handler_fqn), None)

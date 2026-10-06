@@ -14,6 +14,27 @@ class SliceGraph:
         self.root_id = root_id
         self.external = external or {}
         self.keep: set[str] = set(nodes)
+        self.pinned: set[str] = set()
+        self.pins: list[str] = []
+        self.aliases: dict[str, str] = {}
+        self.visible_before_promote = 0
+
+    def resolve(self, node_id: str) -> str:
+        seen = {node_id}
+        while node_id in self.aliases and self.aliases[node_id] not in seen:
+            node_id = self.aliases[node_id]
+            seen.add(node_id)
+        return node_id
+
+    def set_pins(self, pins: list[str]) -> None:
+        self.pins = list(pins)
+        resolved = {self.resolve(pin) for pin in pins}
+        self.pinned = {node_id for node_id in resolved if node_id in self.nodes}
+
+    def path(self) -> list[str]:
+        resolved = [self.resolve(pin) for pin in self.pins]
+        resolved = [node_id for node_id in resolved if node_id in self.nodes]
+        return [n for i, n in enumerate(resolved) if i == 0 or n != resolved[i - 1]]
 
     def successors(self, node_id: str) -> list[str]:
         return sorted({e.target for e in self.edges if e.source == node_id})
@@ -55,6 +76,10 @@ class SliceGraph:
         if not inner:
             return
         self._repoint(inner, host_id)
+        for member_id in inner:
+            self.aliases[member_id] = host_id
+        if inner & self.pinned:
+            self.pinned = (self.pinned - inner) | {host_id}
         for member_id in sorted(inner):
             self.nodes[member_id].containers = [host_id]
             self.keep.discard(member_id)

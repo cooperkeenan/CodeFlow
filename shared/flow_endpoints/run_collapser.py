@@ -19,7 +19,7 @@ class RunCollapser:
                 continue
             if len(graph.keep) - len(run) + 1 < self._floor:
                 continue
-            self._fold(graph, run)
+            self.fold(graph, run)
 
     def _run_from(self, graph: SliceGraph, head_id: str) -> list[str]:
         if self._entered_mid_run(graph, head_id):
@@ -48,7 +48,7 @@ class RunCollapser:
             return False
         return len([s for s in graph.successors(parent) if s in graph.keep]) == 1
 
-    def _fold(self, graph: SliceGraph, run: list[str]) -> None:
+    def fold(self, graph: SliceGraph, run: list[str]) -> None:
         tail = graph.nodes[run[-1]]
         host = FlowNode(
             id=f"{RUN_PREFIX}{run[0]}",

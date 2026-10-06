@@ -2,9 +2,20 @@ from shared.models.flow_graph import FlowEdge
 
 
 class BackEdgePruner:
-    def prune(self, node_ids: set[str], edges: list[FlowEdge], root_id: str) -> list[FlowEdge]:
+    def prune(
+        self,
+        node_ids: set[str],
+        edges: list[FlowEdge],
+        root_id: str,
+        path: list[str] | None = None,
+    ) -> list[FlowEdge]:
+        pairs = set(zip(path or [], (path or [])[1:]))
         ordered = sorted(
-            edges, key=lambda e: (e.source, e.target, e.kind, e.arm_label, e.group_id)
+            edges,
+            key=lambda e: (
+                0 if (e.source, e.target) in pairs else 1,
+                e.source, e.target, e.kind, e.arm_label, e.group_id,
+            ),
         )
         outgoing: dict[str, list[tuple[int, FlowEdge]]] = {node_id: [] for node_id in node_ids}
         for index, edge in enumerate(ordered):
