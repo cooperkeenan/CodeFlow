@@ -14,11 +14,17 @@ from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
 from tracer.services.analysis.condense.island_anchor import IslandAnchor
 from tracer.services.analysis.condense.lane_builder import LaneBuilder
 from tracer.services.analysis.condense.parallel_detector import ParallelDetector
+from tracer.services.analysis.condense.route_assembler import RouteAssembler
+from tracer.services.analysis.condense.route_terminal_builder import (
+    RouteTerminalBuilder,
+)
 from tracer.services.analysis.condense.step_merger import StepMerger
 from tracer.services.analysis.condense.trivial_entry_folder import TrivialEntryFolder
 from tracer.services.analysis.indexing.service_root_resolver import ServiceRootResolver
 from tracer.services.analysis.resolve.call_ancestry_resolver import CallAncestryResolver
 from tracer.services.analysis.resolve.indexes import ComponentIndex
+from tracer.services.analysis.resolve.mro_method_finder import MroMethodFinder
+from tracer.services.analysis.routes.delegation_resolver import DelegationResolver
 from tracer.services.analysis.routes.entry_finder import EntryFinder
 from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
 from tracer.services.analysis.routes.route_handler_locator import RouteHandlerLocator
@@ -52,13 +58,18 @@ class FlowCondenser:
         entries = EntryFinder(
             index, RouteHandlerLocator(index), self._roots, self._labels
         ).find(dispatch_sites)
-        self._assemble(acc, summarizer, entries, index)
+        assembler = RouteAssembler(
+            index, acc, summarizer,
+            RouteTerminalBuilder(index, acc, self._labels, self._roots),
+            DelegationResolver(index, MroMethodFinder(index)),
+        )
+        entries = assembler.assemble(entries)
         entries = TrivialEntryFolder(self._labels).fold(acc, entries)
         ancestry = CallAncestryResolver(callsites)
         anchor = AnchorResolver(self._roots, self._labels, ancestry, components)
         seeded = DecisionSeeder(index, anchor).seed(acc, summarizer, significance, entries)
         ContainerAssigner().assign(acc)
-        StepMerger(acc, self._labels, ContainerRepointer()).merge()
+        StepMerger(acc, self._labels, ContainerRepointer(), self._heads(entries)).merge()
         islanded = IslandAnchor(anchor).anchor(acc, entries + seeded)
         lanes = LaneBuilder(self._roots, self._labels).build(
             entries + seeded + islanded, dispatch_sites, significance
@@ -72,21 +83,7 @@ class FlowCondenser:
             meta={"entries": len(entries), "lanes": len(lanes)},
         )
 
-    def _assemble(
-        self, acc: GraphAccumulator, summarizer: FunctionSummarizer,
-        entries: tuple, index: ProjectIndex,
-    ) -> None:
-        for entry in entries:
-            handlers = entry.members or (entry.handler_fqn,)
-            refs = [index.functions[h].span for h in handlers if h in index.functions]
-            folded = entry.route_count if entry.route_count > 1 else 0
-            acc.upsert(
-                entry.id, "entry", entry.service_root, entry.label,
-                refs=refs or None, folded_count=folded,
-                members=list(entry.route_members),
-            )
-            for handler in handlers:
-                summary = summarizer.summarize(handler)
-                if summary.head is not None:
-                    acc.connect(entry.id, summary.head, "sequence")
-                    acc.add_container(summary.head, entry.id)
+    def _heads(self, entries: tuple) -> frozenset[str]:
+        return frozenset(
+            member.head for entry in entries for member in entry.route_members if member.head
+        )

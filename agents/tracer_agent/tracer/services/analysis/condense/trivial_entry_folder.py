@@ -28,7 +28,7 @@ class TrivialEntryFolder:
                 result.extend(members)
                 continue
             result.append(self._fold_group(acc, root, members))
-        self._prune_orphans(acc, adjacency, result)
+        self._prune_orphans(acc, result)
         return tuple(sorted(result, key=lambda e: e.id))
 
     def _adjacency(self, acc: GraphAccumulator) -> dict[str, list[str]]:
@@ -79,11 +79,14 @@ class TrivialEntryFolder:
             grouped.id, "entry", root, grouped.label,
             folded_count=total_routes, members=routes,
         )
+        for route in routes:
+            if route.head and route.head in acc.nodes():
+                acc.connect(grouped.id, route.head, "sequence")
+                acc.add_container(route.head, grouped.id)
         return grouped
 
-    def _prune_orphans(
-        self, acc: GraphAccumulator, adjacency: dict[str, list[str]], entries: list[FlowEntry]
-    ) -> None:
+    def _prune_orphans(self, acc: GraphAccumulator, entries: list[FlowEntry]) -> None:
+        adjacency = self._adjacency(acc)
         seen: set[str] = set()
         stack = [entry.id for entry in entries]
         while stack:

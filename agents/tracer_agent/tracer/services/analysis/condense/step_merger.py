@@ -5,11 +5,13 @@ from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
 
 class StepMerger:
     def __init__(
-        self, acc: GraphAccumulator, labels: LabelSynthesizer, repointer: ContainerRepointer
+        self, acc: GraphAccumulator, labels: LabelSynthesizer, repointer: ContainerRepointer,
+        protected: frozenset[str] = frozenset(),
     ) -> None:
         self._acc = acc
         self._labels = labels
         self._repointer = repointer
+        self._protected = protected
 
     def merge(self) -> None:
         while self._merge_pass():
@@ -20,6 +22,8 @@ class StepMerger:
         edges = self._acc.edges()
         for source, target, arm_label in sorted(edges):
             if arm_label or edges[(source, target, arm_label)].kind != "sequence":
+                continue
+            if target in self._protected:
                 continue
             if not self._is_step(source, nodes) or not self._is_step(target, nodes):
                 continue
