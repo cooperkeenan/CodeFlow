@@ -22,21 +22,24 @@ class FailureOracle:
                 return True
         return self._is_failing_return(edge.target)
 
+    def is_implicit_terminal(self, node_id: str) -> bool:
+        return node_id.startswith("ret:") and self._stmt_at(node_id) is None
+
     def _is_failing_return(self, node_id: str) -> bool:
         if not node_id.startswith("ret:"):
             return False
         if node_id not in self._returns:
-            self._returns[node_id] = self._classify(node_id)
+            stmt = self._stmt_at(node_id)
+            self._returns[node_id] = stmt is not None and classify_outcome([stmt]) == "failure"
         return self._returns[node_id]
 
-    def _classify(self, node_id: str) -> bool:
-        fqn = self._graph.owner(node_id)
-        record = self._index.functions.get(fqn)
+    def _stmt_at(self, node_id: str) -> ast.stmt | None:
+        record = self._index.functions.get(self._graph.owner(node_id))
         body = getattr(record, "body", None)
         if body is None:
-            return False
+            return None
         line = int(node_id.rsplit(":", 1)[1])
         for stmt in ast.walk(body):
             if isinstance(stmt, (ast.Return, ast.Raise)) and stmt.lineno == line:
-                return classify_outcome([stmt]) == "failure"
-        return False
+                return stmt
+        return None

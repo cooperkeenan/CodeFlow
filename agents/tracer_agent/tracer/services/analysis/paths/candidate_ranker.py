@@ -8,6 +8,7 @@ from shared.models.flow_graph import FlowEdge
 
 _METHOD_TEST = re.compile(r"method\s*==\s*['\"](\w+)['\"]")
 _NON_VERBS = frozenset({"", "ANY"})
+_EARLY_EXITS = frozenset({"returns", "raises"})
 
 
 class CandidateRanker:
@@ -33,6 +34,8 @@ class CandidateRanker:
             (
                 -self._reach.count(e.target, owners, visited, own_head),
                 e.target.startswith("out:"),
+                self._oracle.is_implicit_terminal(e.target),
+                self._exits_early(e),
                 e.arm_index < 0,
                 e.arm_index,
                 e.target,
@@ -40,8 +43,14 @@ class CandidateRanker:
             )
             for e in pool
         ]
-        scored.sort(key=lambda s: s[:5])
-        return scored[0][5], forced
+        scored.sort(key=lambda s: s[:7])
+        return scored[0][7], forced
+
+    def _exits_early(self, edge: FlowEdge) -> bool:
+        if edge.kind != "arm":
+            return False
+        arm = self._arms.arm(edge.group_id, edge.arm_index)
+        return arm is not None and arm.terminal in _EARLY_EXITS
 
     def _by_verb(self, edges: list[FlowEdge], verb: str) -> list[FlowEdge]:
         wanted = verb.upper()

@@ -23,10 +23,12 @@ class HopFinder:
             for current in level:
                 for edge in self._graph.out(current):
                     target = edge.target
-                    if target in visited or self._graph.is_entry(target):
+                    if self._graph.is_entry(target):
                         continue
                     if self._graph.owner(target) in owners:
-                        if self._graph.is_walkable_target(target, own_head):
+                        if target not in visited and self._graph.is_walkable_target(
+                            target, own_head
+                        ):
                             found.add(target)
                     elif target not in seen:
                         following.add(target)

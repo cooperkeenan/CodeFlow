@@ -27,7 +27,7 @@ class TerminalNodeBuilder:
         record = self._index.functions[fqn]
         node_id = f"ret:{fqn}:{stmt.lineno}"
         self._acc.upsert(
-            node_id, "outcome", self._roots.root_of(fqn), label or self.label_of(stmt),
+            node_id, "outcome", self._roots.root_of(fqn), f"{self._owner(fqn)}: {label or self.label_of(stmt)}",
             refs=[SourceRef(file=record.span.file, line=stmt.lineno, end_line=stmt.end_lineno or stmt.lineno)],
         )
         self._acc.set_owner(node_id, fqn, [])
@@ -52,7 +52,12 @@ class TerminalNodeBuilder:
             return normalize_label("raise", raw)
         value = getattr(stmt, "value", None)
         code = status_call_label(value) if isinstance(value, ast.Call) else None
-        return f"return {code}" if code is not None else normalize_label("return", raw)
+        body = normalize_label("return", raw)
+        return f"return {code} {body.removeprefix('return ')}" if code is not None else body
+
+    @staticmethod
+    def _owner(fqn: str) -> str:
+        return ".".join(fqn.split(".")[-2:])
 
     def _statement_at(self, fqn: str, line: int) -> ast.stmt | None:
         record = self._index.functions.get(fqn)

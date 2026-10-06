@@ -1,5 +1,7 @@
 from tracer.services.analysis.paths.path_graph import PathGraph
 
+_REGION_CAP = 300
+
 
 class ReachCounter:
     def __init__(self, graph: PathGraph) -> None:
@@ -11,16 +13,16 @@ class ReachCounter:
         total = 0
         while queue:
             current = queue.pop(0)
-            owned = self._graph.owner(current) in owners
-            if owned:
+            if self._graph.owner(current) in owners:
                 total += 1
-            if not owned and current != start:
-                continue
             for edge in self._graph.out(current):
                 target = edge.target
-                if target in seen or target in blocked:
+                if target in seen or self._graph.is_entry(target):
                     continue
-                if not self._graph.is_walkable_target(target, own_head):
+                if self._graph.owner(target) in owners:
+                    if target in blocked or not self._graph.is_walkable_target(target, own_head):
+                        continue
+                elif len(seen) >= _REGION_CAP:
                     continue
                 seen.add(target)
                 queue.append(target)
