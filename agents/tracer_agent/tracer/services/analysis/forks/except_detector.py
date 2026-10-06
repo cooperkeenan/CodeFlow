@@ -5,6 +5,7 @@ from tracer.models.index_records import FunctionRecord
 from tracer.models.sites import DispatchSite
 from tracer.services.analysis.contracts import DispatchDetectionContext
 from tracer.services.analysis.resolve.indexes import CallSiteArmIndex
+from tracer.services.analysis.syntax.arm_outcome import classify_outcome
 from tracer.services.analysis.syntax.block_walker import walk_statements
 from tracer.services.analysis.syntax.terminal_classifier import classify_terminal
 
@@ -34,6 +35,7 @@ class ExceptDetector:
                 label_source="try",
                 callsites=arm_index.callsites_for(site_id, 0),
                 terminal=classify_terminal(node.body),
+                outcome=classify_outcome(node.body),
             )
         ]
         for i, handler in enumerate(node.handlers):
@@ -43,6 +45,7 @@ class ExceptDetector:
                     label_source=self._handler_label(handler),
                     callsites=arm_index.callsites_for(site_id, i + 1),
                     terminal=classify_terminal(handler.body),
+                    outcome="failure",
                 )
             )
         if not any(arm.callsites for arm in arms[1:]):

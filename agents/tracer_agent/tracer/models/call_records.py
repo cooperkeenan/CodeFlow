@@ -28,6 +28,9 @@ class CallSite:
 Terminal = Literal["returns", "raises", "continues", "falls_through"]
 
 
+Outcome = Literal["success", "failure", "continue"]
+
+
 @dataclass(frozen=True)
 class Arm:
     index: int
@@ -35,3 +38,4 @@ class Arm:
     callsites: tuple[CallSite, ...]
     terminal: Terminal
     handler_fqn: str | None = None
+    outcome: Outcome = "continue"
