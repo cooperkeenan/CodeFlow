@@ -1,4 +1,5 @@
 from tracer.models.sites import FlowEntry
+from tracer.services.analysis.budget.container_repointer import ContainerRepointer
 from tracer.services.analysis.condense.drafts import _NodeDraft
 from tracer.services.analysis.condense.graph_accumulator import GraphAccumulator
 from tracer.services.analysis.routes.label_synthesizer import LabelSynthesizer
@@ -8,8 +9,9 @@ _NOISE_EFFECT = "response"
 
 
 class TrivialEntryFolder:
-    def __init__(self, labels: LabelSynthesizer) -> None:
+    def __init__(self, labels: LabelSynthesizer, repointer: ContainerRepointer) -> None:
         self._labels = labels
+        self._repointer = repointer
 
     def fold(
         self, acc: GraphAccumulator, entries: tuple[FlowEntry, ...]
@@ -79,6 +81,8 @@ class TrivialEntryFolder:
             grouped.id, "entry", root, grouped.label,
             folded_count=total_routes, members=routes,
         )
+        for entry in members:
+            self._repointer.repoint(acc.nodes(), grouped.id, entry.id)
         for route in routes:
             if route.head and route.head in acc.nodes():
                 acc.connect(grouped.id, route.head, "sequence")

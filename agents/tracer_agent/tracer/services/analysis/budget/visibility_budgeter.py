@@ -4,6 +4,7 @@ from tracer.services.analysis.budget.containment_invariants import ContainmentIn
 from tracer.services.analysis.budget.budget_recondenser import BudgetRecondenser
 from tracer.services.analysis.budget.budget_work_graph import BudgetWorkGraph
 from tracer.services.analysis.budget.containment_indexer import ContainmentIndexer
+from tracer.services.analysis.budget.happy_path_remapper import HappyPathRemapper
 from tracer.services.analysis.budget.lane_apportioner import LaneApportioner
 from tracer.services.analysis.budget.repo_root_anchor import RepoRootAnchor
 from tracer.services.analysis.budget.reveal_chunker import RevealChunker
@@ -36,6 +37,7 @@ class VisibilityBudgeter:
         root_anchor: RepoRootAnchor,
         indexer: ContainmentIndexer,
         sequencer: SequenceChainer,
+        remapper: HappyPathRemapper,
         skeleton_budget: int,
     ) -> None:
         self._recondenser = recondenser
@@ -51,6 +53,7 @@ class VisibilityBudgeter:
         self._root_anchor = root_anchor
         self._indexer = indexer
         self._sequencer = sequencer
+        self._remapper = remapper
         self._skeleton_budget = skeleton_budget
 
     def budget(
@@ -91,6 +94,7 @@ class VisibilityBudgeter:
         self._indexer.relevel(work, skeleton_ids)
         self._checker.enforce_structure(work)
         self._checker.enforce_bodies(work)
+        self._remapper.remap(work)
         result = work.to_flow_graph()
         result.meta["skeleton_nodes"] = sum(1 for n in result.nodes if n.level == 0)
         result.meta["revealed_nodes"] = sum(1 for n in result.nodes if n.level >= 1)

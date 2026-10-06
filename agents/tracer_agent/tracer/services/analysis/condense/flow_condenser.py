@@ -64,7 +64,7 @@ class FlowCondenser:
             DelegationResolver(index, MroMethodFinder(index)),
         )
         entries = assembler.assemble(entries)
-        entries = TrivialEntryFolder(self._labels).fold(acc, entries)
+        entries = TrivialEntryFolder(self._labels, ContainerRepointer()).fold(acc, entries)
         ancestry = CallAncestryResolver(callsites)
         anchor = AnchorResolver(self._roots, self._labels, ancestry, components)
         seeded = DecisionSeeder(index, anchor).seed(acc, summarizer, significance, entries)

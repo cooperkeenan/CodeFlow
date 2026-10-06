@@ -34,15 +34,16 @@ class EffectCapper:
     def _merge(self, graph: BudgetWorkGraph, ids: list[str], fold: bool) -> None:
         if len(ids) < 2:
             return
-        keep = ids[0]
+        keep = next((i for i in ids if i in graph.pins), ids[0])
         keeper = graph.nodes[keep]
-        for other in ids[1:]:
+        for other in (i for i in ids if i != keep):
             keeper.folded_count += graph.nodes[other].folded_count + 1
             for edge in graph.in_edges(other):
                 graph.add_edge(edge.source, keep, edge.kind, edge.arm_label, edge.arm_index)
             for edge in graph.out_edges(other):
                 graph.add_edge(keep, edge.target, edge.kind, edge.arm_label, edge.arm_index)
             self._repointer.repoint(graph.nodes, keep, other)
+            graph.alias(other, keep)
             graph.remove_node(other)
         if fold:
             keeper.badges = sorted(set(keeper.badges) | {"folded"})

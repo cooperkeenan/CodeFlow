@@ -23,6 +23,8 @@ class BudgetRecondenser:
                 continue
             if len(graph.out_edges(edge.source)) != 1 or len(graph.in_edges(edge.target)) != 1:
                 continue
+            if (edge.source in graph.pins) != (edge.target in graph.pins):
+                continue
             self._absorb(graph, edge.source, edge.target)
             return True
         return False
@@ -39,6 +41,7 @@ class BudgetRecondenser:
         for edge in graph.out_edges(target):
             graph.add_edge(source, edge.target, edge.kind, edge.arm_label, edge.arm_index)
         self._repointer.repoint(graph.nodes, source, target)
+        graph.alias(target, source)
         graph.remove_node(target)
         if head.backing:
             head.label = self._labels.step_label(head.backing)

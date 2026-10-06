@@ -19,7 +19,12 @@ class ArmFolder:
         if len(arms) <= self._config.max_arms_per_decision:
             return
         ranked = sorted(arms, key=lambda edge: (-self._reach(graph, edge.target), edge.target))
-        drop = ranked[self._config.max_arms_per_decision - 1 :]
+        pinned = [e for e in ranked if e.target in graph.pins]
+        free = [e for e in ranked if e.target not in graph.pins]
+        room = max(self._config.max_arms_per_decision - 1 - len(pinned), 0)
+        drop = free[room:]
+        if not drop:
+            return
         self._collapse(graph, node_id, drop)
 
     def _collapse(self, graph: BudgetWorkGraph, node_id: str, drop: list[FlowEdge]) -> None:

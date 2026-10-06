@@ -15,6 +15,26 @@ class BudgetWorkGraph:
         self.edges: dict[_EdgeKey, FlowEdge] = {}
         for edge in graph.edges:
             self.edges[self._key(edge)] = edge.model_copy(deep=True)
+        self.aliases: dict[str, str] = {}
+        self.pins: set[str] = {
+            node_id
+            for node in self.nodes.values()
+            if node.kind == "entry"
+            for member in node.members
+            if member.happy is not None
+            for node_id in member.happy.node_ids
+        }
+
+    def alias(self, old: str, new: str) -> None:
+        if old != new:
+            self.aliases[old] = new
+
+    def resolve(self, node_id: str) -> str:
+        seen = {node_id}
+        while node_id in self.aliases and self.aliases[node_id] not in seen:
+            node_id = self.aliases[node_id]
+            seen.add(node_id)
+        return node_id
 
     def _key(self, edge: FlowEdge) -> _EdgeKey:
         return (edge.source, edge.target, edge.kind, edge.arm_label)

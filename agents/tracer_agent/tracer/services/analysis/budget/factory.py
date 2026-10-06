@@ -3,6 +3,7 @@ from tracer.services.analysis.budget.budget_recondenser import BudgetRecondenser
 from tracer.services.analysis.budget.container_repointer import ContainerRepointer
 from tracer.services.analysis.budget.containment_indexer import ContainmentIndexer
 from tracer.services.analysis.budget.containment_invariants import ContainmentInvariants
+from tracer.services.analysis.budget.happy_path_remapper import HappyPathRemapper
 from tracer.services.analysis.budget.lane_apportioner import LaneApportioner
 from tracer.services.analysis.budget.repo_root_anchor import RepoRootAnchor
 from tracer.services.analysis.budget.reveal_chunker import RevealChunker
@@ -37,5 +38,6 @@ def build_visibility_budgeter(config: BudgetConfig | None = None) -> VisibilityB
         RepoRootAnchor(),
         ContainmentIndexer(),
         SequenceChainer(),
+        HappyPathRemapper(),
         cfg.skeleton_budget,
     )
