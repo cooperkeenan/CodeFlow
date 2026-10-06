@@ -13,8 +13,15 @@ class PathGraph:
         for edges in self._out.values():
             edges.sort(key=lambda e: (e.arm_index < 0, e.arm_index, e.target, e.kind))
         self._entries = frozenset(n.id for n in graph.nodes if n.kind == "entry")
+        handlers = frozenset(
+            m.handler_fqn for n in graph.nodes if n.kind == "entry" for m in n.members
+        )
         self._heads = frozenset(
-            m.head for n in graph.nodes if n.kind == "entry" for m in n.members if m.head
+            m.head
+            for n in graph.nodes
+            if n.kind == "entry"
+            for m in n.members
+            if m.head in self._nodes and self._nodes[m.head].owner_fqn in handlers
         )
 
     def node(self, node_id: str) -> FlowNode | None:
