@@ -14,6 +14,7 @@ from tracer.services.analysis.forks.factory import (
 )
 from tracer.services.analysis.indexing.project_indexer import ProjectIndexer
 from tracer.services.analysis.indexing.service_root_resolver import ServiceRootResolver
+from tracer.services.analysis.paths.factory import trace_happy_paths
 from tracer.services.analysis.ranking.pillar_ranker import PillarRanker
 from tracer.services.analysis.resolve.call_resolver import CallResolver
 from tracer.services.analysis.resolve.indexes import ComponentIndex
@@ -98,6 +99,8 @@ class FlowPipeline:
         ).find(dispatch)
         self._stages.begin("stitch", f"{len(entries)} entries")
         stitched = self._stitcher.stitch(graph, effects, entries)
+        self._stages.begin("paths")
+        stitched = trace_happy_paths(stitched, index, dispatch)
         self._stages.begin("rank")
         components = ComponentIndex(index)
         pillars = PillarRanker(components, self._config).rank(callsites)

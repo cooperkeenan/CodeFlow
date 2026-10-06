@@ -9,6 +9,7 @@ STAGE_LABELS: dict[str, str] = {
     "condense": "Condense",
     "entries": "Find entries",
     "stitch": "Stitch",
+    "paths": "Trace happy paths",
     "rank": "Rank",
     "budget": "Budget",
     "name": "Label",
