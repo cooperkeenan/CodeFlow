@@ -81,8 +81,8 @@ class FlowSession:
         self._page.click(f'.react-flow__node[data-id="{node_id}"]')
         self._page.wait_for_timeout(250)
 
-    def open_endpoint(self, slug: str) -> None:
-        self._endpoint.open_endpoint(slug)
+    def open_endpoint(self, slug: str, entry_id: str = "") -> None:
+        self._endpoint.open_endpoint(slug, entry_id)
 
     def endpoint_detail(self) -> dict:
         return self._endpoint.detail()

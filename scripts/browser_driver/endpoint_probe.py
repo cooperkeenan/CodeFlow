@@ -1,4 +1,5 @@
 import re
+from urllib.parse import quote, urlsplit
 
 from browser_driver.endpoint_probe_js import (
     READ_ENDPOINT_DETAIL,
@@ -11,8 +12,13 @@ class EndpointProbe:
     def __init__(self, page) -> None:
         self._page = page
 
-    def open_endpoint(self, slug: str) -> None:
-        self._page.click(f'[data-testid="endpoint-{slug}"]')
+    def open_endpoint(self, slug: str, entry_id: str = "") -> None:
+        row = self._page.locator(f'[data-testid="endpoint-{slug}"]')
+        if entry_id and not (row.count() and row.first.is_visible()):
+            origin = "{0.scheme}://{0.netloc}".format(urlsplit(self._page.url))
+            self._page.goto(f"{origin}/endpoint-fixture?entry={quote(entry_id, safe='')}")
+        else:
+            row.first.click()
         self._page.wait_for_selector('[data-testid="endpoint-page"]', timeout=30000)
         self._page.wait_for_timeout(600)
 

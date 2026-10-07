@@ -24,7 +24,7 @@ USAGE = """  endpoint:<entry_id>  click that endpoint (or endpoint group id) row
 
 def run_endpoint_action(session: FlowSession, verb: str, arg: str) -> bool:
     if verb == "endpoint":
-        session.open_endpoint(endpoint_slug(arg))
+        session.open_endpoint(endpoint_slug(arg), arg)
         print(f"opened endpoint page for {arg}")
     elif verb == "detail":
         print_endpoint_detail(session)

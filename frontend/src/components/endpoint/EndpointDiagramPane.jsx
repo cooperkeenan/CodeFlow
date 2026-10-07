@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Box, Button, Typography } from '@mui/material'
 import { endpointFixtureUrl } from '../../api/flow'
 import { useFlowGraph } from '../../hooks/useFlowGraph'
 import { useExpansion } from '../../hooks/useExpansion'
 import { useGraphTransform } from '../../hooks/useGraphTransform'
 import { useHappyHighlight } from '../../hooks/useHappyHighlight'
+import { useTweenedNodes } from '../../hooks/useTweenedNodes'
+import { spineLayout } from '../flow/spineLayout'
 import FlowCanvas from '../flow/FlowCanvas'
 import { CANVAS, GRID } from '../flow/styles'
 import './happyPath.css'
@@ -34,17 +36,26 @@ export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen
       : null
   ), [payload, contract])
   const forcedIds = happy?.reveal?.length ? happy.reveal : NO_IDS
-  const expansion = useExpansion(view, false, [], forcedIds)
+  const expansion = useExpansion(view, false, [], forcedIds, happy?.edges ?? null)
   const onIsolate = useCallback(id => setIsolated(prev => (prev === id ? null : id)), [])
-  const { nodes: baseNodes, edges: baseEdges } = useGraphTransform(
+  const { nodes: flowNodes, edges: baseEdges } = useGraphTransform(
     expansion, expansion.toggle, onIsolate, view?.node_geometry, links, onLink
   )
+  const spineKey = happy ? happy.node_ids.join('|') : ''
+  const spineNodes = useMemo(() => (
+    happy && !isolated ? spineLayout(flowNodes, happy.node_ids, view?.node_geometry) : flowNodes
+  ), [flowNodes, happy, isolated, view])
+  const { nodes: baseNodes, settled } = useTweenedNodes(spineNodes, spineKey)
   const onNodeClick = useCallback((_event, node) => {
     if (node?.id?.startsWith(ENDPOINT_LINK_PREFIX)) {
       onLink?.({ kind: 'endpoint', target: node.id.slice(ENDPOINT_LINK_PREFIX.length) })
     }
   }, [onLink])
-  const { nodes, edges, fitNodeIds } = useHappyHighlight(baseNodes, baseEdges, happy)
+  const { nodes, edges, fitNodeIds: targetFitIds } = useHappyHighlight(baseNodes, baseEdges, happy)
+  const [fitNodeIds, setFitNodeIds] = useState(null)
+  useEffect(() => {
+    if (settled) setFitNodeIds(targetFitIds)
+  }, [settled, targetFitIds])
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>

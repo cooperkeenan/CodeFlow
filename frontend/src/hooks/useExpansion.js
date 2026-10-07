@@ -3,7 +3,7 @@ import { buildBoxes } from './expansionBoxes'
 import { placeChildren } from './childPlacement'
 import { routeChainEdges } from './chainEdges'
 
-export function useExpansion(view, showSecondary, initialIds, forcedIds = null) {
+export function useExpansion(view, showSecondary, initialIds, forcedIds = null, keepPairs = null) {
   const [expanded, setExpanded] = useState(() => new Set(initialIds ?? []))
   const [lastReveal, setLastReveal] = useState(null)
 
@@ -48,6 +48,7 @@ export function useExpansion(view, showSecondary, initialIds, forcedIds = null) 
   }, [])
 
   const forcedKey = forcedIds?.join('\u0000') ?? ''
+  const keepKey = (keepPairs ?? []).map(([s, t]) => `${s} ${t}`).join('\u0000')
 
   const result = useMemo(() => {
     if (!view?.nodes) return { nodes: [], edges: [], expandableCount: 0 }
@@ -101,8 +102,10 @@ export function useExpansion(view, showSecondary, initialIds, forcedIds = null) 
       const path = e.hiddenPath ?? []
       return path.length > 0 && path.every(id => visible.has(id))
     }
+    const kept = new Set(keepKey ? keepKey.split('\u0000') : [])
+    const shown = e => showSecondary || !e.secondary || kept.has(`${e.source} ${e.target}`)
     const skeletonEdges = (view.edges ?? [])
-      .filter(e => showSecondary || !e.secondary)
+      .filter(shown)
       .filter(e => !spliced(e))
     const childOf = new Set()
     for (const node of order) {
@@ -112,7 +115,7 @@ export function useExpansion(view, showSecondary, initialIds, forcedIds = null) 
     const revealedEdges = (view.hidden_edges ?? [])
       .filter(e => visible.has(e.source) && visible.has(e.target))
       .map(e => ({ ...e, secondary: !primary(`${e.source} ${e.target}`) }))
-      .filter(e => showSecondary || !e.secondary)
+      .filter(shown)
     const seen = new Set()
     const merged = [...skeletonEdges, ...revealedEdges].filter(e => {
       if (seen.has(e.id)) return false
@@ -129,7 +132,7 @@ export function useExpansion(view, showSecondary, initialIds, forcedIds = null) 
       n => (n.data?.hiddenChildren ?? []).length > 1,
     ).length
     return { nodes, edges, expandableCount }
-  }, [view, expanded, showSecondary, forcedKey])
+  }, [view, expanded, showSecondary, forcedKey, keepKey])
 
   return { ...result, expanded, toggle, collapseAll, lastReveal }
 }

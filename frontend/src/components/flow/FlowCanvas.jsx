@@ -23,6 +23,7 @@ import CameraController from './CameraController'
 import NodeActionToolbar from './NodeActionToolbar'
 import { KIND_ACCENT, CANVAS, GRID, SURFACE_2, BORDER } from './styles'
 import { useIsolatedView } from '../../hooks/useIsolatedView'
+import { useMeasuredNodes } from '../../hooks/useMeasuredNodes'
 import { useArrowKeyPan } from '../../hooks/useArrowKeyPan'
 
 const NODE_TYPES = {
@@ -101,6 +102,8 @@ function FlowCanvasInner({
     })
   }, [revealedNodes, focusIds, adjacentIds, visibleIds, enteringIds, focusOrder])
 
+  const measuredNodes = useMeasuredNodes(stagedNodes)
+
   const stagedEdges = useMemo(() => {
     if (!focusIds && !visibleIds && !enteringIds && !suppressSelfLabels) return revealedEdges
     return revealedEdges.map(e => {
@@ -135,7 +138,7 @@ function FlowCanvasInner({
 
   return (
     <ReactFlow
-      nodes={stagedNodes}
+      nodes={measuredNodes}
       edges={stagedEdges}
       nodeTypes={NODE_TYPES}
       edgeTypes={EDGE_TYPES}
