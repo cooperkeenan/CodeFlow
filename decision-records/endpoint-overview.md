@@ -1,7 +1,7 @@
 # Endpoint Overview and API Contracts
 
 **Status:** accepted
-**Recorded against:** commit `ace1548d` (2026-10-06) on branch `feature/static-happy-path`
+**Recorded against:** commit `8ec577ee` (2026-10-07) on branch `feature/static-happy-path`
 (previously `6c275719` plus the `feature/api-contracts` work). Re-pin this line to the merge commit
 when the branch lands.
 
@@ -106,13 +106,11 @@ Two consequences worth stating:
 - **The whole-repo map still shows one node.** This changes what the *endpoint page* says about a
   group, not how the diagram draws it.
 
-**Each member also has its own diagram.** The group's contract cards are per route, and selecting a
-card loads that route's view: `GET /repomaps/{repo}/flow?entry=<id>&route=<handler_fqn>`
-(`FlowPayloadService` -> `RouteViewService` -> `shared/flow_endpoints/RouteSubgraph`). The response is
-the usual endpoint view plus `route` (`handler_fqn`, `method`, `path`) and `happy` (path node ids,
-edges, `ends_in_failure`), which the frontend highlights. It is cached in `EndpointViewCache` under
-`route:<entry_id>|<handler_fqn>`. Offline fixtures write `route_<slug(entry)>__<slug(handler)>.json`
-next to the endpoint fixture. This too changes what the endpoint page shows, not the whole-repo map.
+**The diagram is per endpoint group.** A grouped entry is split at read time into groups of at most 8
+routes (`endpoint-groups.md`); the endpoint page is group-scoped, so its contract cards are those of
+the selected group's routes, and selecting a card highlights that route's happy path inside the group
+diagram (`GET /repomaps/{repo}/flow?entry=<group id>`). There is no `route` parameter. Offline
+fixtures are one per group. This changes what the endpoint page shows, not the whole-repo map.
 
 The OpenAPI export benefits directly: `contractsToOpenApi` merges the members into one document's
 `paths` object, which is what that object is for — `entry:group:...auth` exports as three operations
@@ -126,7 +124,7 @@ under `/oauth`, `/oauth/callback` and `/token` in a single Postman import.
   `EndpointViewCache`, an in-process LRU keyed on `(user_id, repo, updated_at, "detail:<entry_id>")`
   (`api/gateway/services/endpoint_view_cache.py`), the same cache the whole-repo and per-endpoint
   flow views already share. `updated_at` in the key means a re-analysed repo invalidates every
-  cached detail for free. Route views share the cache with key `route:<entry_id>|<handler_fqn>`.
+  cached detail for free. Group views share the cache with key `group:<group_id>`.
 - **The `FlowGraph` a detail is built from** — `FlowGraphCache`, the same in-process LRU
   `EndpointDetailService` already depends on for the flow views.
 - **Source file content** — `code_files` (Neon), read through `SymbolContextResolver`, with a

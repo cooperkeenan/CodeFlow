@@ -7,7 +7,7 @@ class IslandDemoter:
 
     def demote(self, graph: SliceGraph) -> None:
         connected = self._connected(graph)
-        islands = sorted(node_id for node_id in graph.keep if node_id not in connected and node_id not in graph.pinned)
+        islands = sorted(node_id for node_id in graph.keep if node_id not in connected)
         for node_id in islands:
             if len(graph.keep) <= self._floor:
                 return

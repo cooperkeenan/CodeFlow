@@ -12,7 +12,7 @@ class SharedHelperCollapser:
 
     def collapse(self, graph: SliceGraph, exclusivity: dict[str, int]) -> None:
         groups: dict[str, list[str]] = {}
-        untouchable = graph.pinned | graph.protected
+        untouchable = graph.protected
         for node_id in sorted(graph.keep):
             owner = graph.nodes[node_id].owner_fqn
             if not owner or node_id == graph.root_id or node_id in untouchable:

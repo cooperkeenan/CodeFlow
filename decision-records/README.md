@@ -13,4 +13,6 @@ worse than no record, because it will be trusted.
 - [endpoint-overview.md](endpoint-overview.md) — why endpoint API contracts are written at read
   time, not in the analyse pipeline, and where the caches sit.
 - [happy-path.md](happy-path.md) — how each route's statically derived happy path is chosen, carried
-  through the budget stage, and drawn as a per-route diagram.
+  through the budget stage.
+- [endpoint-groups.md](endpoint-groups.md) — why endpoints are drawn as a tree of route groups, how
+  groups are split, how a group diagram highlights each route's happy path, and how it is checked.

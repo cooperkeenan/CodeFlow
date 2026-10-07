@@ -1,13 +1,13 @@
 # Static Happy Path per Route
 
 **Status:** accepted
-**Recorded against:** commit `ace1548d` (2026-10-06) on branch `feature/static-happy-path`. Re-pin
+**Recorded against:** commit `8ec577ee` (2026-10-07) on branch `feature/static-happy-path`. Re-pin
 this line to the merge commit when the branch lands.
 
 This record describes what a route's "happy path" is, why it is derived statically rather than by an
 LLM, which signals and which ranking rule choose it, how helper calls and delegation are handled,
-how it survives the whole-repo budget stage, and how the read side slices a per-route diagram around
-it. Paths live in `tracer/services/analysis/paths/`; the read side is in `shared/flow_endpoints/`.
+and how it survives the whole-repo budget stage. Paths live in `tracer/services/analysis/paths/`.
+How paths are drawn (per endpoint group, not per route) is in `endpoint-groups.md`.
 
 ---
 
@@ -108,68 +108,21 @@ both or neither end is pinned; `EffectCapper` keeps a pinned effect. Every merge
 `BudgetWorkGraph.resolve` before export, dropping consecutive duplicates and asserting every final id
 exists. A failing assert means a new merge path forgot to alias.
 
-## 7. Route view slicing (read side)
+## 7. Reading it back
 
-`RouteSubgraph.slice(graph, entry_id, handler_fqn)` returns `None` unless the member has a non-empty
-happy path.
+The stored `RouteMember.happy` is consumed at read time by the endpoint-group views (leaf diagram,
+`paths` payload with `node_ids` / `edges` / `reveal` / `missing_edges`, highlight, fixtures, the
+check). See `endpoint-groups.md`. The per-route view (`RouteSubgraph`, pins, `PathCompressor`,
+`HappyPayload`, `?route=`) was removed.
 
-- `RouteScope` picks the nodes: the path, nodes owned by the handler/head owner reachable from it
-  (cap 80), a bounded region (cap 60) behind each hop, and one hop of context.
-- `SliceAssembler` builds the working `SliceGraph` (`working`), prunes back edges preferring path
-  edges, and assembles the result (`finish`).
-- `HopCollapser` replaces each hop's region with a single `helper:<owner>` node (via
-  `SharedHelperCollapser.fold`), then **discards the inner nodes** and zeroes `folded_count`, so it
-  is a linkable node with no `+N` expansion (an earlier version expanded into ~60 nodes). It then
-  adds an edge from the helper to the next path node so the path stays connected.
-- `EndpointElider.elide(..., pins=path)` never demotes or caps pinned nodes. If the path alone
-  exceeds the budget, `PathCompressor` folds the window of interior path nodes with the fewest
-  decisions into one `run:` node. Entry views are byte-identical when no pins are given.
-- `HappyPayload.build` raises if a path node is not visible or two neighbours have no direct edge.
-
-## 8. API and payload shape
-
-`GET /repomaps/{repo}/flow?entry=<id>&route=<handler_fqn>` is routed by `FlowPayloadService`
-(`helper` first, then `entry`+`route`, then `entry`, else whole map) to `RouteViewService`, which
-loads via `FlowGraphLoader`, renders via `FlowViewRenderer`, and caches under
-`route:<entry>|<handler_fqn>` in `EndpointViewCache`. The normal endpoint view payload gains:
-
-```
-route: {handler_fqn, method, path}
-happy: {node_ids: [...], edges: [[source, target], ...], ends_in_failure: bool}
-```
-
-Fixtures: `scripts/repo_home_fixture.py` writes `route_<slug(entry)>__<slug(handler)>.json` beside the
-endpoint fixtures with the same `route` and `happy` keys.
-
-Frontend: selecting a contract card loads that route's view (single-route endpoints preselect);
-`useHappyHighlight` marks nodes and edges listed in `payload.happy` (`rf-happy`), dims the rest and
-fits the camera to them; `ends_in_failure` adds `rf-happy-failure` (amber) and a header note.
-`happyPath.js` (a frontend regex heuristic) is deleted; the backend is the only source.
-
-## 9. Checking it
-
-`scripts/happy_path_check.py <out_dir>` (needs `flow_graph.json`) slices every route and must exit 0.
-Per route it asserts: `member.happy` non-empty, starting at the entry, every id in the graph; payload
-non-empty, starts at the entry, no duplicates; every payload node present and visible (level 0);
-a direct edge and a listed payload edge between each neighbour pair; `visible_before_promote` <= 16;
-the path ends on an outcome or response effect unless `ends_in_failure`; and routes sharing a
-`(handler, wrappers)` key have identical payloads. The per-entry overview counts are information only.
-
-## 10. Known limits
+## 8. Known limits
 
 - **ANY routes.** A Django view registered for all verbs has no verb to filter on, so GET vs POST is
   resolved only by reach and the §3 tie-breaks; the chosen branch can be the wrong verb's.
 - **Delegation with no project method.** An `UpdateTicketView`-style view whose delegate has no
   project-defined get/post/... ends at the handler's own `ret:` node for its delegating `return`
   (e.g. `staff.update_ticket_view: return UpdateTicketView.as_view()(…)`), not inside the view.
-- **Budget.** The 16 budget applies before `SoleChildPromoter`, which may push a route view past it.
-  Measured on django-helpdesk (`venv/bin/python scripts/happy_path_check.py scratch_out/hp_final`):
-  48 routes, 0 failures, visible max 17 (`followup_edit`: 15 before promote), mean 5.1,
-  1 route `ends_in_failure` (`raw_details`, ends at `raise Http404`).
-- **Long paths at small viewports.** The pane frames the path at `minZoom 0.5`. A path taller or
-  wider than the pane at that zoom is partly off screen and must be panned: on django-helpdesk at a
-  ~745x742px pane, 4 of 48 routes (`BaseCreateTicketView.dispatch`, `ViewTicket.get`,
-  `followup_edit`, `view_ticket`). Lowering the zoom would make labels illegible.
+- **Budget.** Group-view budget and viewport limits are in `endpoint-groups.md` §8.
 - **Region caps.** Hop regions, reach and scope are capped (300 / 80 / 60 nodes); a very large helper
   region can mean the walker does not resume.
 - **Not a trace.** It is the most likely success line, not a runtime proof; data-dependent branches are

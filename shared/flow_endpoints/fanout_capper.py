@@ -17,15 +17,12 @@ class FanoutCapper:
                 continue
             children.sort(
                 key=lambda child: (
-                    0 if child in graph.pinned else 1,
                     _KIND_RANK.get(graph.nodes[child].kind, 9),
                     -sizes.get(child, 0),
                     child,
                 )
             )
             for child_id in children[self._max :]:
-                if child_id in graph.pinned:
-                    continue
                 graph.keep.discard(child_id)
                 graph.nodes[child_id].containers = [parent_id]
 

@@ -19,7 +19,7 @@ class EndpointRanker:
                 node_id,
             ),
         )
-        chosen = {graph.root_id} | (graph.pinned & graph.keep)
+        chosen = {graph.root_id}
         for node_id in candidates:
             if len(chosen) >= budget:
                 break
