@@ -3,7 +3,7 @@ import { buildBoxes } from './expansionBoxes'
 import { placeChildren } from './childPlacement'
 import { routeChainEdges } from './chainEdges'
 
-export function useExpansion(view, showSecondary, initialIds) {
+export function useExpansion(view, showSecondary, initialIds, forcedIds = null) {
   const [expanded, setExpanded] = useState(() => new Set(initialIds ?? []))
   const [lastReveal, setLastReveal] = useState(null)
 
@@ -47,6 +47,8 @@ export function useExpansion(view, showSecondary, initialIds) {
     setLastReveal({ fit: true })
   }, [])
 
+  const forcedKey = forcedIds?.join('\u0000') ?? ''
+
   const result = useMemo(() => {
     if (!view?.nodes) return { nodes: [], edges: [], expandableCount: 0 }
     const hiddenById = new Map((view.hidden ?? []).map(n => [n.id, n]))
@@ -66,7 +68,7 @@ export function useExpansion(view, showSecondary, initialIds) {
       }
     }
     for (const node of view.nodes) walkSole(node.id)
-    const open = new Set([...expanded, ...implicit])
+    const open = new Set([...expanded, ...implicit, ...(forcedKey ? forcedKey.split('\u0000') : [])])
     const placed = new Map()
     const order = []
     for (const node of view.nodes) {
@@ -127,7 +129,7 @@ export function useExpansion(view, showSecondary, initialIds) {
       n => (n.data?.hiddenChildren ?? []).length > 1,
     ).length
     return { nodes, edges, expandableCount }
-  }, [view, expanded, showSecondary])
+  }, [view, expanded, showSecondary, forcedKey])
 
   return { ...result, expanded, toggle, collapseAll, lastReveal }
 }

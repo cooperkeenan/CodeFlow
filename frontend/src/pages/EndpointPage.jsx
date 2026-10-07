@@ -10,6 +10,7 @@ import { endpointDetailFixtureUrl } from '../api/endpoints'
 import { flowQueryFn, flowQueryKey } from '../api/queries'
 import ContractPanel from '../components/endpoint/ContractPanel'
 import KeyMethodPanel from '../components/endpoint/KeyMethodPanel'
+import GroupChildCards from '../components/endpoint/GroupChildCards'
 import EndpointDiagramPane from '../components/endpoint/EndpointDiagramPane'
 
 const REPO_HOME_FIXTURE = '/fixture/repo_home.json'
@@ -30,6 +31,12 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
     if (contracts.length === 1) setSelectedRoute(`${contracts[0].method}:${contracts[0].path}`)
   }, [detail])
   const selectEndpoint = id => setParams({ entry: id })
+  const children = detail?.children ?? []
+  const isParent = children.length > 0
+  const onDiagramLink = link => {
+    if (link.kind === 'helper') navigate(`${flowPath}?helper=${encodeURIComponent(link.target)}`)
+    else selectEndpoint(link.target)
+  }
 
   const backToList = () => {
     if (onBack) return onBack()
@@ -59,6 +66,7 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
         <EndpointRail
           endpoints={home?.endpoints}
+          groups={home?.groups}
           open={railOpen}
           onOpen={selectEndpoint}
           onOverview={backToList}
@@ -92,13 +100,19 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
           {detail && (
             <Stack spacing={4} sx={{ p: 3 }}>
               {description && <Typography color="text.secondary">{description}</Typography>}
-              <ContractPanel
-                contracts={contracts}
-                title={detail.title}
-                selectedKey={selectedRoute}
-                onSelect={setSelectedRoute}
-              />
-              <KeyMethodPanel methods={detail.methods} sources={detail.sources} />
+              {isParent ? (
+                <GroupChildCards groups={children} onOpen={selectEndpoint} />
+              ) : (
+                <>
+                  <ContractPanel
+                    contracts={contracts}
+                    title={detail.title}
+                    selectedKey={selectedRoute}
+                    onSelect={setSelectedRoute}
+                  />
+                  <KeyMethodPanel methods={detail.methods} sources={detail.sources} />
+                </>
+              )}
             </Stack>
           )}
         </Box>
@@ -119,7 +133,8 @@ export default function EndpointPage({ repo, fixture, flowPath = '/flow', onBack
               fixture={fixture}
               entry={entry}
               onFullScreen={openDiagram}
-              route={selectedContract?.handler_fqn ?? ''}
+              contract={isParent ? null : selectedContract}
+              onLink={onDiagramLink}
             />
           </Box>
         )}

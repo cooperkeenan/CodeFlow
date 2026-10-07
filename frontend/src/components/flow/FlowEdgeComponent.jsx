@@ -8,7 +8,7 @@ const FLOW = EDGE.flow
 const HAPPY = '#C6F135'
 
 export default function FlowEdgeComponent({
-  id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, label,
+  id, source, target, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, label,
 }) {
   const d = data ?? {}
   const stitch = d.kind === 'stitch' || d.routed === 'gutter'
@@ -25,6 +25,7 @@ export default function FlowEdgeComponent({
   const opacity = d.happy ? 1 : d.muted ? base * 0.18 : d.secondary ? base * 0.25 : base
   const markerId = `arrowhead-${id}`
   const markerSize = Math.max(5, Math.round(7 * scale))
+  const marks = d.happy ? { 'data-happy': 'true', 'data-source': source, 'data-target': target } : {}
   const canDraw = d.justRevealed && !stitch && !d.dashed
 
   return (
@@ -49,6 +50,7 @@ export default function FlowEdgeComponent({
             d={path}
             fill="none"
             className="react-flow__edge-path rf-reveal-edge"
+            {...marks}
             markerEnd={`url(#${markerId})`}
             pathLength={100}
             style={{ stroke, strokeWidth: width, opacity, animationDelay: `${d.revealEdgeDelayMs ?? 0}ms` }}
@@ -63,6 +65,7 @@ export default function FlowEdgeComponent({
           strokeWidth={width}
           markerEnd={`url(#${markerId})`}
           pathLength="1"
+          {...marks}
           style={{ opacity, strokeDasharray: 1, strokeDashoffset: 1, animation: 'drawIn 700ms ease forwards' }}
         />
       ) : (
@@ -70,6 +73,7 @@ export default function FlowEdgeComponent({
           id={id}
           path={path}
           markerEnd={`url(#${markerId})`}
+          {...marks}
           style={{ stroke, strokeWidth: width, strokeDasharray: dashArray, opacity }}
         />
       )}

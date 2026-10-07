@@ -59,7 +59,7 @@ function FlowCanvasInner({
   nodes, edges, selectedId, isolatedId, onPaneClick, onNodeClick, revealTrigger, repo,
   focusIds = null, adjacentIds = null, packetIds = null, stepKey = 0, children = null,
   visibleIds = null, enteringIds = null, suppressSelfLabels = false, chrome = DEFAULT_CHROME,
-  fitOptions = FIT_OPTIONS, fitNodeIds = null,
+  fitOptions = FIT_OPTIONS, fitNodeIds = null, onFitPartial = null,
   editMode = false, onInit = undefined, onConnect = undefined, onNodesDelete = undefined,
   onEdgesDelete = undefined, onNodeDragStop = undefined, onSelectionChange = undefined,
 }) {
@@ -163,7 +163,7 @@ function FlowCanvasInner({
       className={editMode ? 'edit-mode' : undefined}
       proOptions={{ hideAttribution: true }}
     >
-      <CameraController revealTrigger={revealTrigger} isolateCenter={isolateCenter} fitNodeIds={fitNodeIds} />
+      <CameraController revealTrigger={revealTrigger} isolateCenter={isolateCenter} fitNodeIds={fitNodeIds} onFitPartial={onFitPartial} />
       <NodeActionToolbar
         nodeId={picked}
         isolated={picked === isolatedId}

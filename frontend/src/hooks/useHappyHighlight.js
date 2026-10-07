@@ -18,7 +18,7 @@ export function useHappyHighlight(baseNodes, baseEdges, happy) {
     if (!edgeKeys) return baseEdges
     return baseEdges.map(e => {
       const on = edgeKeys.has(`${e.source}\u0000${e.target}`)
-      return { ...e, data: { ...e.data, happy: on, muted: !on } }
+      return { ...e, className: on ? 'rf-happy' : e.className, data: { ...e.data, happy: on, muted: !on } }
     })
   }, [baseEdges, edgeKeys])
   const fitNodeIds = useMemo(() => (happy ? [...happy.node_ids] : null), [happy])

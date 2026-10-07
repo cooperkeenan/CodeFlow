@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Box, Button, Typography } from '@mui/material'
-import { endpointFixtureUrl, routeFixtureUrl } from '../../api/flow'
+import { endpointFixtureUrl } from '../../api/flow'
 import { useFlowGraph } from '../../hooks/useFlowGraph'
 import { useExpansion } from '../../hooks/useExpansion'
 import { useGraphTransform } from '../../hooks/useGraphTransform'
@@ -13,21 +13,37 @@ const MONO = "'IBM Plex Mono', monospace"
 const FIT_OPTIONS = { padding: 0.18, minZoom: 0.5, maxZoom: 1 }
 const NOTE = { fontFamily: MONO, fontSize: 12, color: 'text.disabled', p: 2 }
 
-export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen, route = '' }) {
-  const fixtureUrl = fixture && entry
-    ? (route ? routeFixtureUrl(entry, route) : endpointFixtureUrl(entry))
-    : null
-  const { payload, loading, error } = useFlowGraph(repo, fixtureUrl, entry, null, route || null)
+const ENDPOINT_LINK_PREFIX = 'endlink:'
+const NO_IDS = []
+
+export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen, contract = null, onLink = null }) {
+  const fixtureUrl = fixture && entry ? endpointFixtureUrl(entry) : null
+  const { payload, loading, error } = useFlowGraph(repo, fixtureUrl, entry, null)
   const [isolated, setIsolated] = useState(null)
+  const [partial, setPartial] = useState(null)
 
   const view = payload?.view ?? payload
   const links = payload?.links ?? null
-  const expansion = useExpansion(view, false, [])
+  const happy = useMemo(() => (
+    contract
+      ? (payload?.paths ?? []).find(path => (
+        path.method === contract.method
+        && path.path === contract.path
+        && path.handler_fqn === contract.handler_fqn
+      )) ?? null
+      : null
+  ), [payload, contract])
+  const forcedIds = happy?.reveal?.length ? happy.reveal : NO_IDS
+  const expansion = useExpansion(view, false, [], forcedIds)
   const onIsolate = useCallback(id => setIsolated(prev => (prev === id ? null : id)), [])
   const { nodes: baseNodes, edges: baseEdges } = useGraphTransform(
-    expansion, expansion.toggle, onIsolate, view?.node_geometry, links, null
+    expansion, expansion.toggle, onIsolate, view?.node_geometry, links, onLink
   )
-  const happy = route ? payload?.happy ?? null : null
+  const onNodeClick = useCallback((_event, node) => {
+    if (node?.id?.startsWith(ENDPOINT_LINK_PREFIX)) {
+      onLink?.({ kind: 'endpoint', target: node.id.slice(ENDPOINT_LINK_PREFIX.length) })
+    }
+  }, [onLink])
   const { nodes, edges, fitNodeIds } = useHappyHighlight(baseNodes, baseEdges, happy)
 
   return (
@@ -37,6 +53,11 @@ export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen
         {happy?.ends_in_failure && (
           <Typography sx={{ fontFamily: MONO, fontSize: 12, color: '#F5A524' }}>
             no success route found statically
+          </Typography>
+        )}
+        {partial && (
+          <Typography data-testid="path-partial" sx={{ fontFamily: MONO, fontSize: 12, color: 'text.secondary' }}>
+            path continues — showing {partial.shown} of {partial.total} steps
           </Typography>
         )}
         <Box sx={{ flexGrow: 1 }} />
@@ -52,6 +73,8 @@ export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen
       </Box>
       <Box
         data-testid="endpoint-diagram"
+        data-happy-ids={happy ? JSON.stringify(happy.node_ids) : undefined}
+        data-happy-edges={happy ? JSON.stringify(happy.edges) : undefined}
         sx={{
           position: 'relative',
           flex: 1,
@@ -71,11 +94,13 @@ export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen
             edges={edges}
             selectedId={isolated}
             isolatedId={isolated}
+            onNodeClick={onNodeClick}
             onPaneClick={() => setIsolated(null)}
             revealTrigger={expansion.lastReveal}
             repo={repo}
             fitOptions={FIT_OPTIONS}
             fitNodeIds={fitNodeIds}
+            onFitPartial={setPartial}
           />
         )}
       </Box>

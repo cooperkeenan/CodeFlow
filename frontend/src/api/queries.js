@@ -4,16 +4,15 @@ import { getDiagramEdits } from './diagrams'
 import { explainNode } from './explain'
 import { getEndpointDetail } from './endpoints'
 
-export const flowQueryKey = (repo, fixtureUrl, entry, helper, route) => [
+export const flowQueryKey = (repo, fixtureUrl, entry, helper) => [
   'flow',
   repo,
   fixtureUrl ?? null,
   helper ? `helper:${helper}` : entry ?? 'full',
-  route ?? null,
 ]
 
-export const flowQueryFn = (repo, fixtureUrl, entry, helper, route) => () =>
-  fixtureUrl ? fetch(fixtureUrl).then(res => res.json()) : getFlowGraph(repo, { entry, helper, route })
+export const flowQueryFn = (repo, fixtureUrl, entry, helper) => () =>
+  fixtureUrl ? fetch(fixtureUrl).then(res => res.json()) : getFlowGraph(repo, { entry, helper })
 
 export const repoHomeQueryKey = (repo, fixtureUrl) => ['repo-home', repo, fixtureUrl ?? null]
 

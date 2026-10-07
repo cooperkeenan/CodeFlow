@@ -10,7 +10,7 @@ const SPREAD_MARGIN = 60
 
 function edgeClass(edge, isolatedId) {
   if (isolatedId && edge.source !== isolatedId && edge.target !== isolatedId) return 'rf-dim'
-  return undefined
+  return edge.className
 }
 
 function scaleFrom(node, rect) {

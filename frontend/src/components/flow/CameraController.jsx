@@ -23,6 +23,20 @@ function boundsOf(nodes) {
   return { minX, minY, maxX, maxY }
 }
 
+function sizeOf(b) {
+  return { w: b.maxX - b.minX + FOCUS_PADDING_PX, h: b.maxY - b.minY + FOCUS_PADDING_PX }
+}
+
+function fittingPrefix(nodes, width, height) {
+  let count = 1
+  while (count < nodes.length) {
+    const { w, h } = sizeOf(boundsOf(nodes.slice(0, count + 1)))
+    if (w * FOCUS_MIN_ZOOM > width || h * FOCUS_MIN_ZOOM > height) break
+    count += 1
+  }
+  return count
+}
+
 function fitOffset(min, max, viewportSize, zoom, current) {
   const size = (max - min) * zoom
   if (size <= viewportSize) {
@@ -42,7 +56,7 @@ function makeInterpolate(matchFrame) {
   }
 }
 
-export default function CameraController({ revealTrigger, isolateCenter = null, fitNodeIds = null }) {
+export default function CameraController({ revealTrigger, isolateCenter = null, fitNodeIds = null, onFitPartial = null }) {
   const { getNode, getViewport, setViewport, fitView } = useReactFlow()
   const width = useStore(s => s.width)
   const height = useStore(s => s.height)
@@ -61,28 +75,28 @@ export default function CameraController({ revealTrigger, isolateCenter = null, 
     previousFitKey.current = fitKey
     if (!fitKey && previous === null) return undefined
     const frame = requestAnimationFrame(() => {
+      onFitPartial?.(null)
       if (!fitKey) return fitView(FIT_OPTIONS)
       const focused = fitKey.split('|').map(getNode).filter(Boolean)
       if (!focused.length || !width || !height) return
-      const b = boundsOf(focused)
-      const zoom = Math.min(
-        FOCUS_MAX_ZOOM,
-        Math.max(FOCUS_MIN_ZOOM, Math.min(
-          width / (b.maxX - b.minX + FOCUS_PADDING_PX),
-          height / (b.maxY - b.minY + FOCUS_PADDING_PX),
-        )),
-      )
+      const all = sizeOf(boundsOf(focused))
+      const fits = Math.min(width / all.w, height / all.h) >= FOCUS_MIN_ZOOM
+      const shown = fits ? focused : focused.slice(0, fittingPrefix(focused, width, height))
+      onFitPartial?.(fits ? null : { shown: shown.length, total: focused.length })
+      const b = boundsOf(shown)
+      const { w, h } = sizeOf(b)
+      const zoom = fits
+        ? Math.min(FOCUS_MAX_ZOOM, Math.max(FOCUS_MIN_ZOOM, Math.min(width / w, height / h)))
+        : FOCUS_MIN_ZOOM
       setViewport(
-        {
-          x: width / 2 - ((b.minX + b.maxX) / 2) * zoom,
-          y: height / 2 - ((b.minY + b.maxY) / 2) * zoom,
-          zoom,
-        },
+        fits
+          ? { x: width / 2 - ((b.minX + b.maxX) / 2) * zoom, y: height / 2 - ((b.minY + b.maxY) / 2) * zoom, zoom }
+          : { x: FOCUS_PADDING_PX / 2 - b.minX * zoom, y: FOCUS_PADDING_PX / 2 - b.minY * zoom, zoom },
         { duration: DURATION },
       )
     })
     return () => cancelAnimationFrame(frame)
-  }, [fitKey, fitView, getNode, setViewport, width, height])
+  }, [fitKey, fitView, getNode, setViewport, width, height, onFitPartial])
 
   useEffect(() => {
     if (!revealTrigger) return
