@@ -46,8 +46,7 @@ class FlowSession:
         self._page.goto(self._url, wait_until="networkidle")
         self._page.wait_for_selector(self._wait_selector, timeout=30000)
         self._endpoint = EndpointProbe(self._page)
-        fixtures = self._frontend_dir / "public" / "fixture" / "endpoints"
-        self.route = RouteProbe(self._page, fixtures)
+        self.route = RouteProbe(self._page)
         return self
 
     def __exit__(self, *_: object) -> None:

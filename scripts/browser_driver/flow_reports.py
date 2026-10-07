@@ -84,12 +84,21 @@ def print_sidebar(session: FlowSession) -> None:
 
 def print_happy(session: FlowSession) -> None:
     info = session.route.happy()
+    expected = len(info["expected"])
+    lit = len(info["happy"])
+    on_screen = sum(1 for node in info["happy"] if node["onScreen"])
     for node in info["happy"]:
         print(f"  happy node {node['id']}  on_screen={node['onScreen']}  height={node['height']}px")
     source = "class/data-happy" if info["edgesByClass"] else "stroke-width heuristic"
-    for edge_id in info["happyEdges"]:
-        print(f"  happy edge {edge_id}  ({source})")
-    print(f"  non-happy visible nodes: {info['other']}")
-    on_screen = sum(1 for node in info["happy"] if node["onScreen"])
-    print(f"happy: {len(info['happy'])} nodes, {on_screen} on screen")
-
+    print(f"  happy edges ({source}): {len(info['happyEdges'])}; non-happy visible nodes: {info['other']}")
+    print(f"happy: {expected} expected, {lit} highlighted, {on_screen} on screen, {len(info['happyEdges'])}/{len(info['expectedEdges'])} edges")
+    if not info["hasHost"]:
+        print("FAIL no [data-testid=endpoint-diagram] element")
+    for node_id in info["missing"]:
+        print(f"FAIL missing (not rendered): {node_id}")
+    for node_id in info["unhighlighted"]:
+        print(f"FAIL unhighlighted: {node_id}")
+    for node_id in info["offScreen"]:
+        print(f"FAIL off-screen: {node_id}")
+    if len(info["happyEdges"]) != len(info["expectedEdges"]):
+        print(f"FAIL edge mismatch: {len(info['happyEdges'])} highlighted vs {len(info['expectedEdges'])} expected")
