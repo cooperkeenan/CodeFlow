@@ -55,7 +55,15 @@ class EndpointDetailFixtureWriter:
         self._routes = EntryRoutes(self._route_label)
         self._handler_name = HandlerName()
 
-    def write(self, graph: FlowGraph, node: FlowNode, entry_id: str, target: Path) -> None:
+    def write(
+        self,
+        graph: FlowGraph,
+        node: FlowNode,
+        entry_id: str,
+        target: Path,
+        routes: list[tuple[str, str, str]] | None = None,
+        extra: dict | None = None,
+    ) -> None:
         symbol_context = graph.meta.get("symbol_context", {})
         method_fqns = self._key_methods.select(graph, entry_id, symbol_context)
         sources = self._sources_for(method_fqns, symbol_context)
@@ -75,9 +83,10 @@ class EndpointDetailFixtureWriter:
                 route.handler_fqn or default_fqn,
             )
             for route in self._routes.of(node)
+            if routes is None or (route.handler_fqn, route.method, route.path) in routes
         ]
         detail = self._builder.build(node, contracts, method_fqns, symbol_context, sources)
-        payload = detail.model_dump(mode="json")
+        payload = {**detail.model_dump(mode="json"), **(extra or {})}
         target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     def _named(self, contract: EndpointContract, handler_fqn: str) -> EndpointContract:
