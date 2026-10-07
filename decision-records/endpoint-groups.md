@@ -81,9 +81,10 @@ those into links to the child diagram. `meta.paths` is empty.
   (`repo_home_fixture.py` includes `groups`); per-route `route_*.json` fixtures no longer exist.
 - Frontend: a group tree rail (`GroupTree`), parent pages with child cards (`GroupChildCards`), and
   the leaf diagram pane. Selecting a contract card highlights that route: its `reveal` ids are
-  force-expanded, then its `node_ids` / `edges` get `rf-happy`, the rest dims. Selection re-lays the
-  diagram out with the path as a vertical spine (client-side post-pass); the pre-selection layout is
-  the server's.
+  force-expanded, then its `node_ids` / `edges` get `rf-happy`, the rest dims. The layout is never
+  changed by selection: the camera frames the path (or its longest legible prefix, from the entry) and
+  the user pans for the rest. A client-side "spine" re-layout was built and removed at the user's
+  request — they preferred a stable diagram they can move around.
 
 ## 7. Checking it
 
@@ -99,8 +100,9 @@ graphs before and after and requiring byte-identical JSON.
 
 ## 8. Known limits
 
-- A long path can still exceed the pane vertically even as a spine; the pane frames a prefix and shows
-  a note rather than shrinking below legible zoom.
+- A long path usually exceeds the pane: paths zigzag across the group layout (up to ~3,800px). The pane
+  frames the longest prefix from the entry at the legible 0.5 floor and shows "path continues — showing
+  N of M steps"; it never shrinks below legible zoom. `flow_agent happy` reports the rest as off-screen.
 - "Other" chunk names are only the first and last pooled segment; they say little about the content.
 - Sub-group names are the static literal segment; there is no LLM-written group label.
 - A bucket of more than 8 routes with no separable segment is an `overflow` leaf over the cap.
