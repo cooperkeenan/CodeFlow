@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 from shared.flow_endpoints.back_edge_pruner import BackEdgePruner
 from shared.flow_endpoints.slice_graph import SliceGraph
 from shared.flow_endpoints.terminal_closer import TerminalCloser
@@ -16,14 +18,24 @@ class SliceAssembler:
         nodes_by_id: dict[str, FlowNode],
         member_ids: set[str],
         root_id: str,
-        path: list[str] | None = None,
+        pairs: set[tuple[str, str]] | None = None,
     ) -> SliceGraph:
         return SliceGraph(
             {node_id: self._scoped(nodes_by_id[node_id], member_ids) for node_id in member_ids},
-            self._edges(graph.edges, member_ids, root_id, path),
+            self._edges(graph.edges, member_ids, root_id, pairs),
             root_id,
             self._external(graph, member_ids),
         )
+
+    def working_for_path(
+        self,
+        graph: FlowGraph,
+        nodes_by_id: dict[str, FlowNode],
+        member_ids: set[str],
+        root_id: str,
+        path: list[str],
+    ) -> SliceGraph:
+        return self.working(graph, nodes_by_id, member_ids, root_id, set(pairwise(path)))
 
     def closer(self, graph: FlowGraph, nodes_by_id: dict[str, FlowNode]) -> TerminalCloser:
         return TerminalCloser(nodes_by_id, self._entry_ids(graph))
@@ -47,14 +59,18 @@ class SliceAssembler:
         )
 
     def _edges(
-        self, edges: list[FlowEdge], member_ids: set[str], root_id: str, path: list[str] | None
+        self,
+        edges: list[FlowEdge],
+        member_ids: set[str],
+        root_id: str,
+        pairs: set[tuple[str, str]] | None,
     ) -> list[FlowEdge]:
         inside = [
             edge.model_copy(deep=True)
             for edge in edges
             if edge.source in member_ids and edge.target in member_ids
         ]
-        return self._pruner.prune(member_ids, inside, root_id, path)
+        return self._pruner.prune(member_ids, inside, root_id, pairs)
 
     def _external(self, graph: FlowGraph, member_ids: set[str]) -> dict[str, list[str]]:
         outside: dict[str, list[str]] = {}

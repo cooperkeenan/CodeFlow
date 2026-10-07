@@ -10,19 +10,31 @@ class HopCollapser:
         self._helpers = helpers
 
     def collapse(
-        self, graph: SliceGraph, regions: dict[str, list[str]], path: list[str], hops: list[str]
+        self,
+        graph: SliceGraph,
+        regions: dict[str, list[str]],
+        routes: list[tuple[list[str], list[str]]],
     ) -> None:
-        for hop in hops:
-            region = regions.get(hop)
-            if not region or hop not in graph.nodes or hop not in graph.keep:
-                continue
-            owner = graph.nodes[hop].owner_fqn
-            if not owner or f"{HELPER_PREFIX}{owner}" in graph.nodes:
-                continue
-            rest = sorted(m for m in region if m != hop and m in graph.keep)
+        for path, hops in routes:
+            for hop in hops:
+                if self._fold(graph, regions, hop):
+                    self._resume(graph, path, hop)
+
+    def _fold(self, graph: SliceGraph, regions: dict[str, list[str]], hop: str) -> bool:
+        region = regions.get(hop)
+        if not region or hop not in graph.nodes or hop not in graph.keep:
+            return False
+        owner = graph.nodes[hop].owner_fqn
+        if not owner:
+            return False
+        host_id = f"{HELPER_PREFIX}{owner}"
+        rest = sorted(m for m in region if m != hop and m in graph.keep)
+        if host_id in graph.nodes:
+            graph.absorb({hop, *rest, host_id}, host_id)
+        else:
             self._helpers.fold(graph, owner, [hop] + rest)
-            self._discard_inner(graph, f"{HELPER_PREFIX}{owner}")
-            self._resume(graph, path, hop)
+        self._discard_inner(graph, host_id)
+        return True
 
     def _discard_inner(self, graph: SliceGraph, host_id: str) -> None:
         inner = {i for i, n in graph.nodes.items() if host_id in n.containers}

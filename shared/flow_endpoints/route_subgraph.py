@@ -37,9 +37,11 @@ class RouteSubgraph:
             return None
         path = member.happy.node_ids
         scoped = self._scope.of(nodes_by_id, graph.edges, root, member)
-        working = self._assembler.working(graph, nodes_by_id, scoped.ids, entry_id, path)
+        working = self._assembler.working_for_path(graph, nodes_by_id, scoped.ids, entry_id, path)
         self._hops.collapse(
-            working, scoped.regions, path, [h for h in path if h in member.happy.hops]
+            working,
+            scoped.regions,
+            [(path, [h for h in path if h in member.happy.hops])],
         )
         self._elider.elide(
             working,

@@ -7,9 +7,9 @@ class BackEdgePruner:
         node_ids: set[str],
         edges: list[FlowEdge],
         root_id: str,
-        path: list[str] | None = None,
+        pairs: set[tuple[str, str]] | None = None,
     ) -> list[FlowEdge]:
-        pairs = set(zip(path or [], (path or [])[1:]))
+        pairs = pairs or set()
         ordered = sorted(
             edges,
             key=lambda e: (

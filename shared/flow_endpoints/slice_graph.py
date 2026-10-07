@@ -15,6 +15,7 @@ class SliceGraph:
         self.external = external or {}
         self.keep: set[str] = set(nodes)
         self.pinned: set[str] = set()
+        self.protected: set[str] = set()
         self.pins: list[str] = []
         self.aliases: dict[str, str] = {}
         self.visible_before_promote = 0
@@ -30,6 +31,21 @@ class SliceGraph:
         self.pins = list(pins)
         resolved = {self.resolve(pin) for pin in pins}
         self.pinned = {node_id for node_id in resolved if node_id in self.nodes}
+
+    def set_protected(self, ids: list[str]) -> None:
+        resolved = {self.resolve(node_id) for node_id in ids}
+        self.protected = {node_id for node_id in resolved if node_id in self.nodes}
+
+    def resolve_path(self, ids: list[str]) -> list[str]:
+        out: list[str] = []
+        for node_id in (self.resolve(i) for i in ids):
+            if node_id not in self.nodes:
+                continue
+            if node_id in out:
+                del out[out.index(node_id) + 1 :]
+            else:
+                out.append(node_id)
+        return out
 
     def path(self) -> list[str]:
         resolved = [self.resolve(pin) for pin in self.pins]
@@ -80,6 +96,8 @@ class SliceGraph:
             self.aliases[member_id] = host_id
         if inner & self.pinned:
             self.pinned = (self.pinned - inner) | {host_id}
+        if inner & self.protected:
+            self.protected = (self.protected - inner) | {host_id}
         for member_id in sorted(inner):
             self.nodes[member_id].containers = [host_id]
             self.keep.discard(member_id)
