@@ -60,7 +60,7 @@ class GroupSubgraph:
         )
         title = self._meta.title(group)
         view_root = working.nodes[root.id]
-        working.nodes[root.id] = view_root.model_copy(update={"label": title, "llm_label": title})
+        working.nodes[root.id] = view_root.model_copy(update=self._meta.root_fields(group, view_root))
         meta = {
             "entry_id": root.id,
             "entry_label": title,

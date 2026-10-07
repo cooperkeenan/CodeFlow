@@ -5,8 +5,6 @@ from shared.flow_endpoints.slice_graph import SliceGraph
 from shared.flow_endpoints.terminal_closer import LINK_PREFIX
 from shared.models.flow_graph import FlowEdge, FlowGraph, FlowNode
 
-_PREVIEW_PATHS = 3
-
 
 class GroupOverview:
     def __init__(self, assembler: SliceAssembler, meta: GroupMeta) -> None:
@@ -24,8 +22,7 @@ class GroupOverview:
         root = entry.model_copy(
             deep=True,
             update={
-                "label": title,
-                "llm_label": title,
+                **self._meta.root_fields(group, entry),
                 "lane": ENDPOINT_LANE_ID,
                 "level": 0,
                 "members": [],
@@ -47,11 +44,10 @@ class GroupOverview:
         return self._assembler.finish(graph, working, root, meta)
 
     def _child(self, child: EndpointGroup) -> FlowNode:
-        paths = sorted({route.path for route in child.routes})[:_PREVIEW_PATHS]
         return FlowNode(
             id=f"{LINK_PREFIX}{child.id}",
             kind="step",
             lane=ENDPOINT_LANE_ID,
             label=self._meta.title(child),
-            one_liner=", ".join(paths),
+            one_liner=self._meta.preview(child),
         )
