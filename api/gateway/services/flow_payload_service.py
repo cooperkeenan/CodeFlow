@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from gateway.services.endpoint_view_service import EndpointViewService
+from gateway.services.group_view_service import GroupViewService
 from gateway.services.repo_map_service import RepoMapService
-from gateway.services.route_view_service import RouteViewService
 
 
 class FlowPayloadService:
@@ -9,11 +9,11 @@ class FlowPayloadService:
         self,
         repo_maps: RepoMapService,
         endpoints: EndpointViewService,
-        routes: RouteViewService,
+        groups: GroupViewService,
     ) -> None:
         self._repo_maps = repo_maps
         self._endpoints = endpoints
-        self._routes = routes
+        self._groups = groups
 
     async def payload(
         self,
@@ -21,19 +21,16 @@ class FlowPayloadService:
         repo: str,
         entry: str | None,
         helper: str | None,
-        route: str | None,
     ) -> dict:
         if helper:
             view = await self._endpoints.helper_view(user_id, repo, helper)
             if view is None:
                 raise HTTPException(status_code=404, detail="Helper not found")
             return view
-        if entry and route:
-            view = await self._routes.view(user_id, repo, entry, route)
-            if view is None:
-                raise HTTPException(status_code=404, detail="Route not found")
-            return view
         if entry:
+            group_view = await self._groups.view(user_id, repo, entry)
+            if group_view is not None:
+                return group_view
             view = await self._endpoints.view(user_id, repo, entry)
             if view is None:
                 raise HTTPException(status_code=404, detail="Endpoint not found")

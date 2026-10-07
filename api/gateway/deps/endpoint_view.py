@@ -17,15 +17,21 @@ from gateway.services.flow_graph_cache import FlowGraphCache
 from gateway.services.flow_graph_loader import FlowGraphLoader
 from gateway.services.flow_payload_service import FlowPayloadService
 from gateway.services.flow_view_renderer import FlowViewRenderer
+from gateway.services.group_detail_scope import GroupDetailScope
+from gateway.services.group_summaries import GroupSummaries
+from gateway.services.group_view_service import GroupViewService
 from gateway.services.repo_map_service import RepoMapService
-from gateway.services.route_view_service import RouteViewService
 from gateway.services.symbol_context_resolver import SymbolContextResolver
 from shared.explanation_store.explanation_store import ExplanationStore
 from shared.flow_endpoints.endpoint_catalog import EndpointCatalog
 from shared.flow_endpoints.endpoint_detail_builder import EndpointDetailBuilder
 from shared.flow_endpoints.endpoint_key_methods import KeyMethodSelector
 from shared.flow_endpoints.endpoint_subgraph import EndpointSubgraph
-from shared.flow_endpoints.factory import build_route_subgraph
+from shared.flow_endpoints.factory import (
+    build_group_overview,
+    build_group_subgraph,
+    build_group_tree,
+)
 from shared.flow_endpoints.link_resolver import LinkResolver
 from shared.flow_endpoints.owner_subgraph import OwnerSubgraph
 from shared.flow_endpoints.route_label import RouteLabel
@@ -58,23 +64,32 @@ def get_endpoint_view_service(
         subgraph,
         OwnerSubgraph(subgraph),
         view_cache,
+        build_group_tree(),
+        GroupSummaries(),
     )
 
 
-def get_route_view_service(
+def get_group_view_service(
     loader: FlowGraphLoader = Depends(get_flow_graph_loader),
     renderer: FlowViewRenderer = Depends(get_flow_view_renderer),
     view_cache: EndpointViewCache = Depends(get_endpoint_view_cache),
-) -> RouteViewService:
-    return RouteViewService(loader, renderer, build_route_subgraph(), view_cache)
+) -> GroupViewService:
+    return GroupViewService(
+        loader,
+        renderer,
+        build_group_tree(),
+        build_group_subgraph(),
+        build_group_overview(),
+        view_cache,
+    )
 
 
 def get_flow_payload_service(
     repo_map_service: RepoMapService = Depends(get_repo_map_service),
     endpoints: EndpointViewService = Depends(get_endpoint_view_service),
-    routes: RouteViewService = Depends(get_route_view_service),
+    groups: GroupViewService = Depends(get_group_view_service),
 ) -> FlowPayloadService:
-    return FlowPayloadService(repo_map_service, endpoints, routes)
+    return FlowPayloadService(repo_map_service, endpoints, groups)
 
 
 def get_endpoint_detail_service(
@@ -94,4 +109,6 @@ def get_endpoint_detail_service(
         KeyMethodSelector(EndpointSubgraph()),
         RouteLabel(),
         EndpointDetailBuilder(RouteLabel()),
+        build_group_tree(),
+        GroupDetailScope(GroupSummaries()),
     )

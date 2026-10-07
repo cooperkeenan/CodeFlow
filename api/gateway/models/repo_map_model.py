@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from shared.models.endpoint_group_summary import EndpointGroupSummary
 from shared.models.profiler_response import ProfileResponse
 
 
@@ -58,6 +59,7 @@ class RepoHomeResponse(BaseModel):
     description: str
     endpoints: list[EndpointSummary]
     entry_points: list[EndpointSummary]
+    groups: list[EndpointGroupSummary] = []
 
 
 class DiagramEditsResponse(BaseModel):

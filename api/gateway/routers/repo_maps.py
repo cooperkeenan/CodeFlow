@@ -61,13 +61,12 @@ async def get_repo_flow(
     response: Response,
     entry: str | None = None,
     helper: str | None = None,
-    route: str | None = None,
     user: AuthUser = Depends(get_current_user),
     flows: FlowPayloadService = Depends(get_flow_payload_service),
 ) -> dict | Response:
     if entry and helper:
         raise HTTPException(status_code=400, detail="Provide either entry or helper, not both")
-    view = await flows.payload(user.id, repo, entry, helper, route)
+    view = await flows.payload(user.id, repo, entry, helper)
     etag = ETag(view)
     if etag.not_modified(request):
         return Response(status_code=304)

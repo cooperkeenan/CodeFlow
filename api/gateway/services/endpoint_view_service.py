@@ -2,8 +2,10 @@ from gateway.models.repo_map_model import EndpointSummary, RepoHomeResponse
 from gateway.services.endpoint_view_cache import EndpointViewCache
 from gateway.services.flow_graph_loader import FlowGraphLoader
 from gateway.services.flow_view_renderer import FlowViewRenderer
+from gateway.services.group_summaries import GroupSummaries
 
 from shared.flow_endpoints.endpoint_catalog import EndpointCatalog
+from shared.flow_endpoints.endpoint_group_tree import EndpointGroupTree
 from shared.flow_endpoints.endpoint_items import EndpointItem
 from shared.flow_endpoints.endpoint_subgraph import EndpointSubgraph
 from shared.flow_endpoints.owner_subgraph import OwnerSubgraph
@@ -20,6 +22,8 @@ class EndpointViewService:
         subgraph: EndpointSubgraph,
         owner_subgraph: OwnerSubgraph,
         view_cache: EndpointViewCache,
+        group_tree: EndpointGroupTree,
+        group_summaries: GroupSummaries,
     ) -> None:
         self._loader = loader
         self._renderer = renderer
@@ -27,6 +31,8 @@ class EndpointViewService:
         self._subgraph = subgraph
         self._owner_subgraph = owner_subgraph
         self._view_cache = view_cache
+        self._group_tree = group_tree
+        self._group_summaries = group_summaries
 
     async def home(self, user_id: int, repo: str) -> RepoHomeResponse | None:
         resolved = await self._loader.load(user_id, repo)
@@ -43,6 +49,7 @@ class EndpointViewService:
             description=graph.page_title,
             endpoints=[self._summary(i) for i in items if i.is_route],
             entry_points=[self._summary(i) for i in items if not i.is_route],
+            groups=self._group_summaries.all(self._group_tree.build(graph)),
         )
         self._view_cache.put(
             user_id, repo, updated_at, _HOME_VIEW_KEY, response.model_dump(mode="json")

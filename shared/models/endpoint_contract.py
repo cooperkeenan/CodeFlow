@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from shared.models.endpoint_group_summary import EndpointGroupSummary
+
 
 class ContractParam(BaseModel):
     name: str
@@ -50,3 +52,5 @@ class EndpointDetail(BaseModel):
     contracts: list[EndpointContract] = Field(default_factory=list)
     methods: list[KeyMethod] = Field(default_factory=list)
     sources: dict[str, str] = Field(default_factory=dict)
+    group: EndpointGroupSummary | None = None
+    children: list[EndpointGroupSummary] = Field(default_factory=list)
