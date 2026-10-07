@@ -17,7 +17,7 @@ class HopCollapser:
     ) -> None:
         for path, hops in routes:
             for hop in hops:
-                if self._fold(graph, regions, hop):
+                if self._fold(graph, regions, hop) or hop in graph.aliases:
                     self._resume(graph, path, hop)
 
     def _fold(self, graph: SliceGraph, regions: dict[str, list[str]], hop: str) -> bool:

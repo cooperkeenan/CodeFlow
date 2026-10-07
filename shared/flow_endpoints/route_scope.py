@@ -15,16 +15,22 @@ class RouteScopeResult:
 
 class RouteScope:
     def of(
-        self, nodes: dict[str, FlowNode], edges: list[FlowEdge], root: FlowNode, member: RouteMember
+        self,
+        nodes: dict[str, FlowNode],
+        edges: list[FlowEdge],
+        root: FlowNode,
+        member: RouteMember,
+        others: frozenset[str] = frozenset(),
+        other_hops: frozenset[str] = frozenset(),
     ) -> RouteScopeResult:
         path = [i for i in (member.happy.node_ids if member.happy else []) if i in nodes]
         hops = [h for h in (member.happy.hops if member.happy else []) if h in nodes]
         owners = self._owners(nodes, member, set(hops))
         successors = self._successors(edges)
-        path_set = set(path) | {root.id}
+        path_set = set(path) | {root.id} | set(others)
         owned = self._owned(nodes, successors, owners, path_set, set(hops))
         regions = {
-            hop: self._region(nodes, successors, owners, path_set, hop) for hop in sorted(hops)
+            hop: self._region(nodes, successors, owners, path_set | other_hops, hop) for hop in sorted(hops)
         }
         ids = path_set | owned | {n for region in regions.values() for n in region}
         ids |= self._context(nodes, successors, owners, ids, set(hops))

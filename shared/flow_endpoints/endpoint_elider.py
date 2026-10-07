@@ -2,12 +2,12 @@ from shared.flow_endpoints.chunk_dissolver import ChunkDissolver
 from shared.flow_endpoints.endpoint_ranker import EndpointRanker
 from shared.flow_endpoints.fanout_capper import FanoutCapper
 from shared.flow_endpoints.island_demoter import IslandDemoter
-from shared.flow_endpoints.run_collapser import RunCollapser
-from shared.flow_endpoints.shared_helper_collapser import SharedHelperCollapser
-from shared.flow_endpoints.sole_child_promoter import SoleChildPromoter
 from shared.flow_endpoints.level_assigner import LevelAssigner
 from shared.flow_endpoints.path_compressor import PathCompressor
+from shared.flow_endpoints.run_collapser import RunCollapser
+from shared.flow_endpoints.shared_helper_collapser import SharedHelperCollapser
 from shared.flow_endpoints.slice_graph import SliceGraph
+from shared.flow_endpoints.sole_child_promoter import SoleChildPromoter
 from shared.flow_endpoints.terminal_closer import TerminalCloser
 
 DEFAULT_BUDGET = 16

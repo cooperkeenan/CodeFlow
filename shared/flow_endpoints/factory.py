@@ -1,8 +1,14 @@
+from shared.flow_endpoints.back_edge_pruner import BackEdgePruner
 from shared.flow_endpoints.chunk_dissolver import ChunkDissolver
 from shared.flow_endpoints.endpoint_elider import EndpointElider
 from shared.flow_endpoints.endpoint_group_tree import EndpointGroupTree
 from shared.flow_endpoints.entry_routes import EntryRoutes
+from shared.flow_endpoints.group_meta import GroupMeta
+from shared.flow_endpoints.group_overview import GroupOverview
+from shared.flow_endpoints.group_paths import GroupPaths
+from shared.flow_endpoints.group_scope import GroupScope
 from shared.flow_endpoints.group_splitter import GroupSplitter
+from shared.flow_endpoints.group_subgraph import GroupSubgraph
 from shared.flow_endpoints.happy_payload import HappyPayload
 from shared.flow_endpoints.hop_collapser import HopCollapser
 from shared.flow_endpoints.level_assigner import LevelAssigner
@@ -28,3 +34,21 @@ def build_route_subgraph() -> RouteSubgraph:
 
 def build_group_tree() -> EndpointGroupTree:
     return EndpointGroupTree(GroupSplitter(), EntryRoutes())
+
+
+def build_group_subgraph() -> GroupSubgraph:
+    helpers = SharedHelperCollapser()
+    return GroupSubgraph(
+        SliceAssembler(),
+        EndpointElider(ChunkDissolver(), LevelAssigner(), helpers=helpers),
+        GroupScope(RouteScope()),
+        HopCollapser(helpers),
+        GroupPaths(),
+        SharedOwnerIndex(),
+        GroupMeta(),
+        BackEdgePruner(),
+    )
+
+
+def build_group_overview() -> GroupOverview:
+    return GroupOverview(SliceAssembler(), GroupMeta())

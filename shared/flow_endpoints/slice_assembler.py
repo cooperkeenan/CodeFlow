@@ -19,10 +19,11 @@ class SliceAssembler:
         member_ids: set[str],
         root_id: str,
         pairs: set[tuple[str, str]] | None = None,
+        sealed: dict[str, frozenset[str]] | None = None,
     ) -> SliceGraph:
         return SliceGraph(
             {node_id: self._scoped(nodes_by_id[node_id], member_ids) for node_id in member_ids},
-            self._edges(graph.edges, member_ids, root_id, pairs),
+            self._edges(graph.edges, member_ids, root_id, pairs, sealed),
             root_id,
             self._external(graph, member_ids),
         )
@@ -64,13 +65,26 @@ class SliceAssembler:
         member_ids: set[str],
         root_id: str,
         pairs: set[tuple[str, str]] | None,
+        sealed: dict[str, frozenset[str]] | None = None,
     ) -> list[FlowEdge]:
         inside = [
             edge.model_copy(deep=True)
             for edge in edges
-            if edge.source in member_ids and edge.target in member_ids
+            if edge.source in member_ids
+            and edge.target in member_ids
+            and not self._leaks(edge, sealed, pairs or set())
         ]
         return self._pruner.prune(member_ids, inside, root_id, pairs)
+
+    def _leaks(
+        self, edge: FlowEdge, sealed: dict[str, frozenset[str]] | None, pairs: set[tuple[str, str]]
+    ) -> bool:
+        region = (sealed or {}).get(edge.source)
+        return (
+            region is not None
+            and edge.target not in region
+            and (edge.source, edge.target) not in pairs
+        )
 
     def _external(self, graph: FlowGraph, member_ids: set[str]) -> dict[str, list[str]]:
         outside: dict[str, list[str]] = {}
