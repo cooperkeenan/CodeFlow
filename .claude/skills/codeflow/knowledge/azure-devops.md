@@ -401,3 +401,23 @@ Azure DevOps does **not** print a "create a pull request" link on push the way G
 `https://dev.azure.com/skych-dev/Skych/_git/RepoMap/pullrequestcreate?sourceRef=<branch>&targetRef=main`
 or with `az repos pr create`. Branch naming ties to the board: `feature/<PBI id>-<slug>`
 (e.g. `feature/5-rework-endpoint-detection` → PBI 5).
+
+## 2026-10-10 — GitHub remote removed; Azure is now `origin`
+
+The user dropped GitHub from the Mac checkout. **Supersedes the remote notes above** (2026-09-22 and
+2026-09-29): there is no `azure` remote any more.
+
+```
+origin  https://dev.azure.com/skych-dev/Skych/_git/RepoMap   (the only remote)
+```
+
+- Plain `git push` / `git push -u origin <branch>` now go to Azure. `push.autoSetupRemote=true` is
+  set in the repo config, so a new branch's first `git push` needs no `--set-upstream`.
+- Before removing GitHub, every GitHub ref was verified contained in Azure with
+  `git rev-list --count origin/<b> --not --remotes=azure` (all 0). Three refs were GitHub-only and
+  were fast-forward pushed first: `feature/static-happy-path`, `feat/refactor-everything` (+3),
+  `feature/api-contracts` (+2).
+- `feature/5-rework-endpoint-detection` was merged (PR 1) and deleted on Azure; the local branch is
+  kept with no upstream.
+- The GitHub repo `cooperkeenan/CodeFlow` itself was **not** deleted or archived — only the local
+  remote was removed.
