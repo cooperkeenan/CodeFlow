@@ -38,6 +38,7 @@ export default function ExpandToggle({ expanded, count, onToggle, nodeId, scale 
         event.stopPropagation()
         event.preventDefault()
       }}
+      onDoubleClick={event => event.stopPropagation()}
     >
       {expanded ? '−' : `+${count}`}
     </span>

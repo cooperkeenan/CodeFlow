@@ -43,6 +43,7 @@ export default function LinkChip({ link, onLink, nodeId, scale = 1 }) {
         event.stopPropagation()
         event.preventDefault()
       }}
+      onDoubleClick={event => event.stopPropagation()}
     >
       <span aria-hidden="true">→</span>
       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortName(link.target)}</span>

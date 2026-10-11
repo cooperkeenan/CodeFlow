@@ -2,10 +2,13 @@ import { Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar } fro
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
 
+import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined'
+
 const WIDTH = 224
 
 const ITEMS = [
   { id: 'repomaps', label: 'Repo Maps', icon: <AccountTreeIcon fontSize="small" /> },
+  { id: 'brainstorm', label: 'Brainstorm', icon: <LightbulbOutlinedIcon fontSize="small" /> },
   { id: 'tour', label: 'Tour', icon: <PlayCircleOutlineIcon fontSize="small" /> },
 ]
 

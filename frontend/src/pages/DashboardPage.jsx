@@ -9,7 +9,8 @@ import RepoMapsPanel from '../components/dashboard/RepoMapsPanel'
 export default function DashboardPage({ onOpenMap }) {
   const [section, setSection] = useState('repomaps')
   const navigate = useNavigate()
-  const select = id => (id === 'tour' ? navigate('/tour') : setSection(id))
+  const routes = { tour: '/tour', brainstorm: '/brainstorm' }
+  const select = id => (routes[id] ? navigate(routes[id]) : setSection(id))
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>

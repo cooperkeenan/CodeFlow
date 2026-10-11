@@ -26,7 +26,7 @@ export default function TourPage() {
   const chapters = payload?.chapters ?? []
   const tour = useTourPlayback(steps)
   const navigate = useNavigate()
-  const { nodes, edges } = useGraphTransform(view, undefined, undefined, view?.node_geometry)
+  const { nodes, edges } = useGraphTransform(view, undefined, view?.node_geometry)
   const step = tour.step
 
   const focusIds = useMemo(() => step?.focus ?? [], [step])

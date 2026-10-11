@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Box, Button, Typography } from '@mui/material'
 import { endpointFixtureUrl } from '../../api/flow'
 import { useFlowGraph } from '../../hooks/useFlowGraph'
@@ -7,6 +8,7 @@ import { useGraphTransform } from '../../hooks/useGraphTransform'
 import { useHappyHighlight } from '../../hooks/useHappyHighlight'
 import FlowCanvas from '../flow/FlowCanvas'
 import { CANVAS, GRID } from '../flow/styles'
+import { brainstormUrl } from '../flow/brainstormLink'
 import './happyPath.css'
 
 const MONO = "'IBM Plex Mono', monospace"
@@ -19,7 +21,7 @@ const NO_IDS = []
 export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen, contract = null, onLink = null }) {
   const fixtureUrl = fixture && entry ? endpointFixtureUrl(entry) : null
   const { payload, loading, error } = useFlowGraph(repo, fixtureUrl, entry, null)
-  const [isolated, setIsolated] = useState(null)
+  const navigate = useNavigate()
   const [partial, setPartial] = useState(null)
 
   const view = payload?.view ?? payload
@@ -35,15 +37,18 @@ export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen
   ), [payload, contract])
   const forcedIds = happy?.reveal?.length ? happy.reveal : NO_IDS
   const expansion = useExpansion(view, false, [], forcedIds, happy?.edges ?? null)
-  const onIsolate = useCallback(id => setIsolated(prev => (prev === id ? null : id)), [])
   const { nodes: baseNodes, edges: baseEdges } = useGraphTransform(
-    expansion, expansion.toggle, onIsolate, view?.node_geometry, links, onLink
+    expansion, expansion.toggle, view?.node_geometry, links, onLink
   )
   const onNodeClick = useCallback((_event, node) => {
     if (node?.id?.startsWith(ENDPOINT_LINK_PREFIX)) {
       onLink?.({ kind: 'endpoint', target: node.id.slice(ENDPOINT_LINK_PREFIX.length) })
     }
   }, [onLink])
+  const onNodeDoubleClick = useCallback((_event, node) => {
+    const url = brainstormUrl(repo, node)
+    if (url) navigate(url)
+  }, [repo, navigate])
   const { nodes, edges, fitNodeIds } = useHappyHighlight(baseNodes, baseEdges, happy)
 
   return (
@@ -92,10 +97,8 @@ export default function EndpointDiagramPane({ repo, fixture, entry, onFullScreen
           <FlowCanvas
             nodes={nodes}
             edges={edges}
-            selectedId={isolated}
-            isolatedId={isolated}
             onNodeClick={onNodeClick}
-            onPaneClick={() => setIsolated(null)}
+            onNodeDoubleClick={onNodeDoubleClick}
             revealTrigger={expansion.lastReveal}
             repo={repo}
             fitOptions={FIT_OPTIONS}

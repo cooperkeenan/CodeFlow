@@ -53,6 +53,7 @@ export default function Legend() {
           <div style={HEAD}>confidence</div>
           <div style={ROW}><span style={SWATCH}>◐</span>inferred = 60% opacity</div>
           <div style={ROW}><span style={SWATCH}>⚡</span>dynamic = dashed</div>
+          <div style={{ ...ROW, marginTop: 8, opacity: 0.7 }}>double-click a node → brainstorm it</div>
         </>
       )}
     </div>

@@ -18,6 +18,7 @@ import RepoHomePage from './pages/RepoHomePage'
 import SettingsPage from './pages/SettingsPage'
 import FlowPage from './pages/FlowPage'
 import EndpointPage from './pages/EndpointPage'
+import BrainstormPage from './pages/BrainstormPage'
 import TourPage from './pages/TourPage'
 
 const queryClient = new QueryClient({
@@ -97,6 +98,7 @@ export default function App() {
             }
           />
           <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+          <Route path="/brainstorm" element={<RequireAuth><BrainstormPage analysis={analysis} /></RequireAuth>} />
           <Route path="/tour" element={<TourPage />} />
           <Route
             path="/repo"

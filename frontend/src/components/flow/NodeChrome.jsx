@@ -1,5 +1,4 @@
 import ExpandToggle from './ExpandToggle'
-import IsolateButton from './IsolateButton'
 import LinkChip from './LinkChip'
 import NodeBadges from './NodeBadges'
 import IsolatedChrome from './isolate/IsolatedChrome'
@@ -64,20 +63,15 @@ export default function NodeChrome({ data, align = 'flex-start', subtitle = null
           <LinkChip link={data.link} onLink={data.onLink} nodeId={data.nodeId} scale={scale} />
         </div>
       )}
-      {(data.expandable || (data.depth > 0 && data.onIsolate)) && (
+      {data.expandable && (
         <div style={{ display: 'flex', alignItems: 'center', gap: Math.round(4 * scale), marginTop: Math.round(4 * scale) }}>
-          {data.expandable && (
-            <ExpandToggle
-              expanded={data.expanded}
-              count={data.hiddenCount}
-              onToggle={data.onToggle}
-              nodeId={data.nodeId}
-              scale={scale}
-            />
-          )}
-          {data.depth > 0 && data.onIsolate && (
-            <IsolateButton onIsolate={data.onIsolate} nodeId={data.nodeId} scale={scale} />
-          )}
+          <ExpandToggle
+            expanded={data.expanded}
+            count={data.hiddenCount}
+            onToggle={data.onToggle}
+            nodeId={data.nodeId}
+            scale={scale}
+          />
         </div>
       )}
     </div>
