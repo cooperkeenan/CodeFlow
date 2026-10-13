@@ -21,6 +21,9 @@ The LLM may never add, remove, merge or rewire a node or edge.
 Implement with the `implementer` agent (`~/.claude/agents/implementer.md`): Sonnet, one verification
 pass, no visual review. Opus owns the screenshot/browser review. See `knowledge/subagents.md`.
 
+**Never commit, push or open a PR unless the user asks (2026-10-13)** — the user commits
+themselves; leave changes in the working tree and say what they are.
+
 Scoped task docs are **ephemeral** — gitignored, deleted on merge to main. Do not rely on their
 numbers or continued existence; this skill and the code are the source of truth.
 
