@@ -52,19 +52,37 @@ class CallGraph:
     def steps(self, root: str) -> list[dict[str, Any]]:
         visited = {root}
         out: list[dict[str, Any]] = []
-
-        def walk(fqn: str, depth: int) -> None:
-            if depth >= MAX_DEPTH:
-                return
-            for child in sorted(self.callees.get(fqn, ()), key=self.sort_key):
-                if child in visited or len(out) >= MAX_STEPS:
-                    continue
-                visited.add(child)
-                out.append(symbol(child, self.functions[child], depth=depth + 1))
-                walk(child, depth + 1)
-
-        walk(root, 0)
+        frontier = [root]
+        depth = 0
+        while frontier and depth < MAX_DEPTH and len(out) < MAX_STEPS:
+            depth += 1
+            next_frontier: list[str] = []
+            for fqn in frontier:
+                for child in sorted(self.callees.get(fqn, ()), key=self.sort_key):
+                    if child in visited or len(out) >= MAX_STEPS:
+                        continue
+                    visited.add(child)
+                    out.append(symbol(child, self.functions[child], depth=depth))
+                    next_frontier.append(child)
+            frontier = next_frontier
         return out
+
+    def files(self, root: str) -> list[str]:
+        seen: list[str] = []
+        visited = {root}
+        frontier = [root]
+        while frontier:
+            next_frontier: list[str] = []
+            for fqn in frontier:
+                file = self.functions[fqn].span.file
+                if file not in seen:
+                    seen.append(file)
+                for child in sorted(self.callees.get(fqn, ()), key=self.sort_key):
+                    if child not in visited:
+                        visited.add(child)
+                        next_frontier.append(child)
+            frontier = next_frontier
+        return seen
 
     def is_root(self, fqn: str) -> bool:
         span = self.functions[fqn].span
@@ -92,7 +110,7 @@ class CallGraph:
             "id": fqn,
             "size": size,
             "steps": self.steps(fqn),
-            "files": sorted({self.functions[f].span.file for f in full}),
+            "files": self.files(fqn),
             "externals": ext[:MAX_EXTERNALS],
         }
 
