@@ -67,22 +67,20 @@ class CallGraph:
             frontier = next_frontier
         return out
 
-    def files(self, root: str) -> list[str]:
-        seen: list[str] = []
+    def ordered(self, root: str) -> list[str]:
         visited = {root}
+        order = [root]
         frontier = [root]
         while frontier:
             next_frontier: list[str] = []
             for fqn in frontier:
-                file = self.functions[fqn].span.file
-                if file not in seen:
-                    seen.append(file)
                 for child in sorted(self.callees.get(fqn, ()), key=self.sort_key):
                     if child not in visited:
                         visited.add(child)
+                        order.append(child)
                         next_frontier.append(child)
             frontier = next_frontier
-        return seen
+        return order
 
     def is_root(self, fqn: str) -> bool:
         span = self.functions[fqn].span
@@ -100,18 +98,18 @@ class CallGraph:
                 if len(members) >= 2:
                     sized.append((len(members), fqn, members))
         sized.sort(key=lambda item: (-item[0], item[1]))
-        return [self.flow(size, fqn, members) for size, fqn, members in sized[:MAX_FLOWS]]
+        return [self.flow(size, fqn) for size, fqn, _ in sized[:MAX_FLOWS]]
 
-    def flow(self, size: int, fqn: str, members: set[str]) -> dict[str, Any]:
-        full = members | {fqn}
-        ext = sorted({m for f in full for m in self.externals.get(f, ())})
+    def flow(self, size: int, fqn: str) -> dict[str, Any]:
+        ordered = self.ordered(fqn)
+        ext = sorted({m for f in ordered for m in self.externals.get(f, ())})
         return {
             **symbol(fqn, self.functions[fqn]),
             "id": fqn,
             "size": size,
-            "members": sorted(full, key=self.sort_key),
+            "members": ordered,
             "steps": self.steps(fqn),
-            "files": self.files(fqn),
+            "files": list(dict.fromkeys(self.functions[f].span.file for f in ordered)),
             "externals": ext[:MAX_EXTERNALS],
         }
 
