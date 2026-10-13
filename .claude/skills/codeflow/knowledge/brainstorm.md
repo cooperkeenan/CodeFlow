@@ -32,3 +32,16 @@ TypeSafe AI's "System One" decision model, released Sep 2026:
 - **Usage in our projects:** the user wants it used only where an LLM call is too slow or expensive.
 - **Possible CodeFlow fit:** a pre-filter in front of the decision judge (yes/no "is this fork a real
   decision?" before the full LLM verdict). Untested.
+
+## 2026-10-13 — `scripts/contents_page.py` (Brainstorm's picker index)
+
+`venv/bin/python scripts/contents_page.py <repo> [--out x.json]` runs only the tracer's `index` +
+`resolve` stages (no LLM, no cache; 0.3s django-helpdesk, 1.5s CodeFlow) and writes call-graph
+roots as "flows": entry fqn + breadth-first callees (≤12, depth ≤4), external modules, and the
+files of the full closure in breadth-first order. A root is an internal function with no
+internal, non-`<module>` caller (decorator sites resolve to `ext:django` and module-level route
+registrations are references, not calls — counting either hid every function-based view).
+Brainstorm shells out to it via `settings.codeflow_root` (`apps/api/src/brainstorm/repo/contents.py`).
+Byte-identical across runs; `scripts/contents_rules.py` holds the rules. Commits `2b0c1056`,
+`94bad730` on `feature/integrate-brainstrom`. `flow_graph.json` was tried first and is the wrong
+source — it is a decision graph, and route happy paths touch 1–2 files.

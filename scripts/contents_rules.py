@@ -109,6 +109,7 @@ class CallGraph:
             **symbol(fqn, self.functions[fqn]),
             "id": fqn,
             "size": size,
+            "members": sorted(full, key=self.sort_key),
             "steps": self.steps(fqn),
             "files": self.files(fqn),
             "externals": ext[:MAX_EXTERNALS],
