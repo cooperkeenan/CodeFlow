@@ -45,3 +45,12 @@ Brainstorm shells out to it via `settings.codeflow_root` (`apps/api/src/brainsto
 Byte-identical across runs; `scripts/contents_rules.py` holds the rules. Commits `2b0c1056`,
 `94bad730` on `feature/integrate-brainstrom`. `flow_graph.json` was tried first and is the wrong
 source — it is a decision graph, and route happy paths touch 1–2 files.
+
+## 2026-10-13 — contents page is now load-bearing; what Brainstorm reads from it
+
+Brainstorm calls `scripts/contents_page.py` on every session start (subprocess, CodeFlow's own
+3.10 venv) and now depends on: `flows[].steps` (BFS, with `file/line/end_line`), `flows[].members`
+(breadth-first from the root), `flows[].files` (same order), and `symbols[]` spans. Its Jev router
+scores every flow line; its "grounded" drafter turns a chosen flow's chain into the diagram
+structure with no LLM. Changing step order, span semantics or the JSON keys breaks Brainstorm's
+pick and grounded paths. Determinism (byte-identical output per repo) is relied on for A/B evals.
